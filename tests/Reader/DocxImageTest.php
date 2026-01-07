@@ -18,7 +18,7 @@ class DocxImageTest extends TestCase
 
     public function testImageExtraction(): void
     {
-        $path = __DIR__ . '/../../../test/docx/image.docx';
+        $path = __DIR__ . '/../../test/docx/image.docx';
         if (!file_exists($path)) {
             $this->markTestSkipped("Test file image.docx not found");
         }

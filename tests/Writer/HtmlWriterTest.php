@@ -1,6 +1,6 @@
 <?php
 
-namespace Pandoc\Tests;
+namespace Pandoc\Tests\Writer;
 
 use PHPUnit\Framework\TestCase;
 use Pandoc\AST\Pandoc;

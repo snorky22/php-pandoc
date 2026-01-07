@@ -14,7 +14,7 @@ $reader = new DocxReader();
 $writer = new LatexWriter();
 
 foreach ($testFiles as $file) {
-    $fullPath = __DIR__ . '/../' . $file;
+    $fullPath = __DIR__ . '/' . $file;
     if (!file_exists($fullPath)) {
         echo "File not found: $fullPath\n";
         continue;
