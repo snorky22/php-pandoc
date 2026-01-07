@@ -1,0 +1,8 @@
+/tests export-ignore
+/web export-ignore
+/.github export-ignore
+/phpunit.xml export-ignore
+/verify_conversion.php export-ignore
+/verify_docx.php export-ignore
+/test_input.md export-ignore
+/test_user_file.php export-ignore

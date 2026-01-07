@@ -1,0 +1,30 @@
+{
+    "name": "pandoc-php/pandoc",
+    "description": "A native PHP 8.4 port of the Pandoc document converter.",
+    "keywords": ["pandoc", "converter", "docx", "latex", "html", "markdown", "jupyter", "ast"],
+    "homepage": "https://github.com/pandoc-php/pandoc",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "John MacFarlane",
+            "email": "jgm@berkeley.edu"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Pandoc\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Pandoc\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=8.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    }
+}
