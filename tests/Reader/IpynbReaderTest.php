@@ -19,7 +19,7 @@ class IpynbReaderTest extends TestCase
 
     public function testSimpleNotebook(): void
     {
-        $path = __DIR__ . '/../../test/ipynb/simple.ipynb';
+        $path = __DIR__ . '/../../../test/ipynb/simple.ipynb';
         if (!file_exists($path)) {
             $this->markTestSkipped("simple.ipynb not found");
         }

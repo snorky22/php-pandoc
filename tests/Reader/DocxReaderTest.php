@@ -26,7 +26,7 @@ class DocxReaderTest extends TestCase
 
     private function getTestDataPath(string $filename): string
     {
-        return __DIR__ . '/../../test/docx/' . $filename;
+        return __DIR__ . '/../../../test/docx/' . $filename;
     }
 
     public function testHeaders(): void
