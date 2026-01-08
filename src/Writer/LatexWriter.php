@@ -51,23 +51,9 @@ class LatexWriter
 \usepackage{graphicx}
 
 \makeatletter
-\newsavebox\pandoc@box
-\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
-  \sbox\pandoc@box{#1}%
-  \ifdim\wd\pandoc@box>\linewidth
-    \makebox[\linewidth]{\resizebox{\linewidth}{!}{\usebox\pandoc@box}}%
-  \else
-    \ifdim\ht\pandoc@box>\textheight
-      \resizebox{!}{\textheight}{\usebox\pandoc@box}%
-    \else
-      \usebox\pandoc@box
-    \fi
-  \fi
-}
-\makeatother
-
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\makeatother
 
 \begin{document}
 EOF;
@@ -236,7 +222,7 @@ EOF;
     {
         $url = $img->target->url;
         // Do not escapeLatex for the URL in \includegraphics as it can break paths (e.g. underscores)
-        return "\\pandocbounded{\\includegraphics{{$url}}}";
+        return "\\includegraphics{{$url}}";
     }
 
     protected function escapeLatex(string $text): string

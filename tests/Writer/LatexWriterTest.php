@@ -12,6 +12,8 @@ use Pandoc\AST\Attr;
 use Pandoc\AST\BulletList;
 use Pandoc\AST\Plain;
 use Pandoc\AST\Span;
+use Pandoc\AST\Image;
+use Pandoc\AST\Target;
 use Pandoc\Writer\LatexWriter;
 
 class LatexWriterTest extends TestCase
@@ -80,5 +82,15 @@ class LatexWriterTest extends TestCase
         ]);
         $expected = "\\textcolor[HTML]{FF0000}{Red} \\textcolor{blue}{Blue} \\colorbox[HTML]{FFFF00}{Yellow BG} \\colorbox{green}{Green BG}";
         $this->assertLatex($expected, $doc);
+    }
+
+    public function testImage(): void
+    {
+        $doc = new Pandoc(blocks: [
+            new Para([
+                new Image(new Attr(), [], new Target("foo.png", "title"))
+            ])
+        ]);
+        $this->assertLatex("\\includegraphics{foo.png}", $doc);
     }
 }

@@ -120,7 +120,7 @@ Tests cover:
 - **AST Integrity**: Ensuring immutability and correct structure.
 - **Reader/Writer Modularity**: Testing the `ReaderFactory` and interface consistency.
 - **Writer Accuracy**: Verifying LaTeX output and character escaping.
-- **Reader Reliability**: Testing against "Golden" Docx samples from the original Pandoc repository.
+- **Reader Reliability**: Testing against standardized Docx samples to ensure parity with Pandoc's behavior.
 
 ## Credits
 

@@ -46,7 +46,7 @@ Comprehensive table support mirroring Pandoc's complex table model:
 *   **Extraction**: Automatically extracts images from the DOCX ZIP archive, including those in headers and footers.
 *   **Mapping**: Uses relationship mapping (`_rels/*.xml.rels`) for each part to correctly link internal relationship IDs to media files, even when IDs collide across parts.
 *   **Organization**: Media files are stored in the `MediaBag` using their base filename.
-*   **LaTeX Output**: Images are referenced using `\includegraphics{filename}` (no directory prefix) and wrapped in a custom `\pandocbounded` macro that handles scaling to prevent page overflow.
+*   **LaTeX Output**: Images are referenced using `\includegraphics{filename}` (no directory prefix).
 
 ### 7. Currently Simplified or In Progress
 *   **Math (MathML/OMML)**: Detection of `m:oMath` blocks is defined in the low-level parser; conversion to `Math` AST nodes is being aligned with `texmath` logic.
