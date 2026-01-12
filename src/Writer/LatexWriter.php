@@ -50,7 +50,6 @@ class LatexWriter
 \usepackage{xcolor}
 \usepackage{graphicx}
 
-\makeatletter
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \makeatother
@@ -222,7 +221,7 @@ EOF;
     {
         $url = $img->target->url;
         // Do not escapeLatex for the URL in \includegraphics as it can break paths (e.g. underscores)
-        return "\\includegraphics{{$url}}";
+        return "\\pandocbounded{\\includegraphics{{$url}}}";
     }
 
     protected function escapeLatex(string $text): string
