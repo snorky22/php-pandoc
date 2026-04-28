@@ -49,6 +49,7 @@ class LatexWriter
 \usepackage{soul}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{booktabs}
 
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -78,7 +79,6 @@ EOF;
 
     protected function writeTable(\Pandoc\AST\Table $table): string
     {
-        $latex = "\\begin{longtable}[]{@{}";
         $cols = 0;
         if (!empty($table->head->rows)) {
             $cols = count($table->head->rows[0]->cells);
@@ -86,15 +86,17 @@ EOF;
             $cols = count($table->bodies[0]->rows[0]->cells);
         }
 
-        for ($i = 0; $i < $cols; $i++) { $latex .= "l"; }
-        $latex .= "@{}}\n";
+        $colSpec = str_repeat('l', $cols);
+
+        $latex = "\\begin{table}[ht]\n\\centering\n";
+        $latex .= "\\begin{tabular}{@{}" . $colSpec . "@{}}\n";
 
         if (!empty($table->head->rows)) {
-            $latex .= "\\toprule\\noalign{}\n";
+            $latex .= "\\toprule\n";
             foreach ($table->head->rows as $row) {
                 $latex .= $this->writeRow($row) . " \\\\\n";
             }
-            $latex .= "\\midrule\\noalign{}\n\\endhead\n";
+            $latex .= "\\midrule\n";
         }
 
         foreach ($table->bodies as $body) {
@@ -103,8 +105,8 @@ EOF;
             }
         }
 
-        $latex .= "\\bottomrule\\noalign{}\n";
-        $latex .= "\\end{longtable}";
+        $latex .= "\\bottomrule\n";
+        $latex .= "\\end{tabular}\n\\end{table}";
         return $latex;
     }
 

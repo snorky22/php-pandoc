@@ -18,7 +18,6 @@ class ReaderFactory
             'docx' => new DocxReader(),
             'html', 'htm' => new HtmlReader(),
             'ipynb' => new IpynbReader(),
-            'tex', 'latex' => new LatexReader(),
             default => throw new \Exception("Unsupported file extension: .$extension")
         };
     }
