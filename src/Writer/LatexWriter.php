@@ -179,24 +179,23 @@ EOF;
 
     protected function writeSpan(Span $span): string
     {
-        $content = $this->writeInlines($span->content);
         foreach ($span->attr->attributes as $attr) {
             if ($attr[0] === 'color') {
                 $color = $attr[1];
                 if (str_starts_with($color, '#')) {
                     $hex = substr($color, 1);
-                    // Handle 3-digit hex
                     if (strlen($hex) === 3) {
                         $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
                     }
                     if (strlen($hex) === 6) {
-                        return "\\textcolor[HTML]{" . strtoupper($hex) . "}{" . $content . "}";
+                        return $this->writeColoredInlines(strtoupper($hex), 'HTML', $span->content);
                     }
                 }
-                return "\\textcolor{" . $color . "}{" . $content . "}";
+                return $this->writeColoredInlines($color, null, $span->content);
             }
             if ($attr[0] === 'background-color') {
                 $color = $attr[1];
+                $content = $this->writeInlines($span->content);
                 if (str_starts_with($color, '#')) {
                     $hex = substr($color, 1);
                     if (strlen($hex) === 3) {
@@ -206,11 +205,33 @@ EOF;
                         return "\\colorbox[HTML]{" . strtoupper($hex) . "}{" . $content . "}";
                     }
                 }
-                // For named colors like 'yellow' from highlight
                 return "\\colorbox{" . $color . "}{" . $content . "}";
             }
         }
-        return $content;
+        return $this->writeInlines($span->content);
+    }
+
+    protected function writeColoredInlines(string $color, ?string $model, array $inlines): string
+    {
+        return implode('', array_map(fn($i) => $this->writeColoredInline($color, $model, $i), $inlines));
+    }
+
+    protected function writeColoredInline(string $color, ?string $model, Inline $i): string
+    {
+        $cmd = $model ? "\\textcolor[{$model}]{{$color}}" : "\\textcolor{{$color}}";
+        return match (true) {
+            $i instanceof Str        => $cmd . '{' . $this->escapeLatex($i->text) . '}',
+            $i instanceof Space      => ' ',
+            $i instanceof Emph       => '\\emph{'             . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Strong     => '\\textbf{'           . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Underline  => '\\ul{'               . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Strikeout  => '\\st{'               . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Superscript => '\\textsuperscript{' . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Subscript   => '\\textsubscript{'   . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Code       => '\\texttt{' . $cmd . '{' . $this->escapeLatex($i->text) . '}}',
+            $i instanceof Link       => '\\href{' . $this->escapeLatex($i->target->url) . '}{' . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            default                  => $cmd . '{' . $this->writeInline($i) . '}',
+        };
     }
 
     protected function writeLink(Link $link): string
