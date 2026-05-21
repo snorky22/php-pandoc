@@ -223,7 +223,7 @@ EOF;
     {
         $url = $img->target->url;
         // Do not escapeLatex for the URL in \includegraphics as it can break paths (e.g. underscores)
-        return "\\pandocbounded{\\includegraphics{{$url}}}";
+        return "\\includegraphics{$url}";
     }
 
     protected function escapeLatex(string $text): string
