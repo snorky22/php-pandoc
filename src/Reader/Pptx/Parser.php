@@ -67,6 +67,14 @@ class Parser
                 'jpg', 'jpeg' => 'image/jpeg',
                 'gif'        => 'image/gif',
                 'svg'        => 'image/svg+xml',
+                'mp4'        => 'video/mp4',
+                'mov'        => 'video/quicktime',
+                'webm'       => 'video/webm',
+                'avi'        => 'video/x-msvideo',
+                'wmv'        => 'video/x-ms-wmv',
+                'mp3'        => 'audio/mpeg',
+                'wav'        => 'audio/wav',
+                'ogg'        => 'audio/ogg',
                 default      => 'application/octet-stream',
             };
             $media[] = new PptxMediaFile(basename($name), $mime, $data);
@@ -237,7 +245,36 @@ class Parser
         array $rels,
         ZipArchive $zip,
         string $slideDir
-    ): ?PptxPicture {
+    ): PptxVideo|PptxPicture|null {
+        // Check for embedded video first (a:videoFile in nvPr)
+        $videoNodes = $xpath->query('.//*[local-name()="nvPr"]/*[local-name()="videoFile"]', $picNode);
+        if ($videoNodes->length > 0) {
+            $videoNode = $videoNodes->item(0);
+            $relId = $videoNode->getAttributeNS(self::R_NS, 'link');
+            if (!$relId) {
+                $relId = $videoNode->getAttribute('r:link');
+            }
+            if ($relId) {
+                $target = $rels[$relId] ?? null;
+                if ($target !== null) {
+                    $mediaPath = $this->normalizePath($slideDir . '/' . $target);
+                    $data = $zip->getFromName($mediaPath);
+                    if ($data !== false) {
+                        $ext = strtolower(pathinfo($mediaPath, PATHINFO_EXTENSION));
+                        $mime = match ($ext) {
+                            'mp4'  => 'video/mp4',
+                            'mov'  => 'video/quicktime',
+                            'webm' => 'video/webm',
+                            'avi'  => 'video/x-msvideo',
+                            'wmv'  => 'video/x-ms-wmv',
+                            default => 'video/mp4',
+                        };
+                        return new PptxVideo(basename($mediaPath), $mime, $data);
+                    }
+                }
+            }
+        }
+
         $blipNodes = $xpath->query('.//*[local-name()="blip"]', $picNode);
         if ($blipNodes->length === 0) {
             return null;
@@ -435,4 +472,13 @@ readonly class PptxDiagram
 {
     /** @param string[] $texts */
     public function __construct(public array $texts) {}
+}
+
+readonly class PptxVideo
+{
+    public function __construct(
+        public string $filename,
+        public string $mime,
+        public string $data
+    ) {}
 }
