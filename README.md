@@ -1,23 +1,23 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library allows you to convert documents between different formats (currently focusing on Word `.docx`, Excel `.xlsx`, HTML `.html`, Markdown `.md`, and Jupyter `.ipynb` to LaTeX) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb` → LaTeX) without requiring the system-level Pandoc binary.
 
 ## Features
 
-- **Native PHP 8.4 Implementation**: Uses modern PHP features like `readonly` classes, Enums, and property hooks.
-- **AST-Centric Architecture**: Mirrors Pandoc's Abstract Syntax Tree (AST) for robust and accurate conversions.
-- **Modular Reader System**: Uses a factory pattern and unified `ReaderInterface` for easy expansion to new formats.
-- **Deep Docx Parsing**: Extracts paragraphs, headers, tables, lists, images/media, and advanced text styling (bold, italic, underline, strikeout, superscript/subscript, and colors).
-- **Excel (XLSX) Support**: Reads `.xlsx` spreadsheets — all sheets, shared strings, cell formatting (bold/italic), and numeric values — and converts them to LaTeX tables.
-- **LaTeX Generation**: Produces clean LaTeX code, available as both standalone documents and body fragments.
-- **Media Support**: Automatically extracts images from documents and includes them in the AST's `MediaBag`. The web interface bundles these into a ZIP archive alongside the LaTeX source.
-- **Improved Robustness**: Resilient parsing that handles malformed XML, missing styles, and relationship collisions.
-- **Full UTF-8 Output**: All output is UTF-8 encoded end-to-end, handling CJK, Cyrillic, Thai, Arabic, and all Latin-extended scripts without re-encoding.
-- **No External Dependencies**: Works purely in PHP 8.4+, making it easy to deploy in shared hosting or restricted environments.
+- **Native PHP 8.4**: Uses `readonly` classes, Enums, and property hooks.
+- **AST-Centric Architecture**: Mirrors Pandoc's Abstract Syntax Tree for robust conversions.
+- **Modular Reader System**: Factory pattern and `ReaderInterface` for easy format expansion.
+- **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors.
+- **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, and chart extraction (JSON metadata + CSV data for Chart.js).
+- **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images extracted to MediaBag.
+- **LaTeX Generation**: Standalone documents or body fragments.
+- **Automatic ZIP Bundling**: When a document contains images or chart data, output is a `.zip` with the `.tex` and all media files in the same directory. Plain `.tex` otherwise.
+- **Full UTF-8**: End-to-end UTF-8, supporting CJK, Cyrillic, Arabic, Thai, and all Latin-extended scripts.
+- **No External Dependencies**: Pure PHP 8.4+.
 
 ## Installation
 
-Ensure you have PHP 8.4 or higher.
+Requires PHP 8.4 or higher.
 
 ```bash
 composer require pandoc-php/pandoc
@@ -34,29 +34,25 @@ use Pandoc\Writer\LatexWriter;
 $reader = new DocxReader();
 $writer = new LatexWriter();
 
-// 1. Read the Docx file into an AST
-$doc = $reader->read('document.docx');
-
-// 2. Convert AST to LaTeX string (standalone document)
+$doc   = $reader->read('document.docx');
 $latex = $writer->write($doc, standalone: true);
 
 file_put_contents('document.tex', $latex);
 ```
 
-### Converting Markdown to LaTeX Fragment
+### Converting Markdown to a LaTeX Fragment
 
 ```php
 use Pandoc\Reader\MarkdownReader;
 use Pandoc\Writer\LatexWriter;
 
-$reader = new MarkdownReader();
-$writer = new LatexWriter();
-
+$reader   = new MarkdownReader();
+$writer   = new LatexWriter();
 $markdown = "# Hello World\nThis is a paragraph.";
-$doc = $reader->read($markdown);
+$doc      = $reader->read($markdown);
 
-// Output just the body (no preamble)
-$latexFragment = $writer->write($doc, standalone: false);
+// standalone: false → body only, no \documentclass preamble
+$fragment = $writer->write($doc, standalone: false);
 ```
 
 ### Converting HTML to LaTeX
@@ -68,8 +64,7 @@ use Pandoc\Writer\LatexWriter;
 $reader = new HtmlReader();
 $writer = new LatexWriter();
 
-$html = "<h1>Hello</h1><p>World</p>";
-$doc = $reader->read($html);
+$doc   = $reader->read("<h1>Hello</h1><p>World</p>");
 $latex = $writer->write($doc);
 ```
 
@@ -82,21 +77,54 @@ use Pandoc\Writer\LatexWriter;
 $reader = new XlsxReader();
 $writer = new LatexWriter();
 
-// Each sheet becomes a \subsection{} followed by a booktabs table.
-$doc = $reader->read('spreadsheet.xlsx');
+$doc   = $reader->read('spreadsheet.xlsx');
 $latex = $writer->write($doc);
-
-file_put_contents('spreadsheet.tex', $latex);
 ```
 
-The reader handles:
-- Multiple sheets (each produces a level-2 header + table)
-- Shared strings and inline text values
-- Numeric values (formatted as `23.0` to match Pandoc's Haskell `show` convention)
-- Bold and italic cell formatting via the XLSX styles table
-- Trailing empty rows are automatically stripped
+Each sheet produces a level-2 header followed by a `booktabs` table. If the spreadsheet contains embedded images or charts, use the ZIP output pattern below.
 
-> **Note**: Only the modern OOXML format (`.xlsx`) is supported. Legacy binary `.xls` files must be converted to `.xlsx` first (e.g. via LibreOffice).
+> **Note**: Only `.xlsx` (OOXML) is supported. Legacy `.xls` files must be converted first (e.g. via LibreOffice).
+
+**Chart extraction**: Charts are exported as two files added to the MediaBag:
+- `chartN.json` — Chart.js-ready metadata (type, title, axis labels, stacking, series names, and a `dataFile` pointer to the CSV).
+- `chartN.csv` — Chart data (categories as first column, one column per series).
+
+A comment marker is inserted in the LaTeX at the chart's position:
+```latex
+% [pandoc-chart: chart1.json]
+```
+Your app can scan for this marker, load the JSON (which points to the CSV via `dataFile`), and render the chart with Chart.js.
+
+### Converting a PowerPoint Presentation to LaTeX
+
+```php
+use Pandoc\Reader\PptxReader;
+use Pandoc\Writer\LatexWriter;
+
+$reader = new PptxReader();
+$writer = new LatexWriter();
+
+$doc   = $reader->read('presentation.pptx');
+$latex = $writer->write($doc, standalone: true);
+```
+
+Each slide is wrapped in a `slide` environment (with the slide title as argument), and all slides are enclosed in a `slider` environment:
+
+```latex
+\begin{slider}
+
+\begin{slide}{Slide Title}
+Paragraph content here.
+\end{slide}
+
+\begin{slide}{Second Slide}
+More content.
+\end{slide}
+
+\end{slider}
+```
+
+These are custom environments — define them in your LaTeX preamble to control rendering. All images (including slide master/template graphics) are extracted into the MediaBag.
 
 ### Converting Jupyter Notebooks to LaTeX
 
@@ -107,47 +135,66 @@ use Pandoc\Writer\LatexWriter;
 $reader = new IpynbReader();
 $writer = new LatexWriter();
 
-$json = file_get_contents('notebook.ipynb');
-$doc = $reader->read($json);
+$json  = file_get_contents('notebook.ipynb');
+$doc   = $reader->read($json);
 $latex = $writer->write($doc);
 ```
 
+## Output: Plain `.tex` or `.zip`
+
+When a document contains images, charts, or other media, you need to bundle them alongside the `.tex` file. The `MediaBag` tells you whether there are any attachments:
+
+```php
+use Pandoc\Reader\ReaderFactory;
+use Pandoc\Writer\LatexWriter;
+
+$reader = ReaderFactory::createForExtension('docx'); // or xlsx, pptx, etc.
+$doc    = $reader->read($filePath);
+$latex  = (new LatexWriter())->write($doc, standalone: true);
+
+if (!$doc->mediaBag->isEmpty()) {
+    // Bundle .tex + all media into a ZIP
+    $zip = new ZipArchive();
+    $zip->open('output.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('document.tex', $latex);
+    foreach ($doc->mediaBag->getAll() as $filename => $media) {
+        $zip->addFromString($filename, $media['contents']);
+    }
+    $zip->close();
+    // → distribute output.zip
+} else {
+    // No media — plain .tex is sufficient
+    file_put_contents('document.tex', $latex);
+}
+```
+
+All media files (images, chart JSON/CSV) are stored at the **root of the ZIP**, so `\includegraphics{image.png}` and chart references resolve correctly when the `.tex` is compiled or processed from the same directory.
+
 ## Web Interface
 
-The project includes a simple web-based demonstration tool in the `web/` directory.
+The project includes a web-based demonstration tool in `web/`.
 
 1. Point your web server to the `php-pandoc/web/` folder.
 2. Open `index.html` in your browser.
-3. Upload a `.docx`, `.xlsx`, `.html`, `.ipynb` or `.md` file.
-4. Choose the output format (Standalone or Fragment).
-5. Download the converted `.tex` file. If the document contains images, you will receive a `.zip` archive containing the LaTeX file and all media files in the same directory.
+3. Upload a `.docx`, `.xlsx`, `.pptx`, `.html`, `.ipynb`, or `.md` file.
+4. Choose Standalone or Fragment output.
+5. Download the result — a plain `.tex` if the document has no media, or a `.zip` if it does.
 
 ## Supported Structures
 
-For a detailed list of Word document features handled by this port, see [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md). Highlights include:
+See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. Highlights:
 
-- **Headers**: Heading 1-6 and Title mapping.
-- **Text Styling**: Bold, Italic, Underline, Strikeout, Superscript, Subscript.
-- **Colors**: Text color and background (highlight/shading).
-- **Lists**: Bulleted and Ordered lists.
-- **Images/Media**: Automatic extraction from Word documents, HTML, and Jupyter Notebooks.
-- **Headers & Footers**: Extraction of content from Docx headers and footers.
-- **Tables**: Multi-body tables with header row detection.
-- **Horizontal Rules**: Detection of underscore sequences as rules.
+- **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers.
+- **Excel**: Multi-sheet tables, cell formatting, embedded images, Chart.js-ready chart extraction.
+- **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
+- **HTML**: Full block and inline element support.
+- **Jupyter**: Markdown cells, code blocks, output images.
 
 ## Development and Testing
-
-The project uses PHPUnit for testing. To run the test suite:
 
 ```bash
 ./vendor/bin/phpunit
 ```
-
-Tests cover:
-- **AST Integrity**: Ensuring immutability and correct structure.
-- **Reader/Writer Modularity**: Testing the `ReaderFactory` and interface consistency.
-- **Writer Accuracy**: Verifying LaTeX output and character escaping.
-- **Reader Reliability**: Testing against standardized Docx samples to ensure parity with Pandoc's behavior.
 
 ## Credits
 
@@ -155,4 +202,4 @@ This project is a port of [Pandoc](https://github.com/jgm/pandoc), originally cr
 
 ## License
 
-This project is licensed under the GPL v2 or later, mirroring the original Pandoc license.
+GPL v2 or later, mirroring the original Pandoc license.

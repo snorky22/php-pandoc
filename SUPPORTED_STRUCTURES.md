@@ -2,6 +2,9 @@
 
 This document details the document structures that are currently detected, parsed, and handled by the native PHP 8.4 port of Pandoc. The implementation follows the modular architecture of the original Haskell source, separating low-level extraction from high-level AST conversion through a unified `ReaderInterface`.
 
+**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`)  
+**Output format:** LaTeX (standalone document or body fragment)
+
 ## Microsoft Word (Docx) Support
 ### 1. Document Structure & Sections
 *   **Paragraphs**: Standard text paragraphs are detected and converted to `Para` or `Plain` AST nodes.
@@ -98,14 +101,88 @@ The XLSX reader parses the Open Office XML ZIP archive and converts each workshe
 ### 7. Unicode
 - All text is preserved as-is in UTF-8 (no re-encoding), supporting CJK, Cyrillic, Thai, Arabic, and all Latin-extended scripts.
 
-### 8. Not Yet Supported
+### 8. Embedded Images
+- Embedded images (inserted via Insert → Picture) are detected by traversing sheet drawing relationships (`xl/worksheets/_rels/`, `xl/drawings/_rels/`).
+- Image files are extracted into the `MediaBag` and inserted as `Image` AST nodes at the chart's position in the document.
+
+### 9. Chart Extraction
+Charts are exported as two companion files added to the `MediaBag`:
+
+| File | Content |
+|------|---------|
+| `chartN.json` | Chart.js-ready metadata: `type`, `title`, `dataFile`, axis titles, stacking, orientation, series labels |
+| `chartN.csv`  | Data table: first column = categories, remaining columns = series values |
+
+The `dataFile` field in the JSON always points to the corresponding CSV, so your app only needs to find the JSON to locate all assets.
+
+A comment marker is emitted in the LaTeX output at the chart's position:
+```latex
+% [pandoc-chart: chart1.json]
+```
+
+Supported chart types: `bar` (vertical/horizontal), `line`, `pie`, `doughnut`, `scatter`, `area`, `radar`, `bubble`. Data is read from the OOXML cache embedded in the chart XML — no cell-range resolution required.
+
+### 10. Not Yet Supported
 - Cell background/foreground colors.
 - Merged cells (span > 1 row or column).
 - Inline string cells (`t="inlineStr"`).
 - Number format codes (dates, currencies, percentages are rendered as raw floats).
-- Charts and embedded images.
+
+## PowerPoint (PPTX) Support
+
+The PPTX reader parses the Office Open XML ZIP archive and converts each slide into a `slide` LaTeX environment. All slides are enclosed in a `slider` environment.
+
+### 1. Slide Structure
+- Each slide in `ppt/slides/slideN.xml` is processed in presentation order (from `ppt/presentation.xml`).
+- The **title placeholder** (`p:ph type="title"` or `type="ctrTitle"`) becomes the argument to `\begin{slide}{title}`.
+- If no title placeholder is found, a fallback `Slide N` label is used.
+- Output structure:
+```latex
+\begin{slider}
+
+\begin{slide}{Slide Title}
+  content...
+\end{slide}
+
+\end{slider}
+```
+These are custom environments — define them in your LaTeX preamble to control rendering.
+
+### 2. Text Content
+- **Text shapes** (`p:sp`): body text paragraphs are extracted from `p:txBody/a:p`.
+- **Text runs** (`a:r`): bold (`b="1"`) and italic (`i="1"`) run properties are mapped to `\textbf{}` and `\emph{}`.
+- **Bullet lists**: paragraphs with `a:buChar` or `a:buClr` markers → `BulletList` AST nodes.
+- **Ordered lists**: paragraphs with `a:buAutoNum` → `OrderedList` AST nodes.
+- **Nesting**: bullet level from `a:pPr/@lvl` is preserved.
+
+### 3. Images
+- **Slide images** (`p:pic`): extracted via per-slide relationship files (`ppt/slides/_rels/slideN.xml.rels`) and added to the `MediaBag` as `Image` AST nodes.
+- **Template/master images**: images in slide masters (`ppt/slideMasters/`) and slide layouts (`ppt/slideLayouts/`) — typically logos or background graphics — are also collected from `ppt/media/` and added to the `MediaBag` so they travel with the ZIP output. They are not inserted into the LaTeX body since their position is layout-defined.
+
+### 4. Tables
+- Tables embedded in graphic frames (`p:graphicFrame/a:graphic/a:graphicData/a:tbl`) are converted to Pandoc `Table` AST nodes.
+- First row is treated as the header row.
+- Cell text is extracted from all `a:t` runs within each cell.
+
+### 5. SmartArt / Charts (Fallback)
+- SmartArt diagrams and charts in graphic frames are not rendered.
+- All text nodes within the frame are extracted and output as `Para` blocks (text fallback).
+
+### 6. Not Yet Supported
+- Slide notes.
+- Animations and transitions.
+- Embedded videos.
+- SmartArt layout fidelity (text is extracted; visual structure is lost).
+- Per-slide background colors.
 
 ## HTML Support
+The HTML reader uses `DOMDocument` to parse HTML and maps elements to the Pandoc AST:
+*   **Headers**: `<h1>` through `<h6>`.
+*   **Blocks**: `<p>`, `<blockquote>`, `<pre>`, `<hr>`, `<div>`.
+*   **Lists**: `<ul>`, `<ol>`, `<li>`.
+*   **Tables**: `<table>`, `<thead>`, `<tbody>`, `<tfoot>`, `<tr>`, `<th>`, `<td>`. Heuristic detection of header rows if `<thead>` is missing.
+*   **Inlines**: `<b>`/`<strong>`, `<i>`/`<em>`, `<u>`, `<s>`/`<strike>`/`<del>`, `<sup>`, `<sub>`, `<a>`, `<img>`, `<code>`/`<kbd>`/`<samp>`/`<var>`, `<span>`, `<br>`.
+*   **Attributes**: Preservation of `id` and `class` attributes in `Attr` objects.
 The HTML reader uses `DOMDocument` to parse HTML and maps elements to the Pandoc AST:
 *   **Headers**: `<h1>` through `<h6>`.
 *   **Blocks**: `<p>`, `<blockquote>`, `<pre>`, `<hr>`, `<div>`.
