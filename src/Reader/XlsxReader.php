@@ -11,21 +11,31 @@ use Pandoc\AST\Plain;
 use Pandoc\AST\Space;
 use Pandoc\AST\Str;
 use Pandoc\AST\Strong;
+use Pandoc\AST\RawBlock;
+use Pandoc\AST\Para;
+use Pandoc\AST\Image;
+use Pandoc\AST\Target;
 use Pandoc\Reader\Xlsx\Parser;
+use Pandoc\Reader\Xlsx\XlsxChart;
+use Pandoc\Reader\Xlsx\XlsxChartSeries;
 use Pandoc\Reader\Xlsx\XlsxSheet;
 use Pandoc\Reader\Xlsx\XlsxCell;
 
 class XlsxReader implements ReaderInterface
 {
+    use HasMediaBag;
+
     private Parser $parser;
 
     public function __construct()
     {
         $this->parser = new Parser();
+        $this->initMediaBag();
     }
 
     public function read(string $filePath): Pandoc
     {
+        $this->initMediaBag();
         $doc = $this->parser->parse($filePath);
         $blocks = [];
 
@@ -36,9 +46,28 @@ class XlsxReader implements ReaderInterface
             if ($table !== null) {
                 $blocks[] = $table;
             }
+
+            // Embedded images
+            foreach ($sheet->images as $img) {
+                $this->mediaBag->insert($img->filename, $img->mime, $img->data);
+                $blocks[] = new Para([
+                    new Image(new Attr(), [], new Target($img->filename))
+                ]);
+            }
+
+            // Charts → JSON + CSV in MediaBag, marker in LaTeX
+            foreach ($sheet->charts as $chart) {
+                $json = $this->chartToJson($chart);
+                $csv  = $this->chartToCsv($chart);
+                $this->mediaBag->insert("{$chart->id}.json", 'application/json', $json);
+                $this->mediaBag->insert("{$chart->id}.csv", 'text/csv', $csv);
+                $blocks[] = new RawBlock('latex',
+                    "% [pandoc-chart: {$chart->id}.json data: {$chart->id}.csv]"
+                );
+            }
         }
 
-        return new Pandoc(new Meta(), $blocks);
+        return new Pandoc(new Meta(), $blocks, $this->mediaBag);
     }
 
     private function sheetToTable(XlsxSheet $sheet): ?\Pandoc\AST\Table
@@ -170,5 +199,64 @@ class XlsxReader implements ReaderInterface
             }
         }
         return true;
+    }
+
+    private function chartToJson(XlsxChart $chart): string
+    {
+        $data = [
+            'type'  => $chart->type,
+            'title' => $chart->title,
+            'options' => [
+                'indexAxis' => $chart->orientation === 'horizontal' ? 'y' : 'x',
+                'scales' => [
+                    'x' => [
+                        'title'   => ['display' => $chart->xAxisTitle !== '', 'text' => $chart->xAxisTitle],
+                        'stacked' => $chart->stacked,
+                    ],
+                    'y' => [
+                        'title'   => ['display' => $chart->yAxisTitle !== '', 'text' => $chart->yAxisTitle],
+                        'stacked' => $chart->stacked,
+                    ],
+                ],
+            ],
+            'series' => array_map(fn(XlsxChartSeries $s) => ['label' => $s->label], $chart->series),
+        ];
+        return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    private function chartToCsv(XlsxChart $chart): string
+    {
+        if (empty($chart->series)) {
+            return '';
+        }
+
+        $categories = $chart->series[0]->categories;
+        $seriesLabels = array_map(fn(XlsxChartSeries $s) => $s->label, $chart->series);
+
+        $rows = [];
+        // Header row
+        $rows[] = $this->csvRow(array_merge(['Category'], $seriesLabels));
+
+        // Data rows
+        foreach ($categories as $i => $cat) {
+            $row = [$cat];
+            foreach ($chart->series as $series) {
+                $val = $series->values[$i] ?? null;
+                $row[] = $val !== null ? (string)$val : '';
+            }
+            $rows[] = $this->csvRow($row);
+        }
+
+        return implode("\n", $rows) . "\n";
+    }
+
+    private function csvRow(array $fields): string
+    {
+        return implode(',', array_map(function (string $f): string {
+            if (str_contains($f, ',') || str_contains($f, '"') || str_contains($f, "\n")) {
+                return '"' . str_replace('"', '""', $f) . '"';
+            }
+            return $f;
+        }, $fields));
     }
 }

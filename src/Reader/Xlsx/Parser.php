@@ -212,7 +212,234 @@ class Parser
             $cells["$col,$row"] = new XlsxCell($col, $row, $type, $text, $number, $bold, $italic);
         }
 
-        return new XlsxSheet($id, $name, $cells);
+        [$charts, $images] = $this->parseSheetDrawings($zip, $path);
+        return new XlsxSheet($id, $name, $cells, $charts, $images);
+    }
+
+    // -----------------------------------------------------------------------
+    // Drawings: charts and embedded images
+    // -----------------------------------------------------------------------
+
+    private function parseSheetDrawings(ZipArchive $zip, string $sheetPath): array
+    {
+        $charts = [];
+        $images = [];
+
+        $drawingTargets = $this->parseRelationshipsByType($zip, $sheetPath, '/drawing');
+        foreach ($drawingTargets as $target) {
+            $drawingPath = $this->normalizePath(dirname($sheetPath) . '/' . $target);
+
+            // Charts inside this drawing
+            $chartTargets = $this->parseRelationshipsByType($zip, $drawingPath, '/chart');
+            foreach ($chartTargets as $cTarget) {
+                $chartPath = $this->normalizePath(dirname($drawingPath) . '/' . $cTarget);
+                $chart = $this->parseChart($zip, $chartPath);
+                if ($chart !== null) {
+                    $charts[] = $chart;
+                }
+            }
+
+            // Embedded images inside this drawing
+            $imageTargets = $this->parseRelationshipsByType($zip, $drawingPath, '/image');
+            foreach ($imageTargets as $iTarget) {
+                $imgPath = $this->normalizePath(dirname($drawingPath) . '/' . $iTarget);
+                $data = $zip->getFromName($imgPath);
+                if ($data === false) {
+                    continue;
+                }
+                $ext  = strtolower(pathinfo($imgPath, PATHINFO_EXTENSION));
+                $mime = match ($ext) {
+                    'png'        => 'image/png',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    'gif'        => 'image/gif',
+                    'svg'        => 'image/svg+xml',
+                    default      => 'image/png',
+                };
+                $images[] = new XlsxImage(basename($imgPath), $mime, $data);
+            }
+        }
+
+        return [$charts, $images];
+    }
+
+    private function parseRelationshipsByType(ZipArchive $zip, string $partPath, string $typeFragment): array
+    {
+        $dir = dirname($partPath);
+        $base = basename($partPath);
+        $relsPath = $dir . '/_rels/' . $base . '.rels';
+
+        $xpath = $this->loadXml($zip, $relsPath);
+        if ($xpath === null) {
+            return [];
+        }
+
+        $targets = [];
+        foreach ($xpath->query('//*[local-name()="Relationship"]') as $node) {
+            if (str_contains($node->getAttribute('Type'), $typeFragment)) {
+                $targets[] = $node->getAttribute('Target');
+            }
+        }
+        return $targets;
+    }
+
+    private function parseChart(ZipArchive $zip, string $chartPath): ?XlsxChart
+    {
+        $xpath = $this->loadXml($zip, $chartPath);
+        if ($xpath === null) {
+            return null;
+        }
+
+        $title = $this->extractChartText($xpath,
+            '//*[local-name()="chartSpace"]/*[local-name()="chart"]/*[local-name()="title"]');
+
+        // Detect chart type from the plot area child element
+        $ooXmlTypes = [
+            'barChart'      => 'bar',
+            'lineChart'     => 'line',
+            'pieChart'      => 'pie',
+            'doughnutChart' => 'doughnut',
+            'scatterChart'  => 'scatter',
+            'areaChart'     => 'area',
+            'radarChart'    => 'radar',
+            'bubbleChart'   => 'bubble',
+        ];
+        $chartType   = 'bar';
+        $orientation = 'vertical';
+        $stacked     = false;
+
+        foreach ($ooXmlTypes as $ooxml => $jsType) {
+            $typeNodes = $xpath->query('//*[local-name()="' . $ooxml . '"]');
+            if ($typeNodes->length === 0) {
+                continue;
+            }
+            $chartType = $jsType;
+            if ($ooxml === 'barChart') {
+                $barDir = $xpath->query('//*[local-name()="barDir"]')->item(0);
+                if ($barDir && $barDir->getAttribute('val') === 'bar') {
+                    $orientation = 'horizontal';
+                }
+            }
+            $grouping = $xpath->query('//*[local-name()="grouping"]')->item(0);
+            if ($grouping) {
+                $stacked = in_array($grouping->getAttribute('val'), ['stacked', 'percentStacked'], true);
+            }
+            break;
+        }
+
+        $xAxisTitle = $this->extractChartText($xpath, '//*[local-name()="catAx"]/*[local-name()="title"]');
+        $yAxisTitle = $this->extractChartText($xpath, '//*[local-name()="valAx"]/*[local-name()="title"]');
+
+        $series = [];
+        foreach ($xpath->query('//*[local-name()="ser"]') as $serNode) {
+            $label = $this->extractSeriesText($xpath, $serNode, 'tx');
+
+            $ptCount = (int)($xpath->query(
+                '*[local-name()="cat"]//*[local-name()="ptCount"]', $serNode
+            )->item(0)?->getAttribute('val') ?? 0);
+
+            $catMap = $this->parseIndexedPts($xpath, $serNode, 'cat');
+            $valMap = $this->parseIndexedPts($xpath, $serNode, 'val');
+
+            // Also handle scatter xVal/yVal
+            if (empty($valMap)) {
+                $valMap = $this->parseIndexedPts($xpath, $serNode, 'yVal');
+                if (empty($catMap)) {
+                    $catMap = $this->parseIndexedPts($xpath, $serNode, 'xVal');
+                }
+            }
+
+            $count = max($ptCount, count($catMap), count($valMap));
+            $cats = [];
+            $vals = [];
+            for ($i = 0; $i < $count; $i++) {
+                $cats[] = $catMap[$i] ?? '';
+                $vals[] = isset($valMap[$i]) ? (float)$valMap[$i] : null;
+            }
+
+            if ($count > 0) {
+                $series[] = new XlsxChartSeries($label, $cats, $vals);
+            }
+        }
+
+        return new XlsxChart(
+            basename($chartPath, '.xml'),
+            $chartType,
+            $title,
+            $orientation,
+            $stacked,
+            $xAxisTitle,
+            $yAxisTitle,
+            $series
+        );
+    }
+
+    private function extractChartText(DOMXPath $xpath, string $contextQuery): string
+    {
+        $nodes = $xpath->query($contextQuery);
+        if ($nodes->length === 0) {
+            return '';
+        }
+        $ctx = $nodes->item(0);
+        // Rich text <a:t> nodes
+        $parts = [];
+        foreach ($xpath->query('.//*[local-name()="t"]', $ctx) as $t) {
+            $parts[] = $t->textContent;
+        }
+        if (!empty($parts)) {
+            return trim(implode('', $parts));
+        }
+        // Cached string value
+        foreach ($xpath->query('.//*[local-name()="v"]', $ctx) as $v) {
+            return trim($v->textContent);
+        }
+        return '';
+    }
+
+    private function extractSeriesText(DOMXPath $xpath, \DOMNode $serNode, string $childName): string
+    {
+        $nodes = $xpath->query('*[local-name()="' . $childName . '"]', $serNode);
+        if ($nodes->length === 0) {
+            return '';
+        }
+        $tNodes = $xpath->query('.//*[local-name()="t"]', $nodes->item(0));
+        if ($tNodes->length > 0) {
+            return trim($tNodes->item(0)->textContent);
+        }
+        $vNodes = $xpath->query('.//*[local-name()="v"]', $nodes->item(0));
+        if ($vNodes->length > 0) {
+            return trim($vNodes->item(0)->textContent);
+        }
+        return '';
+    }
+
+    private function parseIndexedPts(DOMXPath $xpath, \DOMNode $serNode, string $containerName): array
+    {
+        $values = [];
+        foreach ($xpath->query(
+            '*[local-name()="' . $containerName . '"]//*[local-name()="pt"]',
+            $serNode
+        ) as $pt) {
+            $idx = (int)$pt->getAttribute('idx');
+            $vNodes = $xpath->query('*[local-name()="v"]', $pt);
+            if ($vNodes->length > 0) {
+                $values[$idx] = $vNodes->item(0)->textContent;
+            }
+        }
+        return $values;
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $parts = explode('/', $path);
+        $result = [];
+        foreach ($parts as $part) {
+            if ($part === '..') {
+                array_pop($result);
+            } elseif ($part !== '' && $part !== '.') {
+                $result[] = $part;
+            }
+        }
+        return implode('/', $result);
     }
 
     private function parseCellRef(string $ref): array
@@ -240,11 +467,51 @@ readonly class XlsxDocument
 
 readonly class XlsxSheet
 {
-    /** @param array<string, XlsxCell> $cells keyed by "col,row" */
+    /**
+     * @param array<string, XlsxCell> $cells   keyed by "col,row"
+     * @param XlsxChart[]             $charts
+     * @param XlsxImage[]             $images
+     */
     public function __construct(
         public int $id,
         public string $name,
-        public array $cells
+        public array $cells,
+        public array $charts = [],
+        public array $images = []
+    ) {}
+}
+
+readonly class XlsxChart
+{
+    /** @param XlsxChartSeries[] $series */
+    public function __construct(
+        public string $id,
+        public string $type,
+        public string $title,
+        public string $orientation,
+        public bool   $stacked,
+        public string $xAxisTitle,
+        public string $yAxisTitle,
+        public array  $series
+    ) {}
+}
+
+readonly class XlsxChartSeries
+{
+    /** @param string[] $categories  @param (float|null)[] $values */
+    public function __construct(
+        public string $label,
+        public array  $categories,
+        public array  $values
+    ) {}
+}
+
+readonly class XlsxImage
+{
+    public function __construct(
+        public string $filename,
+        public string $mime,
+        public string $data
     ) {}
 }
 
