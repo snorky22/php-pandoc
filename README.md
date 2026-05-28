@@ -85,15 +85,42 @@ Each sheet produces a level-2 header followed by a `booktabs` table. If the spre
 
 > **Note**: Only `.xlsx` (OOXML) is supported. Legacy `.xls` files must be converted first (e.g. via LibreOffice).
 
-**Chart extraction**: Charts are exported as two files added to the MediaBag:
-- `chartN.json` — Chart.js-ready metadata (type, title, axis labels, stacking, series names, and a `dataFile` pointer to the CSV).
-- `chartN.csv` — Chart data (categories as first column, one column per series).
+**Chart extraction**: Charts are exported as two companion files added to the MediaBag:
+
+`chart1.json` — Chart.js-ready metadata:
+```json
+{
+  "type": "bar",
+  "title": "Sales by Quarter",
+  "dataFile": "chart1.csv",
+  "options": {
+    "indexAxis": "x",
+    "scales": {
+      "x": { "title": { "display": true, "text": "Quarter" }, "stacked": false },
+      "y": { "title": { "display": true, "text": "Revenue" }, "stacked": false }
+    }
+  },
+  "series": [
+    { "label": "Product A" },
+    { "label": "Product B" }
+  ]
+}
+```
+
+`chart1.csv` — the data (categories + one column per series):
+```
+Category,Product A,Product B
+Q1,120,85
+Q2,135,90
+Q3,128,95
+Q4,145,110
+```
 
 A comment marker is inserted in the LaTeX at the chart's position:
 ```latex
 % [pandoc-chart: chart1.json]
 ```
-Your app can scan for this marker, load the JSON (which points to the CSV via `dataFile`), and render the chart with Chart.js.
+Your app reads the marker → loads the JSON → finds `dataFile` → loads the CSV → renders with Chart.js.
 
 ### Converting a PowerPoint Presentation to LaTeX
 

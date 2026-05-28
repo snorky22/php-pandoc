@@ -106,21 +106,55 @@ The XLSX reader parses the Open Office XML ZIP archive and converts each workshe
 - Image files are extracted into the `MediaBag` and inserted as `Image` AST nodes at the chart's position in the document.
 
 ### 9. Chart Extraction
-Charts are exported as two companion files added to the `MediaBag`:
+Charts are exported as two companion files added to the `MediaBag`.
 
-| File | Content |
-|------|---------|
-| `chartN.json` | Chart.js-ready metadata: `type`, `title`, `dataFile`, axis titles, stacking, orientation, series labels |
-| `chartN.csv`  | Data table: first column = categories, remaining columns = series values |
+**`chartN.json`** — Chart.js-ready metadata:
+```json
+{
+  "type": "bar",
+  "title": "Sales by Quarter",
+  "dataFile": "chart1.csv",
+  "options": {
+    "indexAxis": "x",
+    "scales": {
+      "x": { "title": { "display": true, "text": "Quarter" }, "stacked": false },
+      "y": { "title": { "display": true, "text": "Revenue" }, "stacked": false }
+    }
+  },
+  "series": [
+    { "label": "Product A" },
+    { "label": "Product B" }
+  ]
+}
+```
 
-The `dataFile` field in the JSON always points to the corresponding CSV, so your app only needs to find the JSON to locate all assets.
+| Field | Description |
+|-------|-------------|
+| `type` | Chart.js type: `bar`, `line`, `pie`, `doughnut`, `scatter`, `area`, `radar`, `bubble` |
+| `title` | Chart title (empty string if none) |
+| `dataFile` | Filename of the companion CSV — always `chartN.csv` |
+| `options.indexAxis` | `"x"` for vertical bar/column charts, `"y"` for horizontal bar charts |
+| `options.scales.x/y.stacked` | `true` if the chart uses stacked series |
+| `options.scales.x/y.title.text` | Axis label (empty string if none) |
+| `series[].label` | Series name as it appears in the chart legend |
 
-A comment marker is emitted in the LaTeX output at the chart's position:
+**`chartN.csv`** — data table (categories as first column, one column per series):
+```
+Category,Product A,Product B
+Q1,120,85
+Q2,135,90
+Q3,128,95
+Q4,145,110
+```
+
+The `dataFile` field in the JSON always points to the companion CSV, so your app only needs to find the JSON to locate all assets.
+
+A comment marker is emitted in the LaTeX at the chart's position:
 ```latex
 % [pandoc-chart: chart1.json]
 ```
 
-Supported chart types: `bar` (vertical/horizontal), `line`, `pie`, `doughnut`, `scatter`, `area`, `radar`, `bubble`. Data is read from the OOXML cache embedded in the chart XML — no cell-range resolution required.
+Data is read from the OOXML cache embedded in the chart XML — no cell-range resolution required.
 
 ### 10. Not Yet Supported
 - Cell background/foreground colors.
