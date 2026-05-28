@@ -61,9 +61,7 @@ class XlsxReader implements ReaderInterface
                 $csv  = $this->chartToCsv($chart);
                 $this->mediaBag->insert("{$chart->id}.json", 'application/json', $json);
                 $this->mediaBag->insert("{$chart->id}.csv", 'text/csv', $csv);
-                $blocks[] = new RawBlock('latex',
-                    "% [pandoc-chart: {$chart->id}.json data: {$chart->id}.csv]"
-                );
+                $blocks[] = new RawBlock('latex', "% [pandoc-chart: {$chart->id}.json]");
             }
         }
 
@@ -204,8 +202,9 @@ class XlsxReader implements ReaderInterface
     private function chartToJson(XlsxChart $chart): string
     {
         $data = [
-            'type'  => $chart->type,
-            'title' => $chart->title,
+            'type'     => $chart->type,
+            'title'    => $chart->title,
+            'dataFile' => "{$chart->id}.csv",
             'options' => [
                 'indexAxis' => $chart->orientation === 'horizontal' ? 'y' : 'x',
                 'scales' => [
