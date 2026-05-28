@@ -7,7 +7,6 @@ use Pandoc\AST\BulletList;
 use Pandoc\AST\Caption;
 use Pandoc\AST\Cell;
 use Pandoc\AST\Emph;
-use Pandoc\AST\Header;
 use Pandoc\AST\Image;
 use Pandoc\AST\ListAttributes;
 use Pandoc\AST\Meta;
@@ -15,6 +14,7 @@ use Pandoc\AST\OrderedList;
 use Pandoc\AST\Pandoc;
 use Pandoc\AST\Para;
 use Pandoc\AST\Plain;
+use Pandoc\AST\RawBlock;
 use Pandoc\AST\Row;
 use Pandoc\AST\Space;
 use Pandoc\AST\Str;
@@ -26,6 +26,7 @@ use Pandoc\AST\TableHead;
 use Pandoc\AST\Target;
 use Pandoc\AST\Alignment;
 use Pandoc\Reader\Pptx\Parser;
+use Pandoc\Reader\Pptx\PptxMediaFile;
 use Pandoc\Reader\Pptx\PptxDiagram;
 use Pandoc\Reader\Pptx\PptxParagraph;
 use Pandoc\Reader\Pptx\PptxPicture;
@@ -46,13 +47,21 @@ class PptxReader implements ReaderInterface
     {
         $this->initMediaBag();
         $doc = (new Parser())->parse($filePath);
-        $blocks = [];
+
+        // Bundle all media (including slide master/layout assets) into the MediaBag
+        foreach ($doc->mediaFiles as $mf) {
+            $this->mediaBag->insert($mf->filename, $mf->mime, $mf->data);
+        }
+
+        $blocks = [new RawBlock('latex', '\\begin{slider}')];
 
         foreach ($doc->slides as $slide) {
             foreach ($this->slideToBlocks($slide) as $block) {
                 $blocks[] = $block;
             }
         }
+
+        $blocks[] = new RawBlock('latex', '\\end{slider}');
 
         return new Pandoc(new Meta(), $blocks, $this->mediaBag);
     }
@@ -69,11 +78,9 @@ class PptxReader implements ReaderInterface
             }
         }
 
-        if ($titleInlines === null || empty($titleInlines)) {
-            $titleInlines = [new Str("Slide {$slide->index}")];
-        }
+        $titleText = $titleInlines !== null ? $this->inlinesToPlainText($titleInlines) : "Slide {$slide->index}";
 
-        $blocks = [new Header(2, new Attr(), $titleInlines)];
+        $blocks = [new RawBlock('latex', '\\begin{slide}{' . $this->escapeLaTeX($titleText) . '}')];
 
         // Second pass: content shapes
         foreach ($slide->shapes as $shape) {
@@ -104,6 +111,8 @@ class PptxReader implements ReaderInterface
                 }
             }
         }
+
+        $blocks[] = new RawBlock('latex', '\\end{slide}');
 
         return $blocks;
     }
@@ -198,6 +207,33 @@ class PptxReader implements ReaderInterface
             $inlines[] = preg_match('/^\s+$/u', $part) ? new Space() : new Str($part);
         }
         return $inlines;
+    }
+
+    private function inlinesToPlainText(array $inlines): string
+    {
+        $text = '';
+        foreach ($inlines as $inline) {
+            if ($inline instanceof Str) {
+                $text .= $inline->text;
+            } elseif ($inline instanceof Space) {
+                $text .= ' ';
+            } elseif ($inline instanceof Strong || $inline instanceof Emph) {
+                $text .= $this->inlinesToPlainText($inline->content);
+            }
+        }
+        return trim($text);
+    }
+
+    private function escapeLaTeX(string $text): string
+    {
+        return strtr($text, [
+            '\\' => '\\textbackslash{}',
+            '{' => '\\{', '}' => '\\}',
+            '$' => '\\$', '&' => '\\&',
+            '#' => '\\#', '^' => '\\textasciicircum{}',
+            '_' => '\\_', '~' => '\\textasciitilde{}',
+            '%' => '\\%',
+        ]);
     }
 
     private function tableToAst(PptxTable $shape): ?Table

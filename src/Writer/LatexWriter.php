@@ -73,6 +73,7 @@ EOF;
             $block instanceof BlockQuote => $this->writeBlockQuote($block),
             $block instanceof CodeBlock => $this->writeCodeBlock($block),
             $block instanceof Div => $this->writeBlocks($block->content),
+            $block instanceof \Pandoc\AST\RawBlock => $block->format === 'latex' ? $block->text : '',
             default => '% Unsupported Block: ' . get_class($block)
         };
     }

@@ -40,11 +40,38 @@ class Parser
                 $shapes = $this->parseSlide($slideXpath, $slideRels, $zip, $slidePath);
                 $slides[] = new PptxSlide($slideIndex, $shapes);
             }
+
+            $mediaFiles = $this->collectMedia($zip);
         } finally {
             $zip->close();
         }
 
-        return new PptxDocument($slides);
+        return new PptxDocument($slides, $mediaFiles);
+    }
+
+    private function collectMedia(ZipArchive $zip): array
+    {
+        $media = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if (!str_starts_with($name, 'ppt/media/')) {
+                continue;
+            }
+            $data = $zip->getFromIndex($i);
+            if ($data === false) {
+                continue;
+            }
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            $mime = match ($ext) {
+                'png'        => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif'        => 'image/gif',
+                'svg'        => 'image/svg+xml',
+                default      => 'application/octet-stream',
+            };
+            $media[] = new PptxMediaFile(basename($name), $mime, $data);
+        }
+        return $media;
     }
 
     private function parsePresentation(ZipArchive $zip): array
@@ -332,8 +359,20 @@ class Parser
 
 readonly class PptxDocument
 {
-    /** @param PptxSlide[] $slides */
-    public function __construct(public array $slides) {}
+    /**
+     * @param PptxSlide[]     $slides
+     * @param PptxMediaFile[] $mediaFiles  all ppt/media/* files (including master/layout assets)
+     */
+    public function __construct(public array $slides, public array $mediaFiles = []) {}
+}
+
+readonly class PptxMediaFile
+{
+    public function __construct(
+        public string $filename,
+        public string $mime,
+        public string $data
+    ) {}
 }
 
 readonly class PptxSlide
