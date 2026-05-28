@@ -16,6 +16,7 @@ class ReaderFactory
         return match (strtolower($extension)) {
             'md', 'markdown' => new MarkdownReader(),
             'docx' => new DocxReader(),
+            'xlsx' => new XlsxReader(),
             'html', 'htm' => new HtmlReader(),
             'ipynb' => new IpynbReader(),
             default => throw new \Exception("Unsupported file extension: .$extension")
