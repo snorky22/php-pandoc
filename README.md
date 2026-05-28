@@ -9,7 +9,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **Modular Reader System**: Factory pattern and `ReaderInterface` for easy format expansion.
 - **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors.
 - **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, and chart extraction (JSON metadata + CSV data for Chart.js).
-- **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images extracted to MediaBag.
+- **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images, embedded videos (`\begin{video}...\end{video}`), and audio (`\begin{audio}...\end{audio}`) extracted to MediaBag.
 - **LaTeX Generation**: Standalone documents or body fragments.
 - **Automatic ZIP Bundling**: When a document contains images or chart data, output is a `.zip` with the `.tex` and all media files in the same directory. Plain `.tex` otherwise.
 - **Full UTF-8**: End-to-end UTF-8, supporting CJK, Cyrillic, Arabic, Thai, and all Latin-extended scripts.
@@ -152,6 +152,25 @@ More content.
 ```
 
 These are custom environments — define them in your LaTeX preamble to control rendering. All images (including slide master/template graphics) are extracted into the MediaBag.
+
+Embedded videos are exported as a `video` environment:
+
+```latex
+\begin{video}
+\url{media1.mp4}
+\type{mux}
+\end{video}
+```
+
+Embedded audio is exported as an `audio` environment:
+
+```latex
+\begin{audio}
+\url{recording.mp3}
+\end{audio}
+```
+
+All media files (images, video, audio) are included in the ZIP output alongside the `.tex`.
 
 ### Converting Jupyter Notebooks to LaTeX
 

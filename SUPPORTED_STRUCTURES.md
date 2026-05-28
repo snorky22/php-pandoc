@@ -189,9 +189,24 @@ These are custom environments — define them in your LaTeX preamble to control 
 - **Ordered lists**: paragraphs with `a:buAutoNum` → `OrderedList` AST nodes.
 - **Nesting**: bullet level from `a:pPr/@lvl` is preserved.
 
-### 3. Images
+### 3. Images, Video, and Audio
 - **Slide images** (`p:pic`): extracted via per-slide relationship files (`ppt/slides/_rels/slideN.xml.rels`) and added to the `MediaBag` as `Image` AST nodes.
 - **Template/master images**: images in slide masters (`ppt/slideMasters/`) and slide layouts (`ppt/slideLayouts/`) — typically logos or background graphics — are also collected from `ppt/media/` and added to the `MediaBag` so they travel with the ZIP output. They are not inserted into the LaTeX body since their position is layout-defined.
+- **Embedded video** (`p:pic` with `a:videoFile` in `nvPr`): detected via the per-slide relationship of type `video`. The file is added to the `MediaBag` and a `video` environment is emitted at the shape's position:
+```latex
+\begin{video}
+\url{media1.mp4}
+\type{mux}
+\end{video}
+```
+Supported formats: `mp4`, `mov`, `webm`, `avi`, `wmv`.
+- **Embedded audio** (`p:pic` with `a:audioFile` in `nvPr`): detected via the per-slide relationship of type `audio`. The file is added to the `MediaBag` and an `audio` environment is emitted:
+```latex
+\begin{audio}
+\url{recording.mp3}
+\end{audio}
+```
+Supported formats: `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac`.
 
 ### 4. Tables
 - Tables embedded in graphic frames (`p:graphicFrame/a:graphic/a:graphicData/a:tbl`) are converted to Pandoc `Table` AST nodes.
@@ -205,7 +220,6 @@ These are custom environments — define them in your LaTeX preamble to control 
 ### 6. Not Yet Supported
 - Slide notes.
 - Animations and transitions.
-- Embedded videos.
 - SmartArt layout fidelity (text is extracted; visual structure is lost).
 - Per-slide background colors.
 
