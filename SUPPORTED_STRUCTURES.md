@@ -61,6 +61,50 @@ Comprehensive table support mirroring Pandoc's complex table model:
 ### 9. Technical Implementation Note
 All detected structures are mapped to immutable PHP 8.4 `readonly` classes defined in the `Pandoc\AST` namespace, ensuring that the intermediate representation is strictly compatible with Pandoc's universal document model.
 
+## Excel (XLSX) Support
+
+The XLSX reader parses the Open Office XML ZIP archive and converts each worksheet into a pair of AST nodes: a level-2 `Header` (sheet name) and a `Table`. The implementation mirrors the Haskell `Text.Pandoc.Readers.Xlsx` module introduced in Pandoc 3.x.
+
+### 1. Archive Parsing
+- Opens `.xlsx` files as ZIP archives using PHP's `ZipArchive`.
+- Locates `xl/workbook.xml` and its relationship file (`xl/_rels/workbook.xml.rels`) to discover all worksheets in order.
+- Uses `local-name()` XPath queries throughout, making parsing robust against namespace variations across Excel versions and third-party generators.
+
+### 2. Shared Strings
+- Parses `xl/sharedStrings.xml` into an indexed array for O(1) lookup.
+- Handles both simple `<si><t>text</t></si>` entries and rich-text `<si><r><t>…</t></r></si>` entries (text runs are concatenated).
+
+### 3. Cell Styles (Bold / Italic)
+- Parses `xl/styles.xml`: extracts the `<fonts>` array and the `<cellXfs>` index that maps each cell's style index to a font.
+- Bold and italic flags are propagated to AST inlines via `Strong` and `Emph` wrappers.
+
+### 4. Cell Values
+- **Shared string cells** (`t="s"`): resolved via the shared strings table.
+- **Numeric cells**: stored as `float`; integer-valued floats are formatted with a `.0` suffix (e.g. `23.0`) to match Pandoc's Haskell `show` convention.
+- **Empty cells**: absent from the sparse cell map; rendered as empty `Plain []` in the table grid.
+- **Formula cells**: the cached `<v>` value is used (formula text is ignored).
+
+### 5. Table Construction
+- Builds a dense row×column grid from the sparse cell map using the minimum and maximum row/column coordinates.
+- The **first row is always treated as the table header** (same heuristic as the Haskell implementation).
+- **Trailing all-empty rows are stripped** from the body using a `dropWhileEnd` equivalent.
+- Empty interior rows (between non-empty rows) are preserved.
+
+### 6. Multi-Sheet Documents
+- Each worksheet produces a `Header 2` block (sheet name) followed by its table.
+- Sheets are output in workbook order.
+- Sheets with no cells produce only the header (no table).
+
+### 7. Unicode
+- All text is preserved as-is in UTF-8 (no re-encoding), supporting CJK, Cyrillic, Thai, Arabic, and all Latin-extended scripts.
+
+### 8. Not Yet Supported
+- Cell background/foreground colors.
+- Merged cells (span > 1 row or column).
+- Inline string cells (`t="inlineStr"`).
+- Number format codes (dates, currencies, percentages are rendered as raw floats).
+- Charts and embedded images.
+
 ## HTML Support
 The HTML reader uses `DOMDocument` to parse HTML and maps elements to the Pandoc AST:
 *   **Headers**: `<h1>` through `<h6>`.
