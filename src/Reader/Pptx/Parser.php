@@ -239,39 +239,67 @@ class Parser
         return new PptxParagraph($level, $bulletType, $runs);
     }
 
+    private function resolveMediaLink(DOMXPath $xpath, DOMNode $node, array $rels, ZipArchive $zip, string $slideDir): ?array
+    {
+        $relId = $node->getAttributeNS(self::R_NS, 'link');
+        if (!$relId) {
+            $relId = $node->getAttribute('r:link');
+        }
+        if (!$relId) {
+            return null;
+        }
+        $target = $rels[$relId] ?? null;
+        if ($target === null) {
+            return null;
+        }
+        $mediaPath = $this->normalizePath($slideDir . '/' . $target);
+        $data = $zip->getFromName($mediaPath);
+        return $data !== false ? [$mediaPath, $data] : null;
+    }
+
     private function parsePicture(
         DOMXPath $xpath,
         DOMNode $picNode,
         array $rels,
         ZipArchive $zip,
         string $slideDir
-    ): PptxVideo|PptxPicture|null {
-        // Check for embedded video first (a:videoFile in nvPr)
+    ): PptxVideo|PptxAudio|PptxPicture|null {
+        // Check for embedded video (a:videoFile in nvPr)
         $videoNodes = $xpath->query('.//*[local-name()="nvPr"]/*[local-name()="videoFile"]', $picNode);
         if ($videoNodes->length > 0) {
-            $videoNode = $videoNodes->item(0);
-            $relId = $videoNode->getAttributeNS(self::R_NS, 'link');
-            if (!$relId) {
-                $relId = $videoNode->getAttribute('r:link');
+            $result = $this->resolveMediaLink($xpath, $videoNodes->item(0), $rels, $zip, $slideDir);
+            if ($result !== null) {
+                [$mediaPath, $data] = $result;
+                $ext = strtolower(pathinfo($mediaPath, PATHINFO_EXTENSION));
+                $mime = match ($ext) {
+                    'mp4'  => 'video/mp4',
+                    'mov'  => 'video/quicktime',
+                    'webm' => 'video/webm',
+                    'avi'  => 'video/x-msvideo',
+                    'wmv'  => 'video/x-ms-wmv',
+                    default => 'video/mp4',
+                };
+                return new PptxVideo(basename($mediaPath), $mime, $data);
             }
-            if ($relId) {
-                $target = $rels[$relId] ?? null;
-                if ($target !== null) {
-                    $mediaPath = $this->normalizePath($slideDir . '/' . $target);
-                    $data = $zip->getFromName($mediaPath);
-                    if ($data !== false) {
-                        $ext = strtolower(pathinfo($mediaPath, PATHINFO_EXTENSION));
-                        $mime = match ($ext) {
-                            'mp4'  => 'video/mp4',
-                            'mov'  => 'video/quicktime',
-                            'webm' => 'video/webm',
-                            'avi'  => 'video/x-msvideo',
-                            'wmv'  => 'video/x-ms-wmv',
-                            default => 'video/mp4',
-                        };
-                        return new PptxVideo(basename($mediaPath), $mime, $data);
-                    }
-                }
+        }
+
+        // Check for embedded audio (a:audioFile in nvPr)
+        $audioNodes = $xpath->query('.//*[local-name()="nvPr"]/*[local-name()="audioFile"]', $picNode);
+        if ($audioNodes->length > 0) {
+            $result = $this->resolveMediaLink($xpath, $audioNodes->item(0), $rels, $zip, $slideDir);
+            if ($result !== null) {
+                [$mediaPath, $data] = $result;
+                $ext = strtolower(pathinfo($mediaPath, PATHINFO_EXTENSION));
+                $mime = match ($ext) {
+                    'mp3'  => 'audio/mpeg',
+                    'wav'  => 'audio/wav',
+                    'ogg'  => 'audio/ogg',
+                    'aac'  => 'audio/aac',
+                    'm4a'  => 'audio/mp4',
+                    'flac' => 'audio/flac',
+                    default => 'audio/mpeg',
+                };
+                return new PptxAudio(basename($mediaPath), $mime, $data);
             }
         }
 
@@ -475,6 +503,15 @@ readonly class PptxDiagram
 }
 
 readonly class PptxVideo
+{
+    public function __construct(
+        public string $filename,
+        public string $mime,
+        public string $data
+    ) {}
+}
+
+readonly class PptxAudio
 {
     public function __construct(
         public string $filename,

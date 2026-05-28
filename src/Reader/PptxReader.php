@@ -33,6 +33,7 @@ use Pandoc\Reader\Pptx\PptxPicture;
 use Pandoc\Reader\Pptx\PptxSlide;
 use Pandoc\Reader\Pptx\PptxTable;
 use Pandoc\Reader\Pptx\PptxTextShape;
+use Pandoc\Reader\Pptx\PptxAudio;
 use Pandoc\Reader\Pptx\PptxVideo;
 
 class PptxReader implements ReaderInterface
@@ -96,6 +97,11 @@ class PptxReader implements ReaderInterface
                 $this->mediaBag->insert($shape->filename, $shape->mime, $shape->data);
                 $blocks[] = new RawBlock('latex',
                     "\\begin{video}\n\\url{{$shape->filename}}\n\\type{mux}\n\\end{video}"
+                );
+            } elseif ($shape instanceof PptxAudio) {
+                $this->mediaBag->insert($shape->filename, $shape->mime, $shape->data);
+                $blocks[] = new RawBlock('latex',
+                    "\\begin{audio}\n\\url{{$shape->filename}}\n\\end{audio}"
                 );
             } elseif ($shape instanceof PptxPicture) {
                 $this->mediaBag->insert($shape->filename, $shape->mime, $shape->data);
