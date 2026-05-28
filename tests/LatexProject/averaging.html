@@ -1,0 +1,3743 @@
+<h1 id="introduction">Introduction</h1>
+<p>We consider here optimal control problems which feature fast
+dependency on time. This is the case, for instance, if the problems
+depend on data which features high frequency phenomenons, i.e., features
+that happen at a much smaller time scale than the response time of the
+dynamics.</p>
+<p>We consider here the solution of these control problems using the
+Pontryagin’s minimum principle. In this perspective, we have to solve a
+two point boundary value problem, be it through direct or indirect
+methods. To do that, we have to discretize the boundary problem. In our
+case, the size of the mesh is dictated by the high frequency features of
+the data, which is much smaller than the time scale of the dynamics. The
+question that is addressed in this paper is to find a solution method
+whose mesh size is dictated by the dynamics and not by the data.</p>
+<p>When the fast data is periodic with respect to time, a classic
+approach to the solving of differential equations is averaging.
+Historically, the method of averaging was introduced to study the motion
+of celestial bodies by solving a simple two body equation which is
+perturbed by the influence of other bodies (see the section in <span
+class="citation" data-cites="sanders"></span> about the history of
+averaging). As developed in <span class="citation"
+data-cites="poincare"></span>, the framework was that of the
+perturbation of an orbit by the small influence of a periodic input.
+Averaging was then generalized in a geometric framework, notably in
+<span class="citation" data-cites="Arnold-celestial ArnoldODE"></span>.
+A comprehensive book on the subject is <span class="citation"
+data-cites="sanders"></span>. In this framework, the faster oscillating
+phenomenon is either periodic or satisfies some kind of ergodicity
+assumption.</p>
+<p>The previous references consider a non controlled dynamical systems.
+We turn our attention now to controlled systems, and, in particular,
+optimal control problems (OCPs).</p>
+<p>In this perspective, we add to the differential equation an extra
+parameter <span class="math inline"><em>u</em></span> which is the open
+loop control of the system. If we have non-linearities in the dynamics,
+common sense dictates that averaging be performed <span>
+<em>after</em></span> the control is introduced, by contrast to the
+approach where the control would be introduced
+<span><em>after</em></span> the differential system is averaged. Indeed,
+the high frequency content of the control may interact with the high
+frequency content of the data; therefore the averaging must be applied
+once this interaction is taken into account.</p>
+<p>In the case of ordinary differential equations, the approximation
+value of the averaging method is determined by the proximity of the
+nominal and averaged trajectories.</p>
+<p>However, in the case of controlled systems, there are as many
+trajectories to consider as there are different controls. Fortunately,
+in optimal control, there is a simple way to evaluate the performance of
+an approximation method:</p>
+<ul>
+<li><p>We first consider the optimal cost <span
+class="math inline"><em>J</em><sub>0</sub></span> for the nominal
+control system.</p></li>
+<li><p>On the other hand, we considered the optimal control <span
+class="math inline"><em>u</em><sup>*</sup></span> for the approximated
+control system, and we use it to control the
+<span><em>nominal</em></span> system. This generates a cost <span
+class="math inline"><em>J</em><sup>*</sup></span>.</p></li>
+<li><p>Naturally, <span
+class="math inline"><em>J</em><sup>*</sup></span> is greater than <span
+class="math inline"><em>J</em><sub>0</sub></span>. As a consequence, we
+can evaluate the quality of the approximation method by considering the
+loss of optimality <span
+class="math inline"><em>J</em><sup>*</sup> − <em>J</em><sub>0</sub></span>
+which is non negative.</p></li>
+</ul>
+<p>Let us review some previous work on this topic.</p>
+<p>An early work <span class="citation" data-cites="balachandra"></span>
+applies averaging to two point boundary value problems, but its
+application to optimal control is limited to what is essentially the
+linear quadratic case. In <span class="citation"
+data-cites="chaplais"></span>, the method of averaging is applied to
+optimal control, both in open loop (the system is then periodic with
+respect to the fast time), and in closed loop (which is a study of the
+Hamilton-Jacobi equation under an ergodicity assumption). The study of
+the HJB equation is improved in <span class="citation"
+data-cites="Barron1993"></span>. Observe that, in these two references,
+the horizon is finite and the oscillatory input is fast.</p>
+<p>References <span class="citation"
+data-cites="GaitsgoryCDC2006 GaitsgorySIAM2006 GaitsgorySIAM2008 GaitsgoryCDC2009"></span>
+consider an optimal control problem “in the long run”, that is, with
+slow and “normal” time scales, using averaging techniques. The
+convergence of the optimal cost is proved, but there is no estimation of
+the loss of optimality that the approximation method produces.</p>
+<p>Reference <span class="citation" data-cites="Ogulenko"></span>
+constructs the method of averaging for controlled systems on time
+scales, and determines the algorithm of correspondence of controls over
+the original and averaged systems. It is an interesting work, but we
+shall prove in this article that the order of efficiency of the method
+is under-estimated (it should be two).</p>
+<p>As we pointed out before, the application of averaging to celestial
+mechanics is a classic. It has been naturally transposed to the context
+of optimal control. Specifically, the optimal control of low thrust
+engines in space have been studied from a geometric view point and in
+the periodic case. Such a approach has been adopted in <span
+class="citation"
+data-cites="bonnard-BSM Bonnard-Caillau2006 BonnardCaillauIHP"></span>.
+Averaging has also been used for similar problems <span class="citation"
+data-cites="EpenoyGeoffroy1997 EpenoyEclipse"></span> in a spirit that
+is close to <span class="citation" data-cites="chaplais"></span>. All of
+these references assume that the fast dynamics are either periodic or
+satisfy an ergodicity assumption.</p>
+<p>There are applications of averaging in optimal control that are more
+data driven (by contrast to autonomous celestial mechanics). Energy
+management of thermal systems consider the optimal control of the
+temperature of buildings <span class="citation"
+data-cites="robillart"></span>. Naturally, this heavily depends of the
+weather data, which naturally features fast oscillating components (with
+respect to the building’s inertia).</p>
+<p>Reference <span class="citation" data-cites="lepreux"></span>
+considers a buoy which is subject to the oscillating influence of
+waves.</p>
+<p>Averaging has been also used is stochastic optimal control, notably
+of Markov chains (see for instance <span class="citation"
+data-cites="hernandez-lasserre VargasCDC2009 TsaiHaddaACC1994"></span>).
+Indeed, when there exists a cycle in a discrete state Markov chain that
+has high transition probabilities, then this cycle is gone through very
+fast and averaging can be applied. An alternative to the classical
+averaging scheme is ergodic theory <span class="citation"
+data-cites="Buckdahn"></span>.</p>
+<p>In this article, we consider optimal control problems which are
+influenced by some fast perturbation data (with respect to the time
+constant of the system). The approach is somehow different from what
+exists in the litterature.</p>
+<p>Here we consider, as far as rapidly oscillating inputs are
+considered, that the behavior of the system is similar to the response
+of a single integrator. This is why we first define our averaging method
+by the effect of integration on general signals. The averaged signal is
+defined by its successive averages on consecutive intervals. This
+transformation can be from various points of view:</p>
+<ul>
+<li><p>In the frequency domain, this averaging method is low pass
+filter, although not a very good one <span class="citation"
+data-cites="LiTan2008 Stranneby2004 Oppenheim2010"></span>. Indeed, it
+is a Finite Impulse Response filter, and thus its transfer function is
+not compactly supported.</p></li>
+<li><p>In the time domain, this averaging operator is an orthogonal
+projection on the Haar basis. More efficient approximation methods exist
+in the wavelet framework <span class="citation"
+data-cites="Mallat98"></span>; however specific tools must be used for
+compactly supported signals <span class="citation"
+data-cites="CohenDV:94 chaplais-denoising"></span> and, in practice,
+their have boundary effects that are not desirable when noise is
+present.</p></li>
+<li><p>From a statistical point of view, this method can viewed as the
+computation of a sequence of empirical expectations, typically for a non
+stationnary signal. This why we call our method
+<span><em>empirical</em></span> averaging.</p></li>
+</ul>
+<p>From this approximation technique we derive a similar one for
+ordinary differential equations, control systems, and ultimately optimal
+control problems.</p>
+<p>In all of these contexts, the performance of the averaging method is
+evaluated by the difference between the output of the reference signal
+and the averaged one, through an integrator. The maximum value for this
+difference is called <span class="math inline"><em>α</em></span>.</p>
+<p>It is a very simple thing to evaluate and as a consequence, it may be
+applied to a wide range of situations.</p>
+<p>An important feature of this problem is that the mesh size of the two
+point boundary value problem is not dictated by the fast data, but
+rather by the time constant of the system (which is larger than the
+width of the averaging interval). The minimization consists in the
+minimization of an averaged Hamiltonian.</p>
+<p>This numerical technique has already been applied to the optimal
+control of a low thrust space engine that must reach its final orbit;
+the controls in the Keplerian case (where periodicity exists) and in the
+non Keplerian case (where the influence of the moon and of the sun
+breaks the periodicity) have been successfully computed <span
+class="citation" data-cites="goumri"></span>.</p>
+<p>The paper is organized as follows. Section <a href="#settingssec"
+data-reference-type="ref" data-reference="settingssec">2</a> presents
+the original OCP. It then presents windowed averaging for functions,
+differential equations and control systems. It then presents the concept
+of averaged OCP that is used in this paper. This is where the averaging
+error <span class="math inline"><em>α</em></span> is defined. Section <a
+href="#Example" data-reference-type="ref" data-reference="Example">3</a>
+describes the example of the orbit transfer of low thrust space engine
+in the non keplerian case <span class="citation"
+data-cites="goumri"></span>. Sections <a href="#expansions"
+data-reference-type="ref" data-reference="expansions">4</a> and <a
+href="#FormalExp" data-reference-type="ref"
+data-reference="FormalExp">11</a> compute formal expansions of the state
+and of the costate of the nominal problem with respect to the parameter
+<span class="math inline"><em>α</em></span>. Auxilliary variables that
+will be used later in the course of the article are defined here.
+Section <a href="#auxProblem" data-reference-type="ref"
+data-reference="auxProblem">5</a> introduces an auxiliary problem of
+optimization as well as new auxiliary variables. The main assumptions
+(bounded derivatives and convexity) are given before we state the
+auxiliary problem. The main result is exposed in section <a
+href="#MainTheoremSection" data-reference-type="ref"
+data-reference="MainTheoremSection">6</a>. It is a result on the control
+cost, trajectories and the optimal control. Section <a href="#proof"
+data-reference-type="ref" data-reference="proof">7</a> is devoted to the
+proof of the main theorem. A conclusion is presented is section <a
+href="#conclusionsec" data-reference-type="ref"
+data-reference="conclusionsec">8</a>.</p>
+<p>Note that, for a fluent reading of the paper, complicated
+computations are detailed in the appendices.</p>
+<h1 id="settingssec">Problem statement</h1>
+<h2 id="NominalProblem">Nominal Problem</h2>
+<p>We wish to solve the following Optimal Control Problem (OCP) : <span
+class="math display">min<sub><em>u</em></sub>∫<sub>0</sub><sup><em>T</em></sup><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)<em>d</em><em>t</em></span>
+where <span class="math inline"><em>x</em></span> is is a finite
+dimensional state which satisfies the dynamics : <span
+class="math display">$$\frac{dx}{dt}=f(x,u,t) \; , \; x(0)=\chi_{0}
+    \label{dynamics}$$</span> where <span
+class="math inline"><em>u</em></span> is an integrable finite
+dimensional and unconstrained control. The assumptions on <span
+class="math inline"><em>f</em></span> and <span
+class="math inline"><em>L</em></span> are given in section <a
+href="#Assumptions" data-reference-type="ref"
+data-reference="Assumptions">5.1</a>.</p>
+<h2 id="averaged-problem">Averaged Problem</h2>
+<p>If the dependency of <span class="math inline"><em>f</em></span> or
+<span class="math inline"><em>L</em></span> with respect to time
+contains fast oscillations, the nominal problem may be difficult to
+solve because the mesh size is dictated by the fast oscillation rate. To
+avoid this, we define an averaged problem with the help of a very simple
+low pass filter. This averaging method applies to any kind of
+time-varying (or data-driven) system.</p>
+<h3 id="filtering-of-a-signal-by-windowed-averaging">Filtering of a
+signal by windowed averaging</h3>
+<p>We consider a signal defined on an interval and split this interval
+into <span class="math inline"><em>N</em></span> consecutive intervals.
+On each interval we compute the average of the signal.</p>
+<div id="filtering" class="definition">
+<p><strong>Definition 1</strong>. <em>Let <span
+class="math inline"><em>N</em></span> an integer, and g an integrable
+function on <span class="math inline">[0,<em>T</em>]</span>. Let us
+subdivide <span class="math inline">[0,<em>T</em>]</span> into <span
+class="math inline"><em>N</em></span> intervals <span
+class="math inline">[<em>t</em><sub><em>k</em></sub>,<em>t</em><sub><em>k</em> + 1</sub>]</span>,
+with: <span class="math display">$$t_{k}=k\frac{T}{N} \; , \; k = 0..N
+    \label{intervals}$$</span> The averages of <span
+class="math inline"><em>g</em></span> on these intervals define the low
+pass filter <span class="math inline"><em>L</em><em>P</em></span> on
+<span class="math inline"><em>g</em></span>: <span
+class="math display">$$LP[g](t) =
+\frac{1}{t_{k+1}-t_{k}}\int_{t_{k}}^{t_{k+1}}g(s)ds
+     \; , \; t\in \left[t_{k},t_{k+1}\right) \; , \; k=0..N-1
+    \label{LdefP}$$</span> The difference <span
+class="math inline"><em>g</em> − <em>L</em><em>P</em>[<em>g</em>]</span>,
+that is the averaging error, defines the high pass filter <span
+class="math inline"><em>H</em><em>P</em></span> on <span
+class="math inline"><em>g</em></span>: <span
+class="math display"><em>H</em><em>P</em> = <em>I</em><em>d</em> − <em>L</em><em>P</em></span>
+We then denote I[g] the antiderivative of the averaging error: <span
+class="math display"><em>I</em>[<em>g</em>](<em>t</em>) = ∫<sub>0</sub><sup><em>t</em></sup><em>H</em><em>P</em>[<em>g</em>](<em>s</em>)<em>d</em><em>s</em> , <em>t</em> ∈ [0,<em>T</em>]</span></em></p>
+</div>
+<p>We show now that the upper bound of the function <span
+class="math inline"><em>I</em>[<em>g</em>]</span> is small when <span
+class="math inline"><em>N</em></span> is big and <span
+class="math inline"><em>g</em></span> is bounded.</p>
+<div class="proposition">
+<p><strong>Proposition 1</strong>. <em>The following bound holds for any
+bounded function <span class="math inline"><em>g</em></span> and any
+<span class="math inline"><em>t</em> ∈ [0,<em>T</em>]</span>: <span
+class="math display">$$|I[g](t)| \leq 2 \|g\|_{\infty}\frac{T}{N}
+    \label{BoundI}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let us first prove that for any <span
+class="math inline"><em>k</em> = 0..<em>N</em></span> <span
+class="math display">∫<sub><em>t</em><sub><em>k</em></sub></sub><sup><em>t</em><sub><em>k</em> + 1</sub></sup><em>H</em><em>P</em>[<em>g</em>](<em>t</em>)<em>d</em><em>t</em> = 0</span>
+Indeed: <span
+class="math display">$$\int_{t_{k}}^{t_{k+1}}HP[g](t)dt  =  \int_{t_{k}}^{t_{k+1}}g(t)dt
+            -\int_{t_{k}}^{t_{k+1}}
+      \left[\frac{1}{t_{k+1}-t_{k}}\int_{t_{k}}^{t_{k+1}}g(s)ds]\right]dt
+        =  0$$</span> Hence, for <span
+class="math inline"><em>t</em> ∈ [<em>t</em><sub><em>k</em></sub><em>t</em><sub><em>k</em> + 1</sub>[</span>:
+<span
+class="math display"><em>I</em>[<em>g</em>](<em>t</em>) = ∫<sub><em>t</em><sub><em>k</em></sub></sub><sup><em>t</em></sup><em>H</em><em>P</em>[<em>g</em>](<em>s</em>)<em>d</em><em>s</em></span>
+But <span
+class="math inline">|<em>L</em><em>P</em>[<em>g</em>](<em>s</em>)| ≤ ∥<em>g</em>∥<sub>∞</sub></span>,
+so that <span
+class="math inline">|<em>H</em><em>P</em>[<em>g</em>](<em>s</em>)| ≤ 2∥<em>g</em>∥<sub>∞</sub></span>.
+This gives finally: <span class="math display">$$|I[g](t)|\leq 2
+\|g\|_{\infty}(t-t_{n+1}) \leq 2
+    \|g\|_{\infty}\frac{T}{N}$$</span> ◻</p>
+</div>
+<p>Thus we may define a small number <span
+class="math inline"><em>α</em></span> that represents how close the
+signal <span class="math inline"><em>g</em></span> is closed to its
+averaged signal <span
+class="math inline"><em>L</em><em>P</em>[<em>g</em>]</span>: <span
+class="math display"><em>α</em> = ∥<em>I</em>[<em>g</em>]∥<sub>∞</sub></span></p>
+<h4 id="example-1">Example 1</h4>
+<p>Let us suppose that <span class="math inline"><em>g</em></span> is
+periodical with period <span class="math inline">$\frac{T}{N}$</span>.
+Then <span class="math inline"><em>L</em><em>P</em>[<em>g</em>]</span>
+is constant equal to the mean of <span
+class="math inline"><em>g</em></span> over a period. The function <span
+class="math inline"><em>H</em><em>P</em>[<em>g</em>]</span> is a
+periodic signal with <span class="math inline">0</span> average. The
+function <span class="math inline"><em>I</em>[<em>g</em>]</span> is the
+periodic antiderivative of <span
+class="math inline"><em>H</em><em>P</em>(<em>g</em>)</span> with value
+<span class="math inline">0</span> at <span
+class="math inline">0</span>. Its upper bound <span
+class="math inline"><em>α</em></span> is of order <span
+class="math inline">$\frac{T}{N}$</span>.</p>
+<h4 id="example-2">Example 2</h4>
+<p>Let us suppose that <span class="math inline"><em>g</em></span> is
+periodical with period <span class="math inline"><em>ϵ</em></span> a
+small divisor of <span class="math inline"><em>T</em></span>, and <span
+class="math inline"><em>N</em> = 1</span>. Then <span
+class="math inline"><em>L</em><em>P</em>[<em>g</em>]</span> is constant
+equal to the mean of <span class="math inline"><em>g</em></span> over
+the many periods in <span class="math inline">[0,<em>T</em>]</span>. The
+function <span
+class="math inline"><em>H</em><em>P</em>[<em>g</em>]</span> is a
+periodic signal of small period <span
+class="math inline"><em>ϵ</em></span> with <span
+class="math inline">0</span> average. The function <span
+class="math inline"><em>I</em>[<em>g</em>]</span> is the periodic
+antiderivative of <span
+class="math inline"><em>H</em><em>P</em>(<em>g</em>)</span> with value
+<span class="math inline">0</span> at <span
+class="math inline">0</span>. Its upper bound <span
+class="math inline"><em>α</em></span> is of order <span
+class="math inline"><em>ϵ</em></span>. This example shows that <span
+class="math inline"><em>α</em></span> can be small with seemingly large
+intervals.</p>
+<h3 id="averaging-errors-for-ordinary-differential-equation">Averaging
+errors for ordinary differential equation</h3>
+<p>Let us consider the ordinary differential equation (ODE): <span
+class="math display">$$\frac{dx}{dt}=f(x,t) \; , \; x(0)=\chi_{0}
+    \label{ODE}$$</span> with <span
+class="math inline"><em>f</em></span> Lipschitz with respect to <span
+class="math inline"><em>x</em></span> and integrable with respect to
+t.</p>
+<p>The averaged ODE is defined as: <span
+class="math display">$$\frac{dx_{0}}{dt}=LP[f](x_{0},t) \; , \;
+x_{0}(0)=\chi_{0}
+    \label{aveODE}$$</span> where the low-pass filter <span
+class="math inline"><em>L</em><em>P</em></span> on a general function
+<span class="math inline"><em>g</em>(<em>x</em>,<em>t</em>)</span> is
+defined as: <span
+class="math display">$$LP[g](\xi,t)  =  \frac{1}{t_{k+1}-t_{k}}
+    \int_{t_{k}}^{t_{k+1}}g(\xi,s)ds
+    \; , \;  t \in [t_{k},t_{k+1}) \; , \; k=0..N-1
+    \label{avedDynODE}$$</span> As a summary, <span
+class="math inline"><em>L</em><em>P</em>[<em>g</em>]</span> averages
+<span class="math inline"><em>g</em></span> with respect to time on
+rectangular adjacent windows, leaving the state variable unchanged.</p>
+<p>The state <span class="math inline"><em>x</em><sub>0</sub></span> is
+well defined and bounded because <span
+class="math inline"><em>f</em></span>, and thus <span
+class="math inline"><em>L</em><em>P</em>[<em>f</em>]</span>, is
+Lipschitz.</p>
+<p>We consider now <span
+class="math inline"><em>x</em><sub>0</sub></span> the solution of (<a
+href="#aveODE" data-reference-type="ref"
+data-reference="aveODE">[aveODE]</a>) and <span
+class="math inline"><em>g</em>(<em>x</em>,<em>t</em>)</span> a general
+function of the state and time. We establish a bound in the following
+propostion that will be used for the definition of the small parameter
+<span class="math inline"><em>α</em></span>, which will measure in
+section <a href="#alphaDefinition" data-reference-type="ref"
+data-reference="alphaDefinition">2.2.6</a> the averaging error for
+optimal control problems.</p>
+<div id="IboundProp" class="proposition">
+<p><strong>Proposition 2</strong>. <em>Let <span
+class="math inline"><em>g</em>(<em>x</em>,<em>t</em>)</span> be bounded
+Lipschitz in x with a Lipschitz constant <span
+class="math inline"><em>λ</em><sub><em>g</em></sub></span>, and let’s
+suppose that <span
+class="math inline"><em>f</em>(<em>x</em>,<em>t</em>)</span> is bounded.
+Let <span
+class="math inline"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>]</span>
+the function of <span class="math inline"><em>t</em></span> defined by:
+<span
+class="math display"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em>) = ∫<sub>0</sub><sup><em>t</em></sup>[<em>g</em>(<em>x</em><sub>0</sub>(<em>s</em>),<em>s</em>)−<em>L</em><em>P</em>[<em>g</em>](<em>x</em><sub>0</sub>(<em>s</em>),<em>s</em>)]<em>d</em><em>s</em></span>
+where <span class="math inline"><em>x</em><sub>0</sub></span> is the
+solution of the averaged ODE (<a href="#aveODE"
+data-reference-type="ref" data-reference="aveODE">[aveODE]</a>) Then the
+following bound holds: <span class="math display">$$|I[g](t)| \leq 2
+(\|g\|_{\infty} + \lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{BoundODE}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#proofIboundProp"
+data-reference-type="ref" data-reference="proofIboundProp">9</a>. ◻</p>
+</div>
+<p>We now estimate the distance between the trajectories obtained
+respectively from the nominal and averaged system.</p>
+<div class="proposition">
+<p><strong>Proposition 3</strong>. <em>Let <span
+class="math inline"><em>x</em></span> defined by the ODE (<a href="#ODE"
+data-reference-type="ref" data-reference="ODE">[ODE]</a>) and let <span
+class="math inline"><em>x</em><sub>0</sub></span> defined by the
+averaged ODE (<a href="#aveODE" data-reference-type="ref"
+data-reference="aveODE">[aveODE]</a>). Let <span
+class="math inline"><em>λ</em></span> the Lipschitz constant of f in
+<span class="math inline"><em>x</em></span> and define <span
+class="math display"><em>α</em> = sup<sub><em>t</em> ∈ [0,<em>T</em>]</sub>(|<em>I</em>[<em>f</em>](<em>t</em>)|)</span>
+Then the following bound holds: <span
+class="math display">$$\|x-x_{0}\|_{\infty} \leq \alpha \frac{e^{\lambda
+    T}-1}{\lambda}$$</span></em></p>
+</div>
+<p>In other words, the averaging error <span
+class="math inline">∥<em>x</em> − <em>x</em><sub>0</sub>∥<sub>∞</sub></span>
+is in first order in <span class="math inline"><em>α</em></span>, that
+is small when <span class="math inline"><em>N</em></span> is big because
+<span class="math inline"><em>f</em></span> is Lipschitz and thus
+bounded on <span class="math inline">[0,<em>T</em>]</span>.</p>
+<div class="proof">
+<p><em>Proof.</em> We have <span class="math display">$$\begin{aligned}
+        |x(t)-x_{0}(t)| &amp; = &amp; \left|\int_{0}^{t}
+    f(x(s),s) -f(x_{0}(s),s)
+    +  f(x_{0}(s),s)
+    - LP[f](x_{0}(s)\right| ds\\
+         &amp; \leq &amp; \lambda\int_{0}^{t}|x(s)-x_{0}(s)|ds +\alpha\\
+    \end{aligned}$$</span> which leads to the result thanks to the
+Gronwall lemma. ◻</p>
+</div>
+<h3 id="averaging-of-a-controlled-system">Averaging of a controlled
+system</h3>
+<p>In the scope of this article, we define, for the integer <span
+class="math inline"><em>N</em> &gt; 0</span>, and any functions <span
+class="math inline"><em>u</em>(<em>t</em>)</span> and <span
+class="math inline"><em>g</em>(<em>x</em>,<em>u</em>(<em>t</em>),<em>t</em>)</span>,
+an averaged function <span
+class="math inline"><em>L</em><em>P</em>[<em>g</em>,<em>u</em>]</span>
+<span class="math display">$$\label{average}
+    \begin{split}
+    LP[g,u](x,t)= &amp;
+    \frac{N}{T}\int_{\frac{kT}{N}}^{\frac{(k+1)T}{N}}g(x,u(s),s)ds\\
+    &amp; \textrm{ for } t\in\left[
+    \frac{kT}{N},\frac{(k+1)T}{N}\right) \textrm{ and } k\in[0,N-1]
+    \end{split}$$</span> As a summary, <span
+class="math inline"><em>L</em><em>P</em>[<em>g</em>]</span> averages
+<span class="math inline"><em>g</em></span> with respect to time (this
+includes the open loop control) on rectangular adjacent windows, leaving
+the state (or costate) unchanged.</p>
+<h3 id="aveProblem">Statement of the averaged problem</h3>
+<p>We define the averaged OCP which consists in minimizing the cost
+<span
+class="math display"><em>J</em><sub>0</sub>(<em>v</em>) = ∫<sub>0</sub><sup><em>T</em></sup><em>L</em><em>P</em>[<em>L</em>,<em>v</em>](<em>y</em>(<em>s</em>),<em>s</em>)<em>d</em><em>s</em></span>
+where <span class="math inline"><em>y</em></span> is the state defined
+by <span class="math display">$$\frac{dy}{dt}=LP[f,v](y,t)\; , \;
+y(0)=\xi_{0}
+    \label{averagedyn}$$</span> The system (<a href="#averagedyn"
+data-reference-type="ref" data-reference="averagedyn">[averagedyn]</a>)
+is a well defined differential equation.</p>
+<div id="aveOCPsolution" class="assumption">
+<p><strong>Assumption 1</strong>. <em>The averaged OCP admits an optimal
+control <span class="math inline"><em>u</em><sub>0</sub></span> with a
+corresponding trajectory <span
+class="math inline"><em>x</em><sub>0</sub></span>.</em></p>
+</div>
+<p>The optimal trajectory <span
+class="math inline"><em>x</em><sub>0</sub></span> is defined by the ODE:
+<span class="math display">$$\frac{dx_{0}}{dt}=LP[f,u_{0}](x_{0},t)\; ,
+\; x_{0}(0)=\xi_{0}
+    \label{aveOptTraj}$$</span></p>
+<h3 id="stationnarity-condition-for-the-averaged-problem">Stationnarity
+condition for the averaged problem</h3>
+<div class="theorem">
+<p><strong>Theorem 1</strong>. <em>Let H be the Hamiltonian of the
+nominal problem: <span
+class="math display"><em>H</em>(<em>x</em>,<em>u</em>,<em>p</em>,<em>t</em>) = <em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>) + <em>p</em> <em>f</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+Let <span class="math inline"><em>p</em><sub>0</sub></span> be the
+costate of the averaged problem, defined along the optimal trajectory
+<span class="math inline"><em>x</em><sub>0</sub></span> by the backwards
+differential equation: <span
+class="math display">$$\frac{dp_{0}}{dt}=-LP\left[\frac{\partial
+H}{\partial x},u_{0}\right]
+                                  (x_{0},p_{0},t)\; , \; p_{0}(T)=0
+        \label{aveCostate}$$</span> Then the following stationarity
+condition holds: <span class="math display">$$\frac{\partial H}{\partial
+u}
+           (x_{0}(t),u_{0}(t),p_{0}(t),t)=0 \; a.e.
+        \label{StatCond}$$</span> where <span
+class="math inline"><em>a</em>.<em>e</em>.</span> stands for almost
+everywhere in <span
+class="math inline"><em>t</em> ∈ [0,<em>T</em>]</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#proofStationarity"
+data-reference-type="ref"
+data-reference="proofStationarity">10</a> ◻</p>
+</div>
+<h3 id="alphaDefinition">Introduction of a small <span
+class="math inline"><em>α</em></span></h3>
+<p>We want to define a small <span class="math inline"><em>α</em></span>
+as we have done for signals and differential equations.</p>
+<p>For a function <span
+class="math inline"><em>g</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>,
+the difference <span
+class="math inline"><em>g</em>(<em>x</em><sub>0</sub>(<em>t</em>),<em>u</em><sub>0</sub>(<em>t</em>),<em>t</em>) − <em>L</em><em>P</em>]<em>g</em>, <em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>(<em>t</em>),<em>t</em>)</span>
+is the result of high pass filtering <span
+class="math inline"><em>H</em><em>P</em>]<em>g</em>, <em>u</em>](<em>x</em><sub>0</sub>(<em>t</em>),<em>t</em>)</span>.
+Let’s define the antiderivative: <span
+class="math display"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>](<em>t</em>) = ∫<sub>0</sub><sup><em>t</em></sup><em>H</em><em>P</em>[<em>g</em>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>(<em>s</em>),<em>s</em>)<em>d</em><em>s</em></span>
+Then, as a consequence of Proposition <a href="#IboundProp"
+data-reference-type="ref" data-reference="IboundProp">2</a>, the
+following bound holds: <span
+class="math display">$$|I[g,x_{0},u_{0}](t)| \le (2 \|g\|_{\infty} +
+\lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{boundIcontrol}$$</span> In other words, <span
+class="math inline">∥<em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>]∥<sub>∞</sub></span>
+can be made small if <span class="math inline"><em>N</em></span> is
+large, <span class="math inline"><em>f</em></span> is bounded and <span
+class="math inline"><em>g</em></span> is bounded and Lipschitz.</p>
+<p>Let’s define similarly the backwards antiderivative <span
+class="math display"><em>I</em><sup><em>T</em></sup>[<em>g</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>](<em>t</em>) = ∫<sub><em>t</em></sub><sup><em>T</em></sup><em>H</em><em>P</em>[<em>g</em>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>(<em>s</em>),<em>s</em>)<em>d</em><em>s</em></span>
+Then, with a similar proof, the same inequality holds: <span
+class="math display">$$|I^{T}[g,x_{0},u_{0}](t)| \le (2 \|g\|_{\infty} +
+\lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{boundIcontrol2}$$</span> Consequently, <span
+class="math inline">∥<em>I</em><sup><em>T</em></sup>[<em>g</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>]∥<sub>∞</sub></span>
+can also be made small if <span class="math inline"><em>N</em></span> is
+large, <span class="math inline"><em>f</em></span> is bounded and <span
+class="math inline"><em>g</em></span> is bounded and Lipschitz.</p>
+<div id="alphadef" class="definition">
+<p><strong>Definition 2</strong>. <em>For the rest of that document, we
+consider the small number <span class="math inline"><em>α</em></span>
+defined as: <span class="math display">$$\alpha = \sup  
+                        \left(
+              \| I[f,x_{0},u_{0}]\|_{\infty} \; , \;
+                  \left\|I^{T}\left[\frac{\partial H}{\partial
+x},(x_{0},p_{0}),u_{0}\right]\right\| _{\infty}
+                 \right)
+        \label{alpha}$$</span></em></p>
+</div>
+<p>We shall see that <span class="math inline"><em>α</em></span>
+measures how close the nominal and averaged problems are. Observe that
+<span class="math inline"><em>α</em></span> is small, for instance, when
+<span class="math inline"><em>N</em></span> is big and assumption <a
+href="#boundedDeriv" data-reference-type="ref"
+data-reference="boundedDeriv">2</a> below holds (bounded functions and
+their derivatives).</p>
+<p>Observe that that <span class="math inline"><em>α</em></span> depends
+only on the solution of the averaged problem.</p>
+<h2 id="numericalSection">Numerical perspective</h2>
+<p>Technically, the proof of our main approximation result is based on
+the Pontryagin principle. This is a theoretical result which holds
+independently of the actual numerical method used to solve the nominal
+(resp. averaged) problem.</p>
+<p>Now that we have stated what the averaged optimal control problem is,
+we can begin to evaluate its benefit when solving numerically a general
+optimal control problem.</p>
+<p>Let us consider a direct method for the solving of problem (<a
+href="#cost" data-reference-type="ref"
+data-reference="cost">[cost]</a>,<a href="#dynamics"
+data-reference-type="ref" data-reference="dynamics">[dynamics]</a>). To
+do so, we discretize the dynamics into <span
+class="math display"><em>x</em><sub><em>k</em> + 1</sub> = <em>x</em><sub><em>k</em></sub> + <em>δ</em><em>t</em> <em>f</em>(<em>x</em><sub><em>k</em></sub>,<em>u</em><sub><em>k</em></sub>,<em>t</em><sub><em>k</em></sub>)</span>
+In order to represent accurately the influence of the data on the
+system, the discretization step <span
+class="math inline"><em>δ</em><em>t</em></span> must be a suitable
+sampling rate for the data. In this article’s framework, <span
+class="math inline"><em>δ</em><em>t</em></span> is much smaller than the
+time constant of the system. The approximation of the cost is obtained
+by using a quadrature rule for the integral. Without using extra
+knowledge on the system, the time step of the quadrature is <span
+class="math inline"><em>δ</em><em>t</em></span>.</p>
+<p>In this framework, the optimal control problem becomes a finite
+dimensional optimization problem with a finite number of equality
+constraints.</p>
+<p>We consider now a similar direct method to solve the averaged problem
+(<a href="#averagecost" data-reference-type="ref"
+data-reference="averagecost">[averagecost]</a>,<a href="#averagedyn"
+data-reference-type="ref" data-reference="averagedyn">[averagedyn]</a>).
+To avoid confusion, we denote by capital <span
+class="math inline"><em>T</em><sub><em>K</em></sub></span> the
+boundaries of the averaging intervals, and <span
+class="math inline"><em>X</em><sub><em>K</em></sub></span> denotes the
+state of the discretized averaged system. The dynamics of <span
+class="math inline"><em>X</em></span> is <span
+class="math display"><em>X</em><sub><em>K</em> + 1</sub> = <em>X</em><sub><em>K</em></sub> + ∫<sub><em>T</em><sub><em>K</em></sub></sub><sup><em>T</em><sub><em>K</em> + 1</sub></sup><em>f</em>(<em>X</em><sub><em>K</em></sub>,<em>u</em>(<em>s</em>),<em>s</em>)<em>d</em><em>s</em></span>
+where a suitable quadrature rule is used to compute the integral.
+Consistently with the discretization (<a href="#discretized"
+data-reference-type="ref"
+data-reference="discretized">[discretized]</a>), we consider the
+sampling rate of the control and data to be <span
+class="math inline"><em>δ</em><em>t</em></span>. The computation of the
+cost is handled similarly.</p>
+<p>We see that, while (<a href="#discretized" data-reference-type="ref"
+data-reference="discretized">[discretized]</a>) only consider the
+differential aspect of the dynamics, the averaged dynamics (<a
+href="#discretizedAverage" data-reference-type="ref"
+data-reference="discretizedAverage">[discretizedAverage]</a>)
+incorporates the integral action of a dynamical system.</p>
+<p>Let us now consider the benefit of solving the averaged problem
+versus solving the nominal problem. To make things even simpler, let us
+use a Riemann integral for the computation of (<a
+href="#discretizedAverage" data-reference-type="ref"
+data-reference="discretizedAverage">[discretizedAverage]</a>) and define
+<span class="math display">$$R=\frac{T_{K+1}-T_{K}}{\delta t}$$</span>
+We assume that <span class="math inline"><em>R</em></span> is a (large)
+integer. Indeed, <span class="math inline"><em>δ</em><em>t</em></span>
+is dictated by the sampling rate of the data, while <span
+class="math inline"><em>T</em><sub><em>K</em> + 1</sub> − <em>T</em><sub><em>K</em></sub></span>
+is dictated by the time constant of the system, which is much
+larger.</p>
+<p>We see that the number of control variables <span
+class="math inline"><em>u</em><sub><em>k</em></sub></span> is the same
+in both problems. However, the <em>number of constraints</em> (<a
+href="#discretizedAverage" data-reference-type="ref"
+data-reference="discretizedAverage">[discretizedAverage]</a>) for the
+averaged problem is <span class="math inline"><em>R</em></span> times
+smaller than the number of constraints (<a href="#discretized"
+data-reference-type="ref"
+data-reference="discretized">[discretized]</a>) for the original
+problem. This is the main benefit of using averaging to solve the
+optimal control problem with direct methods.</p>
+<p>Finally, observe that the definition of the averaged costate (<a
+href="#aveCostate" data-reference-type="ref"
+data-reference="aveCostate">[aveCostate]</a>) indicates what should be
+an indirect method, i.e. based on the Pontryagin principle, for the
+solving of the averaged problem. In this case, the benefit of using the
+averaging method is a coarser grid for the two point boundary value
+problem.</p>
+<h1 id="Example">Applicative Example</h1>
+<p>We describe here the example of the orbit transfer of low thrust
+space engine in the non keplerian case <span class="citation"
+data-cites="goumri"></span>. Ionic thrust engines work as follows:
+instead of using a chemichal reaction to eject material, ions are
+ejected from the engines using an eletro-magnetic field. The resulting
+thrust is much lower than with a classical engine, but the required mass
+for the same acceleration is proportionnally smaller (within the
+operating range).</p>
+<h2 id="description-of-the-problem">Description of the problem</h2>
+<p>A geostationary satellite (communication, meteo, TV) can not reach
+its orbit directly with a classical launcher. It is rather set on a
+transfer elliptic orbit and then brought to its geostationnary orbit by
+its own means: see figure <a href="#geostat" data-reference-type="ref"
+data-reference="geostat">1</a>.</p>
+<figure>
+<embed src="geostationnaire.pdf" id="geostat" style="width:100mm" />
+<figcaption aria-hidden="true">Setting a geostationnary satellite to its
+operational orbit</figcaption>
+</figure>
+<p>The orbit transfer is done by a ionic thrust engine rather than a
+conventional engine in order to save the mass of fuel and oxygen needed
+by a conventional engine. Thus the transfer is slow and needs a lot of
+orbits (about 90).</p>
+<p>The optimisation criteria is either the time length of the orbit
+transfer or the mass loss and thus the initial mass need.</p>
+<h2 id="characteristics-of-the-optimal-control-problem">Characteristics
+of the optimal control problem</h2>
+<p>The dynamics of the satellite is very close to an orbital movement,
+so that the parameters may be divided into:</p>
+<ul>
+<li><p>orbital slow parameters,</p></li>
+<li><p>angular speed position on the orbit,</p></li>
+<li><p>plus the mass, that is also slowly decreasing.</p></li>
+</ul>
+<p>Thus the problem is ill conditioned. Indeed, the optimal control
+probem, with a 90 orbits horizon, needs a very great amount of time
+samples, so that the two boundary value problem can not be reasonably
+numerically solved.</p>
+<h2 id="averaging-on-successive-orbits">Averaging on successive
+orbits</h2>
+<p>In order to take advantage of the almost orbital movement, an
+averaging process is done on each orbit, so that the time sampling can
+be coarser and the optimal control problem can be numerically
+solved.</p>
+<p>Note that a time conversion is done, defining the angular positin on
+the orbit as the new “time”, so that the dynamic is nearly periodic of
+period <span class="math inline">2<em>π</em></span>.</p>
+<h3 id="keplerian-case">Keplerian Case</h3>
+<p>When only the earh gravity is taken into account, we are in the so
+called Kepkerian case, and the dynmic is periodic, with the low thrust
+of the ionic engine, the control parameter, as only perturbation. In
+that case, a “classical” averaging scheme on successive orbits can be
+performed.</p>
+<h4 id="result">Result</h4>
+<p>The solution of the averaged problem is a progressive modification of
+the orbit until it is the geastationary one, as shown on Figure <a
+href="#trajectory" data-reference-type="ref"
+data-reference="trajectory">2</a>.</p>
+<figure>
+<embed src="trajectoire.pdf" id="trajectory" />
+<figcaption aria-hidden="true">Successive orbits during the orbital
+tranfer in the Kepkerian Case</figcaption>
+</figure>
+<p>The costs of the orbital tranfer are respectively a duration of
+1235.4457 days and a mass loss of 208.7603 kilos.</p>
+<p>The thrust strategy is divide into two phases, with a transition at
+about half the orbital transfer:</p>
+<ul>
+<li><p>an acceleration phase, where the satellite is accelerated at its
+apogee and perigee, so that apogee and perigee heights are both
+increaased,</p></li>
+<li><p>a deceleration phase, where the satellite is decelerated at its
+apogee and accelerated at its perigee, so that apogee and perigee
+heights are respectively decreased and increased.</p></li>
+</ul>
+<h3 id="non-keplerian-case">Non-Keplerian Case</h3>
+<p>Moon and sun gravity forces can not be neglected in the context of a
+low thrust transfer. So that they are taken into account in a further
+version of the optimal orbit transfer search.</p>
+<p>But this results in a non-Keplerian problem, that is only nearly
+periodic and not exactly periodic in the angular position on the
+orbit.</p>
+<p>This is why an windowed averaging scheme on <span
+class="math inline">2<em>π</em></span> wide successive windows is
+interesting. But we can wonder whether that averaging scheme leads to
+costs and thrust strategy that are close to the Keplerian case.</p>
+<p>The answer is <em>yes</em>:</p>
+<ul>
+<li><p>the costs of the optimal averaged problem of orbital transfer are
+respectively a duration of 135.0423 days and a mass loss of 208.1386
+kilos, that are very close to the corresponding costs in the Keplerian
+case.</p></li>
+<li><p>The thrust strategy is divided into the same two phases,
+acceleration and then deceleration, as in the Keplerian phase</p></li>
+</ul>
+<p>This is true even though the costates are quite different in the
+different configurations.</p>
+<h2 id="conclusion-of-the-example">Conclusion of the example</h2>
+<p>The widowed averaging scheme proves to be as affective in the
+periodic case (Keplerian) than in the non-periodic case (non-Keplerian
+case with moon and sum gravity forces). And this is very useful in order
+to have an accurate <em>and</em> numerically solvable optimal orbit
+transfer problem. The fact that the solution is nearly optimal, with
+close to each other trajectories, is the result of the present
+paper.</p>
+<h1 id="expansions">A priori expansions and definitions of auxiliary
+variables</h1>
+<p>We are now going to define auxiliary variables by means of formal
+expansions with respect to <span class="math inline"><em>α</em></span>.
+In what follows, <span
+class="math inline"><em>u</em><sub>0</sub></span>, <span
+class="math inline"><em>x</em><sub>0</sub></span> and <span
+class="math inline"><em>p</em><sub>0</sub></span> denote the optimal
+control, state and costate of the averaged problem as described in
+section <a href="#aveProblem" data-reference-type="ref"
+data-reference="aveProblem">2.2.4</a>.</p>
+<h2 id="notations">Notations</h2>
+<div class="definition">
+<p><strong>Definition 3</strong>. <em>We denote the following variables
+from the state <span class="math inline"><em>x</em></span> (resp. <span
+class="math inline"><em>x</em><sub>0</sub></span>), the control <span
+class="math inline"><em>u</em></span> (resp. <span
+class="math inline"><em>u</em><sub>0</sub></span>) and the costate <span
+class="math inline"><em>p</em></span> (<span
+class="math inline"><em>p</em><sub>0</sub>)</span>: <span
+class="math display">$$\begin{aligned}
+    \sigma = (x,u) \; , \; \sigma_{0} = (x_{0},u_{0}) \\
+    w = (x,u,p) \; , \; w_{0} = (x_{0},u_{0},p_{0})
+    \end{aligned}$$</span></em></p>
+</div>
+<p>where <span class="math inline"><em>p</em></span> is the costate of
+the nominal problem defined by the ODE with final condition: <span
+class="math display">$$\frac{dp}{dt}=-\frac{\partial H}{\partial x}
+                                  (x,u,p,t)\; , \; p(T)=0
+        \label{Costate}$$</span></p>
+<div class="definition">
+<p><strong>Definition 4</strong>. <em>We denote the derivatives up to
+second order of functions with respect to the variables <span
+class="math inline"><em>x</em></span>, <span
+class="math inline"><em>u</em></span> or <span
+class="math inline"><em>σ</em></span> with indexes, on the model: <span
+class="math display">$$\begin{aligned}
+        f_{x}  =  \frac{\partial f}{\partial x} \\
+    H_{uu}  =  \frac{\partial^{2} f}{\partial u^{2}}
+    \end{aligned}$$</span> <span class="math display">$$H_{\sigma
+\sigma}  =
+            \left[ \begin{array}
+             {cc}
+                 
+                H_{xx}  &amp; H_{xu}   \\
+                 
+                 H_{ux}  &amp; H_{uu}   \\
+                 
+                  
+             \end{array} \right]$$</span></em></p>
+</div>
+<h2 id="formal-expansion-in-alpha">Formal expansion in <span
+class="math inline"><em>α</em></span></h2>
+<p>The variable <span class="math inline"><em>α</em></span> defined by
+the equation (<a href="#alpha" data-reference-type="ref"
+data-reference="alpha">[alpha]</a>) is viewed as a small quantity<a
+href="#fn1" class="footnote-ref" id="fnref1"
+role="doc-noteref"><sup>1</sup></a>. In Appendix <a href="#FormalExp"
+data-reference-type="ref" data-reference="FormalExp">11</a> we compute a
+formal expansion of the state <span
+class="math inline"><em>x</em></span> and the costate <span
+class="math inline"><em>p</em></span> at the first order with respect to
+<span class="math inline"><em>α</em></span>.</p>
+<p>These formal expansions lead to the definition of auxiliary variables
+<span class="math inline">$\tilde{x_{1}}$</span> and <span
+class="math inline">$\tilde{p_{1}}$</span> as follows:</p>
+<div id="xpTilde1" class="definition">
+<p><strong>Definition 5</strong>. <em>We define the auxiliary variables
+<span class="math inline">$\tilde{x_{1}}$</span> and <span
+class="math inline">$\tilde{p_{1}}$</span> the following way: <span
+class="math display">$$\label{xtilde1}
+        \alpha \tilde{x_{1}} =  I[f,x_{0},u_{0}]$$</span> and <span
+class="math display">$$\alpha \tilde{p_{1}}
+=  I^{T}[H_{x},(x_{0},p_{0}),u_{0}]$$</span></em></p>
+</div>
+<p>The error terms <span class="math inline">$\tilde{x_{1}}$</span> and
+<span class="math inline">$\tilde{p_{1}}$</span> correspond to the
+deviation error due to the approximation of the dynamics with respect to
+their fast oscillating behavior.</p>
+<p>In definition <a href="#deltaDefs" data-reference-type="ref"
+data-reference="deltaDefs">8</a> of section <a href="#auxVariables"
+data-reference-type="ref" data-reference="auxVariables">5.3</a> we
+define deviations that are defined in <span><em>magnitude</em></span>,
+by contrast to the sole averaging error (at the optimum) which is
+considered here.</p>
+<p>A consequence of the definition of <span class="math inline">$\alpha
+\tilde{x_{1}}$</span> in definition <a href="#xpTilde1"
+data-reference-type="ref" data-reference="xpTilde1">5</a> and <span
+class="math inline"><em>α</em></span> in definition <a href="#alphadef"
+data-reference-type="ref" data-reference="alphadef">2</a> is that: <span
+class="math display">$$\|\tilde{x_{1}}\|_{\infty} \leq 1
+    \label{xtilde1le1}$$</span></p>
+<p>And a consequence of the definition of <span
+class="math inline">$\alpha \tilde{p_{1}}$</span> in definition(<a
+href="#xpTilde1" data-reference-type="ref"
+data-reference="xpTilde1">5</a>) and <span
+class="math inline"><em>α</em></span> in definition <a href="#alphadef"
+data-reference-type="ref" data-reference="alphadef">2</a> is that: <span
+class="math display">$$\|\tilde{p_{1}}\|_{\infty} \leq 1
+    \label{ptilde1le1}$$</span></p>
+<h1 id="auxProblem">Auxiliary Problem</h1>
+<p>We define an auxiliary problem which is similar to the study of the
+second variation in <span class="citation"
+data-cites="Bry1"></span>.</p>
+<h2 id="Assumptions">Assumptions</h2>
+<p>We make two kinds of assumption on the problem data; the first is
+related to the regularity of the functions involved, and the second is a
+convexity assumption (Legendre-Clebsch) that is common in optimal
+control <span class="citation"
+data-cites="Bry1 bensPert chaplais"></span>.</p>
+<div id="boundedDeriv" class="assumption">
+<p><strong>Assumption 2</strong> (Regularity). <em>The derivatives, up
+to the third order, of <span class="math inline"><em>f</em></span> and
+<span class="math inline"><em>L</em></span> with respect to <span
+class="math inline"><em>x</em></span> and <span
+class="math inline"><em>u</em></span> are bounded by some <span
+class="math inline"><em>k</em> &gt; 0</span>.</em></p>
+</div>
+<p>A consequence of that assumption is that the value <span
+class="math inline"><em>α</em></span> defined by equation (<a
+href="#alpha" data-reference-type="ref"
+data-reference="alpha">[alpha]</a>) is well defined and small if <span
+class="math inline"><em>N</em></span> is sufficiently big (or if the
+problem is periodic of small period).</p>
+<p>As a consequence, we can bound the second derivative of the dynamics
+<span class="math inline"><em>f</em></span>:</p>
+<div class="proposition">
+<p><strong>Proposition 4</strong>. <em><span
+class="math display">$$\left|f_{\sigma \sigma}(X,U,t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| \leq k(|Y|+|V|)^{2}
+    \label{fsigmasigma}$$</span> for any <span
+class="math inline">(<em>X</em>,<em>U</em>,<em>Y</em>,<em>V</em>)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> <span class="math display">$$\begin{aligned}
+     \left|f_{\sigma \sigma}(X,U,t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| &amp;
+    = &amp;  |f_{xx}(X,U,t)Y^{2}  
+             + 2f_{xu}(X,U,t)YV + f_{uu}(X,U,t)V^{2}| \\
+     &amp; \leq &amp; k(|Y|+|V|)^{2}\end{aligned}$$</span> ◻</p>
+</div>
+<p>Moreover, as <span class="math inline"><em>p</em><sub>0</sub></span>
+is the solution of the ODE with final condition (<a href="#aveCostate"
+data-reference-type="ref" data-reference="aveCostate">[aveCostate]</a>),
+it is differentiable and thus continuous of the bounded interval <span
+class="math inline">[0,<em>T</em>]</span>, so that it is bounded. So
+that another consequence of the assumption <a href="#boundedDeriv"
+data-reference-type="ref" data-reference="boundedDeriv">2</a> involves
+the derivatives of the Hamiltonian:</p>
+<div class="proposition">
+<p><strong>Proposition 5</strong>. <em>The hamiltonian <span
+class="math inline"><em>H</em>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>
+and its derivatives up to the third order in <span
+class="math inline"><em>u</em></span> and <span
+class="math inline"><em>x</em></span> are bounded by a constant
+K.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Take <span
+class="math inline"><em>K</em> = (1+∥<em>p</em><sub>0</sub>∥<sub>∞</sub>)<em>k</em></span>. ◻</p>
+</div>
+<p>As a consequence, the Hessian of the Hamiltonian is bounded:</p>
+<div class="proposition">
+<p><strong>Proposition 6</strong>. <em><span
+class="math display">$$\left|H_{\sigma \sigma}(X,U,p_{0}t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| \leq K(|Y|+|V|)^{2}
+    \label{HsigmasigmaEq}$$</span> for any <span
+class="math inline">(<em>X</em>,<em>U</em>,<em>Y</em>,<em>V</em>)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Similar as for <span
+class="math inline"><em>f</em><sub><em>σ</em><em>σ</em></sub></span>. ◻</p>
+</div>
+<div id="convexity" class="assumption">
+<p><strong>Assumption 3</strong> (Strong Legendre-Clebsch condition
+<span class="citation" data-cites="Bry1"></span>). <em>There exists
+<span class="math inline"><em>β</em> &gt; 0</span> so that for any <span
+class="math inline">(<em>x</em>,<em>u</em>)</span>, the following holds:
+<span
+class="math display"><em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>) ≥ <em>β</em><em>I</em><em>d</em></span>
+and <span
+class="math display">[<em>H</em><sub><em>x</em><em>x</em></sub>−<em>H</em><sub><em>x</em><em>u</em></sub>(<em>H</em><sub><em>u</em><em>u</em></sub>)<sup>−1</sup><em>H</em><sub><em>u</em><em>x</em></sub>](<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>) ≥ 0</span></em></p>
+</div>
+<p>The consequence of equation (<a href="#beta"
+data-reference-type="ref" data-reference="beta">[beta]</a>) is that
+<span
+class="math inline"><em>H</em><sub><em>u</em><em>u</em></sub></span> is
+invertible and <span class="math inline">$\|H_{uu}^{-1}\|_{\infty} \le
+\frac{1}{\beta}$</span> on any <span
+class="math inline">(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>)</span>.</p>
+<p>The consequence of equation (<a href="#positive"
+data-reference-type="ref" data-reference="positive">[positive]</a>) is
+:</p>
+<div id="Hsigmasigma" class="proposition">
+<p><strong>Proposition 7</strong>. <em><span
+class="math display"><em>H</em><sub><em>σ</em><em>σ</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>) ≥ 0</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see Appendix <a href="#HsigmasigmaProof"
+data-reference-type="ref" data-reference="HsigmasigmaProof">12</a> ◻</p>
+</div>
+<h2 id="AuxProblemStatement">Auxiliary Problem Definition and
+Properties</h2>
+<div id="secondVariation" class="definition">
+<p><strong>Definition 6</strong>. <em>Let’s define the following
+notations: <span class="math display">$$H_{0 \sigma \sigma} = H_{\sigma
+\sigma} (w_{0},t)
+       =
+       \left[\begin{array}
+       {cc}
+           
+           H_{0xx} &amp; H_{0xu}  \\
+           
+           H_{0ux} &amp;  H_{0uu}   \\         
+            
+       \end{array}\right]$$</span> and <span
+class="math display"><em>f</em><sub>0<em>x</em></sub> = <em>f</em><sub><em>x</em></sub>(<em>σ</em><sub>0</sub>,<em>t</em>) , <em>f</em><sub>0<em>u</em></sub> = <em>f</em><sub><em>u</em></sub>(<em>σ</em><sub>0</sub>,<em>t</em>)</span>
+Then we define the auxiliary problem as the linear quadratic OCP for the
+state y steered by the control v: <span
+class="math display">$$\begin{aligned}
+        \frac{dy}{dt} &amp; = &amp; f_{0x}[\tilde{x_{1}}+y] + f_{0u}v \;
+, \;
+    y(0)=0
+        \label{auxstate}\\
+        J_{1}(v) &amp; = &amp; \int_{0}^{T} \left[\frac{1}{2} \left[
+        \begin{array}
+        {cc}
+            
+            y &amp; v  \\
+             
+        \end{array}
+        \right]
+    H_{0 \sigma \sigma} \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+    \end{array}
+    \right]
+    + \tilde{p_{1}} \left(f_{0x}y + f_{0u}v\right)
+    \right]dt
+        \label{auxcost}
+    \end{aligned}$$</span></em></p>
+</div>
+<p>where <span class="math inline"><em>x̃</em><sub>1</sub></span> and
+<span class="math inline"><em>p̃</em><sub>1</sub></span> are defined in
+definition <a href="#xpTilde1" data-reference-type="ref"
+data-reference="xpTilde1">5</a> as the averaging errors on the dynamics
+of the optimal state and costate at the optimal solution of the averaged
+problem (as defined in section <a href="#aveProblem"
+data-reference-type="ref" data-reference="aveProblem">2.2.4</a>).</p>
+<div class="proposition">
+<p><strong>Proposition 8</strong>. <em>There exists an optimal cost
+<span class="math inline"><em>v</em><sub>1</sub></span> for the
+auxiliary problem.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> It is a convex linear quadratic problem because <span
+class="math inline"><em>H</em><sub>0<em>σ</em><em>σ</em></sub></span> is
+non-negative (equation (<a href="#positive1" data-reference-type="ref"
+data-reference="positive1">[positive1]</a>)). ◻</p>
+</div>
+<div class="definition">
+<p><strong>Definition 7</strong>. <em>We denote <span
+class="math inline"><em>v</em><sub>1</sub></span> an optimal control of
+the auxialty problem, <span
+class="math inline"><em>y</em><sub>1</sub></span> the trajectory
+corresponding to <span class="math inline"><em>v</em><sub>1</sub></span>
+and <span class="math inline"><em>q</em><sub>1</sub></span> the
+corresponding costate.</em></p>
+</div>
+<div class="proposition">
+<p><strong>Proposition 9</strong>. <em><span
+class="math inline"><em>y</em><sub>1</sub></span> follows the dynamics:
+<span class="math display">$$\frac{dy_{1}}{dt} =
+f_{0x}(y_{1}+\tilde{x_{1}}) + f_{0u}v_{1} \; , \;
+        y_{1}(0)=0
+        \label{optauxstate}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> This is the definition of the dynamics of the
+auxiliary problem. ◻</p>
+</div>
+<p>Moreover, we have:</p>
+<div class="proposition">
+<p><strong>Proposition 10</strong>. <em>The stationarity condition <span
+class="math inline">$\frac{\partial H_{1}}{\partial
+u}(y_{1},v_{1},p_{1})  
+    = 0$</span> may be written the following way: <span
+class="math display">$$H_{0xu} y_{1} + H_{0uu} v_{1} +(\tilde{p_{1}} +
+q_{1}) f_{0u} = 0
+        \label{auxstationarity}$$</span> Moreover, the costate <span
+class="math inline"><em>q</em><sub>1</sub></span> of the auxiliary
+problem follows the dynamics: <span
+class="math display">$$\frac{dq_{1}}{dt} = - H_{0xx} y_{1} - H_{0xu}
+v_{1} -
+        (\tilde{p_{1}} +q_{1}) f_{0x}
+        \; , \; q_{1}(T) = 0
+        \label{auxcostate}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The hamiltonian of the auxiliary problem expands in:
+<span class="math display">$$\label{auxhamiltonian}
+    \begin{split}
+    H_{1}(y,v,q) &amp; = \frac{1}{2}\left(H_{0xx}y^{2} + 2 H_{0xu}yv +
+    H_{0uu}v^{2}\right) \\
+    &amp; + \tilde{p_{1}}\left(f_{0x}y +f_{0u}v\right)
+    +q_{1}\left[f_{0x}(y+\tilde{x_{1}}) + f_{0u}v\right]
+    \end{split}$$</span> ◻</p>
+</div>
+<p>Finally, we have:</p>
+<div id="AuxProblemBound" class="proposition">
+<p><strong>Proposition 11</strong>. <em><span
+class="math inline"><em>y</em><sub>1</sub></span>, <span
+class="math inline"><em>v</em><sub>1</sub></span> and <span
+class="math inline"><em>q</em><sub>1</sub></span> are bounded by a
+constant <span class="math inline"><em>M</em></span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The auxiliary problem is smooth and convex. ◻</p>
+</div>
+<h2 id="auxVariables">More auxiliary variables and their upper
+bounds</h2>
+<div id="deltaDefs" class="definition">
+<p><strong>Definition 8</strong>. <em>For any <span
+class="math inline"><em>u</em> ∈ <strong>L</strong><sub>[0,<em>T</em>]</sub><sup>2</sup></span>,
+<span class="math inline"><em>x</em></span> is the trajectory of the
+nominal dynamics (<a href="#dynamics" data-reference-type="ref"
+data-reference="dynamics">[dynamics]</a>).</em></p>
+<p><em>Let’s then define the following notations: <span
+class="math display">$$\begin{aligned}
+        \delta x = x-x_{0} &amp;  &amp; \tilde{x} = \delta x - \alpha
+\tilde{x_{1}}\\
+       \delta u = u-u_{0} &amp;  &amp; \tilde{u} = \delta u\\
+      \delta \sigma = (\delta x,\delta u) &amp; &amp; \rho(\lambda,\mu)
+= \sigma_{0} + \lambda \mu \delta \sigma
+    \end{aligned}$$</span> Where <span
+class="math inline">(<em>u</em><sub>0</sub>,<em>x</em><sub>0</sub>)</span>
+is a solution of the averaged problem and <span
+class="math inline">$\alpha \tilde{x_{1}}$</span> is <span
+class="math inline"><em>I</em>[<em>f</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>]</span>
+(equation (<a href="#xtilde1" data-reference-type="ref"
+data-reference="xtilde1">[xtilde1]</a>)).</em></p>
+</div>
+<p>The <span class="math inline"><em>δ</em></span> variables are
+deviations in magnitude around the optimal control <span
+class="math inline"><em>u</em><sub>0</sub></span>, after a correction
+due to the pure averaging error on the various dynamics.</p>
+<div class="definition">
+<p><strong>Definition 9</strong>. <em>We define the following variables:
+<span
+class="math display"><em>r</em> = <em>x̃</em> − <em>α</em><em>y</em><sub>1</sub> , <em>v</em> = <em>ũ</em> − <em>α</em><em>v</em><sub>1</sub></span>
+<span class="math display">$$Z[\lambda,\mu](t) =
+v        +[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha
+\tilde{x_{1}})$$</span> <span
+class="math display"><em>z</em><sup>2</sup> = ∫<sub>0</sub><sup>1</sup>∫<sub>0</sub><sup>1</sup><em>λ</em>∥<em>Z</em>[<em>λ</em>,<em>μ</em>]∥<sub>2</sub><sup>2</sup><em>d</em><em>λ</em><em>d</em><em>μ</em></span></em></p>
+</div>
+<p>Here <span class="math inline"><em>r</em></span> and <span
+class="math inline"><em>v</em></span> are variations with respect to the
+solution of the averaged optimal control problem, with the extra
+corrective terms</p>
+<ul>
+<li><p>the averaging error on the optimal dynamics <span> <em>considered
+as a pure signal</em></span></p></li>
+<li><p>the correction term that corresponds to the second variation in
+reference <span class="citation" data-cites="Bry1"></span>, as defined
+in definition <a href="#secondVariation" data-reference-type="ref"
+data-reference="secondVariation">6</a>.</p></li>
+</ul>
+<p>The quantity <span class="math inline"><em>z</em><sup>2</sup></span>
+is repeatedly used in <span class="citation"
+data-cites="bensPert"></span> to study perturbations in optimal control;
+it has been used later in <span class="citation"
+data-cites="maamria"></span> in a similar manner.</p>
+<p>We will bound <span
+class="math inline">∥<em>r</em>∥<sub>∞</sub><sup>2</sup></span> and
+<span class="math inline">∥<em>v</em>∥<sub>2</sub><sup>2</sup></span>
+with respect to <span class="math inline"><em>z</em><sup>2</sup></span>
+and <span class="math inline"><em>α</em><sup>2</sup></span>. Bounding
+then <span class="math inline"><em>z</em><sup>2</sup></span> with
+respect to <span class="math inline"><em>α</em><sup>2</sup></span> will
+lead to the main result.</p>
+<div id="krv12definition" class="definition">
+<p><strong>Definition 10</strong>. <em>We define the following
+constants:</em></p>
+<p><em><span class="math display">$$\begin{aligned}
+         k_{r1} &amp; =  &amp; 4 k^{2}T
+e^{2k\left(1+\frac{K}{\beta}\right)}
+         \\
+         k_{r2} &amp; = &amp;
+\frac{\left(\frac{K}{\beta}+\frac{1}{2}(1+2M)^{2}
+         \alpha\right)^{2}}{\left(1+\frac{K}{\beta}\right)^{2}}
+         \left(e^{k\left(1+\frac{K}{\beta}\right)}-1\right)^{2}
+         \\
+         k_{v1} &amp; = &amp; 6\left( 2 + \frac{K^{2}T
+k_{r1}}{\beta^{2}}\right)
+          \\
+          k_{v2} &amp; =  &amp;\frac{6K^{2}T(k_{r2}+1)}{\beta^{2}}
+     \end{aligned}$$</span></em></p>
+<p><em>with:</em></p>
+<p><em>- <span class="math inline"><em>k</em></span> is introduced in
+assumption <a href="#boundedDeriv" data-reference-type="ref"
+data-reference="boundedDeriv">2</a> about the boundedness of the
+derivatives of <span
+class="math inline"><em>f</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+and <span
+class="math inline"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>.</em></p>
+<p><em>- <span
+class="math inline"><em>K</em> = (1+∥<em>p</em><sub>0</sub>∥<sub>∞</sub>)<em>k</em></span></em></p>
+<p><em>- <span class="math inline"><em>M</em></span> is the upper bound
+of the optimal trajectory of the auxiliary problem introduced in section
+<a href="#AuxProblemStatement" data-reference-type="ref"
+data-reference="AuxProblemStatement">5.2</a> (proposition <a
+href="#AuxProblemBound" data-reference-type="ref"
+data-reference="AuxProblemBound">11</a>).</em></p>
+<p><em>- <span class="math inline"><em>α</em></span> is the (hopefully)
+small quantity defined in equation (<a href="#alpha"
+data-reference-type="ref" data-reference="alpha">[alpha]</a>).</em></p>
+<p><em>- <span class="math inline"><em>β</em></span> is the convexity
+constant of <span
+class="math inline"><em>H</em><sub><em>u</em><em>u</em></sub></span>
+introduced in equation (<a href="#beta" data-reference-type="ref"
+data-reference="beta">[beta]</a>) inside of the Legendre-Clebsch
+conditions of assumption <a href="#convexity" data-reference-type="ref"
+data-reference="convexity">3</a>.</em></p>
+</div>
+<div id="vrinequalities" class="proposition">
+<p><strong>Proposition 12</strong>. <em>The following inequalities hold:
+<span
+class="math display">∥<em>r</em>∥<sub>∞</sub><sup>2</sup> ≤ <em>k</em><sub><em>r</em>1</sub><em>z</em><sup>2</sup> + <em>k</em><sub><em>r</em>2</sub><em>α</em><sup>2</sup></span>
+and: <span
+class="math display"> ∥<em>v</em>∥<sub>2</sub><sup>2</sup> ≤ <em>k</em><sub><em>v</em>1</sub><em>z</em><sup>2</sup> + <em>k</em><sub><em>v</em>2</sub><em>α</em><sup>2</sup></span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#vrinequalitiesproof"
+data-reference-type="ref"
+data-reference="vrinequalitiesproof">13.1</a> ◻</p>
+</div>
+<p>We now define an extra correction term that will be used furter on.
+We will show that this correction term is also bounded by values that
+depend only on <span class="math inline"><em>z</em></span> and <span
+class="math inline"><em>α</em></span>.</p>
+<div class="definition">
+<p><strong>Definition 11</strong>. <em><span
+class="math inline"><em>r</em><sub>1</sub></span> is defined by the
+following dynamics: <span class="math display">$$\begin{split}
+        \frac{dr_{1}}{dt} =  &amp;
+    f(r_{1}+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+\alpha
+    v_{1},t)\\
+    &amp; -  f(x_{0}+\alpha(\tilde{x_{1}}+y_{1}),u_{0}+\alpha v_{1},t)
+    \\ r_{1}(0) &amp; =0
+    \end{split}
+        \label{r1dynamics}$$</span></em></p>
+</div>
+<p>The state <span class="math inline"><em>r</em><sub>1</sub></span> is
+driven by the difference between the dynamics with state <span
+class="math inline"><em>r</em><sub>1</sub></span> and input <span
+class="math inline"><em>v</em></span>, and the nominal velocity of the
+system for the value of the state and controls that include all the
+previously introduced correction terms.</p>
+<p>We will bound <span
+class="math inline">∥<em>r</em> − <em>r</em><sub>1</sub>∥<sub>∞</sub></span>
+in <span class="math inline"><em>α</em><sup>2</sup></span> and <span
+class="math inline">∥<em>r</em><sub>1</sub>∥<sub>∞</sub><sup>2</sup></span>
+in <span class="math inline"><em>z</em><sup>2</sup></span> and <span
+class="math inline"><em>α</em><sup>2</sup></span>. As a consequence, we
+will “anchor” our error estimates to the nominal term <span
+class="math inline"><em>r</em><sub>1</sub></span>.</p>
+<div id="kr345definition" class="definition">
+<p><strong>Definition 12</strong>. <em>We define the following
+constants: <span class="math display">$$k_{r5} =
+\frac{T}{2}(1+2M)^{2}(e^{kT}-1)  \; , \;  
+           k_{r3} = 2 k_{r1} \; , \;
+           k_{r4} = 2 (k_{r2} + k_{r5}^{2}\alpha^{2})$$</span> with
+<span class="math inline"><em>k</em></span>, <span
+class="math inline"><em>K</em></span> and <span
+class="math inline"><em>M</em></span> as in definition <a
+href="#krv12definition" data-reference-type="ref"
+data-reference="krv12definition">10</a>.</em></p>
+</div>
+<div id="rr1r1inequalities" class="proposition">
+<p><strong>Proposition 13</strong>. <em>The following inequalities hold:
+<span
+class="math display">∥<em>r</em> − <em>r</em><sub>1</sub>∥<sub>∞</sub> ≤ <em>k</em><sub><em>r</em>5</sub><em>α</em><sup>2</sup></span>
+and <span
+class="math display">∥<em>r</em><sub>1</sub>∥<sub>∞</sub><sup>2</sup> ≤ <em>k</em><sub><em>r</em>3</sub><em>z</em><sup>2</sup> + <em>k</em><sub><em>r</em>4</sub><em>α</em><sup>2</sup></span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#rr1r1inequalitiesproof"
+data-reference-type="ref"
+data-reference="rr1r1inequalitiesproof">13.2</a> ◻</p>
+</div>
+<h1 id="MainTheoremSection">Main theorem</h1>
+<div id="kJdefinition" class="definition">
+<p><strong>Definition 13</strong>. <em>We define the following
+constants: <span class="math display">$$\begin{aligned}
+       k_{J1}  &amp; = &amp;
+      4 \sqrt{3}KMTk_{r1}+\left(\frac{3k}{2}+KM\right)Tk_{r3}
+       +\left(\frac{3k}{2}+(2\sqrt{3}+1)KM\right)k_{v1}
+       \\
+        k_{J2} &amp; = &amp; 2\sqrt{3}KTk_{r5}+k(1+2M)+2KTM(M+1)
+        \\&amp;&amp;
+        +\frac{3k}{2}Tk_{r2} +\left(kM+4\sqrt{3}KM\right)Tk_{r4}
+        +\left(\frac{3k}{2}+(2\sqrt{3}+1)KM\right)k_{v2}
+        \\
+         k_{J0}&amp;=&amp;\left[e^{kT}-1 +
+\frac{K}{2k^{2}T}\left(e^{kT}-1\right)^{2}
+        +\frac{k}{2}\alpha\right]
+    \\
+    k_{J}&amp; =&amp; k_{J2}+k_{J0}
+    \\
+    k_{x} &amp; = &amp; \sqrt{2\left(\frac{2k_{J}k_{r1}}{\beta} +k_{r2}
++ (M+1)^{2}\right)}
+    \\
+    k_{u} &amp; = &amp; \sqrt{2\left(\frac{2k_{J}k_{v1}}{\beta} +k_{v2}
++
+    T^{2}M^{2}\right)}
+    \end{aligned}$$</span> where:</em></p>
+<p><em>- <span class="math inline"><em>k</em></span>, <span
+class="math inline"><em>K</em></span>, <span
+class="math inline"><em>M</em></span>, <span
+class="math inline"><em>α</em></span> and <span
+class="math inline"><em>β</em></span> are as in definition <a
+href="#krv12definition" data-reference-type="ref"
+data-reference="krv12definition">10</a>.</em></p>
+<p><em>- <span
+class="math inline"><em>k</em><sub><em>r</em>1</sub></span>, <span
+class="math inline"><em>k</em><sub><em>r</em>2</sub></span>, <span
+class="math inline"><em>k</em><sub><em>v</em>1</sub></span> and <span
+class="math inline"><em>k</em><sub><em>r</em>2</sub></span> are defined
+in definition <a href="#krv12definition" data-reference-type="ref"
+data-reference="krv12definition">10</a></em></p>
+<p><em>- <span
+class="math inline"><em>k</em><sub><em>r</em>3</sub></span>, <span
+class="math inline"><em>k</em><sub><em>r</em>4</sub></span> and <span
+class="math inline"><em>k</em><sub><em>r</em>5</sub></span> are defined
+in definition <a href="#kr345definition" data-reference-type="ref"
+data-reference="kr345definition">12</a>.</em></p>
+</div>
+<p>Note that these constants depend only of <span
+class="math inline"><em>k</em></span>, <span
+class="math inline"><em>K</em></span>, <span
+class="math inline"><em>M</em></span>, <span
+class="math inline"><em>α</em></span>, <span
+class="math inline"><em>β</em></span>, and the horizon <span
+class="math inline"><em>T</em></span>.</p>
+<div id="mainAssumption" class="assumption">
+<p><strong>Assumption 4</strong>. <em><span
+class="math display">$$\alpha \leq
+\frac{\beta}{2k_{J1}}$$</span></em></p>
+</div>
+<div id="MainTheorem" class="theorem">
+<p><strong>Theorem 2</strong> (Main Theorem). <em>Considering the
+nominal problem in section <a href="#NominalProblem"
+data-reference-type="ref" data-reference="NominalProblem">2.1</a>, let
+<span
+class="math inline"><em>H</em>(<em>x</em>,<em>u</em>,<em>p</em>,<em>t</em>)</span>
+its Hamiltonian, and let <span
+class="math inline"><em>J</em><sup>*</sup> = inf<sub><em>u</em></sub><em>J</em>(<em>u</em>)</span>
+be its infimum cost.</em></p>
+<p><em>Let <span class="math inline"><em>u</em><sub>0</sub></span> a
+solution of the averaged problem described in section <a
+href="#aveProblem" data-reference-type="ref"
+data-reference="aveProblem">2.2.4</a> with its trajectory <span
+class="math inline"><em>x</em><sub>0</sub></span>. Such a solution
+exists by assumption <a href="#aveOCPsolution" data-reference-type="ref"
+data-reference="aveOCPsolution">1</a>.</em></p>
+<p><em>Let <span class="math inline"><em>α</em></span> be the small
+quantity defined in equation (<a href="#alpha" data-reference-type="ref"
+data-reference="alpha">[alpha]</a>) and let <span
+class="math inline"><em>β</em></span> be the constant introduced in
+assumption <a href="#convexity" data-reference-type="ref"
+data-reference="convexity">3</a>.</em></p>
+<p><em>Let the set of constants (<span
+class="math inline"><em>k</em><sub><em>J</em>1</sub>, <em>k</em><sub><em>J</em></sub>, <em>k</em><sub><em>x</em></sub>, <em>k</em><sub><em>u</em></sub>)</span>
+introduced in definition <a href="#kJdefinition"
+data-reference-type="ref" data-reference="kJdefinition">13</a>.</em></p>
+<p><em>Then, under the set of assumptions listed in section <a
+href="#Assumptions" data-reference-type="ref"
+data-reference="Assumptions">5.1</a> and the assumption <a
+href="#mainAssumption" data-reference-type="ref"
+data-reference="mainAssumption">4</a>, the following inequalities
+hold:</em></p>
+<p><em>- the suboptimality of the real system commanded by <span
+class="math inline"><em>u</em><sub>0</sub></span> is limited to: <span
+class="math display"><em>J</em><sup>*</sup> ≤ <em>J</em>(<em>u</em><sub>0</sub>) ≤ <em>J</em><sup>*</sup> + <em>k</em><sub><em>J</em></sub><em>α</em><sup>2</sup></span></em></p>
+<p><em>- any trajectory <span class="math inline"><em>x</em></span> of
+the nominal problem for a <span class="math inline"><em>u</em></span>
+better than <span class="math inline"><em>u</em><sub>0</sub></span>
+(<span
+class="math inline"><em>J</em>(<em>u</em>) ≤ <em>J</em>(<em>u</em><sub>0</sub>)</span>),
+is close to <span
+class="math inline">(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>)</span>,
+with: <span class="math display">$$\begin{aligned}
+       \|x-x_{0}\|_{\infty} &amp; \leq  &amp; k_{x} \alpha
+       \label{closeTrajectory}\\
+       \|u-u_{0}\|_{2} &amp; \leq &amp; k_{u} \alpha
+       \label{closeControl}
+   \end{aligned}$$</span></em></p>
+</div>
+<h1 id="proof">Proof of the main result</h1>
+<h2 id="proof-process">Proof Process</h2>
+<p>To prove the main theorem, we proceed the following way.</p>
+<p>The section <a href="#JuLowerBoundSection" data-reference-type="ref"
+data-reference="JuLowerBoundSection">7.2</a> is devoted to the search of
+a lower bound of any real cost <span
+class="math inline"><em>J</em>(<em>u</em>)</span> of the nominal
+problem. That lower bound contains two integral terms that do not depend
+on <span class="math inline"><em>u</em></span>, a term in <span
+class="math inline"><em>z</em><sup>2</sup></span> that is the only one
+depending on <span class="math inline"><em>u</em></span>, and a term in
+<span class="math inline"><em>α</em><sup>2</sup></span>, that dos not
+depend on <span class="math inline"><em>u</em></span> either.</p>
+<p>The section <a href="#Ju0UppererBoundSection"
+data-reference-type="ref"
+data-reference="Ju0UppererBoundSection">7.3</a> is devoted to the search
+of an upper bound of the real cost <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span> of the
+nominal problem controlled by <span
+class="math inline"><em>u</em><sub>0</sub></span>. That upper bound
+contains the same two integral terms as in the lower bound of <span
+class="math inline"><em>J</em>(<em>u</em>)</span> and a term in <span
+class="math inline"><em>α</em><sup>2</sup></span>.</p>
+<p>Then the section <a href="#ProofSuboptimality"
+data-reference-type="ref" data-reference="ProofSuboptimality">7.4.1</a>
+uses the assumption <span class="math inline">$\alpha
+\leq \frac{\beta}{k_{J1}}$</span> to obtain a lower bound of <span
+class="math inline"><em>J</em>(<em>u</em>)</span> independent of <span
+class="math inline"><em>u</em></span>, so that it is also a lower bound
+for <span class="math inline"><em>J</em><sup>*</sup></span>. That lower
+bound is combined with the upper bound of <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span> to bound
+the suboptimality <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>) − <em>J</em><sup>*</sup></span>
+as a function of <span
+class="math inline"><em>α</em><sup>2</sup></span>, as stated in the
+equation (<a href="#suboptimality" data-reference-type="ref"
+data-reference="suboptimality">[suboptimality]</a>) of the first part of
+the main theorem <a href="#MainTheorem" data-reference-type="ref"
+data-reference="MainTheorem">2</a>.</p>
+<p>Then the section <a href="#ProofSuboptimality"
+data-reference-type="ref" data-reference="ProofSuboptimality">7.4.1</a>
+uses the stronger assumption <span class="math inline">$\alpha
+\leq \frac{\beta}{2k_{J1}}$</span> to obtain, for any <span
+class="math inline"><em>u</em></span> better than <span
+class="math inline"><em>u</em><sub>0</sub></span>, i.e. so that <span
+class="math inline"><em>J</em>(<em>u</em>) ≤ <em>J</em>(<em>u</em><sub>0</sub>)</span>,
+an upper bound of <span
+class="math inline"><em>z</em><sup>2</sup></span>. With that bound of
+<span class="math inline"><em>z</em><sup>2</sup></span>, upper bounds
+for <span
+class="math inline">∥<em>x</em> − <em>x</em><sub>0</sub>∥<sub>∞</sub></span>
+and <span
+class="math inline">∥<em>u</em> − <em>u</em><sub>0</sub>∥<sub>2</sub></span>
+are found in the equations (<a href="#closeTrajectory"
+data-reference-type="ref"
+data-reference="closeTrajectory">[closeTrajectory]</a>) and (<a
+href="#closeControl" data-reference-type="ref"
+data-reference="closeControl">[closeControl]</a>) of the second part of
+the main theorem, with the help of the definitions and bounds of <span
+class="math inline"><em>r</em></span> and <span
+class="math inline"><em>v</em></span> in section <a href="#auxVariables"
+data-reference-type="ref" data-reference="auxVariables">5.3</a>.</p>
+<h2 id="JuLowerBoundSection">Lower bound on the real cost of the nominal
+problem</h2>
+<h3 id="expansion-of-the-real-cost-ju">Expansion of the real cost <span
+class="math inline"><em>J</em>(<em>u</em>)</span></h3>
+<p>We use an expansion with integral remainder to compute the variation
+of the cost with respect to the nominal integral cost for the nominal
+system being driven by <span
+class="math inline"><em>u</em><sub>0</sub></span>.</p>
+<div id="expJuProp" class="proposition">
+<p><strong>Proposition 14</strong>. <em>The cost <span
+class="math inline"><em>J</em>(<em>u</em>) = ∫<sub>0</sub><sup><em>T</em></sup><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)<em>d</em><em>t</em></span>
+for any command <span
+class="math inline"><em>u</em> ∈ <strong>L</strong><sub>[0,<em>T</em>]</sub><sup>2</sup></span>
+expands the following way: <span class="math display">$$\begin{split}
+        J(u) = &amp; \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    + \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+    \\
+    &amp; + \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma
+    \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+    d \lambda d \mu dt
+    \end{split}
+        \label{expJu}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#ProofExpJU"
+data-reference-type="ref" data-reference="ProofExpJU">14</a>. ◻</p>
+</div>
+<p>We are going now to study carefully the various terms involved in the
+expansion (<a href="#expJu" data-reference-type="ref"
+data-reference="expJu">[expJu]</a>).</p>
+<h3
+id="lower-bound-of-the-third-term-of-the-expansion-of-ju-in-equation-expju">Lower
+Bound of the third term of the expansion of <span
+class="math inline"><em>J</em>(<em>u</em>)</span> in equation (<a
+href="#expJu" data-reference-type="ref"
+data-reference="expJu">[expJu]</a>)</h3>
+<div id="J3LowerBoundProp" class="proposition">
+<p><strong>Proposition 15</strong>. <em>The following inequality holds:
+<span class="math display">$$\begin{split}
+        &amp;   \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+        \\ &amp; \geq
+    \alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v] dt
+    -\frac{3k}{2}(Tk_{r3}+k_{v1}) \alpha z^{2}
+    \\
+    &amp; -  \left[2KTk_{r5} + k(1+2M) + \frac{k}{2}(3(Tk_{r4}+k_{v2})
+    +4T(1+2M)^{2}) \alpha\right]\alpha^{2}
+    \end{split}
+        \label{J3LowerBound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> See appendix <a href="#J3LowerBoundProof"
+data-reference-type="ref"
+data-reference="J3LowerBoundProof">15</a>. ◻</p>
+</div>
+<h3
+id="lower-bound-of-the-fourth-term-of-the-expansion-of-ju-in-equation-expju">Lower
+Bound of the fourth term of the expansion of <span
+class="math inline"><em>J</em>(<em>u</em>)</span> in equation (<a
+href="#expJu" data-reference-type="ref"
+data-reference="expJu">[expJu]</a>)</h3>
+<div id="J4LowerBoundProp" class="proposition">
+<p><strong>Proposition 16</strong>. <em>The following inequality holds:
+<span class="math display">$$\begin{split}
+    &amp;     \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma
+    \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+    d \lambda d \mu dt \\ &amp; \geq
+    -2KM \left[TM+\sqrt{3}(2Tk_{r2}+k_{v2}+T(M^{2}+2))\alpha\right]
+\alpha^{2}
+         \\
+    &amp;      + \left[\beta - 2\sqrt{3}KM(2Tk_{r1}+k_{v1})\alpha\right]
+z^{2}
+        \\
+    &amp; + \alpha \int_{0}^{T} \tilde{p_{1}}\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r+\alpha\tilde{x_{1}}  \\
+        v  \\
+    \end{array}
+    \right] dt
+    \end{split}
+    \label{J4LowerBound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#J4LowerBoundProof"
+data-reference-type="ref"
+data-reference="J4LowerBoundProof">16</a>. ◻</p>
+</div>
+<h3
+id="bound-in-absolute-value-for-the-sum-of-the-integral-terms-of-the-right-hand-sides-of-equations-j3lowerbound-and-j4lowerbound">Bound
+in absolute value for the sum of the integral terms of the right hand
+sides of equations (<a href="#J3LowerBound" data-reference-type="ref"
+data-reference="J3LowerBound">[J3LowerBound]</a>) and (<a
+href="#J4LowerBound" data-reference-type="ref"
+data-reference="J4LowerBound">[J4LowerBound]</a>)</h3>
+<div class="proposition">
+<p><strong>Proposition 17</strong>. <em>Let’s define <span
+class="math inline"><em>R</em></span> as the sum of the integral terms
+of the right hand sides of equations (<a href="#J3LowerBound"
+data-reference-type="ref"
+data-reference="J3LowerBound">[J3LowerBound]</a>) and (<a
+href="#J4LowerBound" data-reference-type="ref"
+data-reference="J4LowerBound">[J4LowerBound]</a>): <span
+class="math display">$$R = \alpha \int_{0}^{T} \tilde{p_{1}}
+    \left[f_{0x}r_{1} + f_{0u}v
+    + \left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r+\alpha\tilde{x_{1}}  \\
+        v  \\
+    \end{array}
+    \right]\right] dt$$</span> Then the following inequality holds:
+<span
+class="math display">|<em>R</em>| ≤ <em>K</em><em>M</em>[<em>T</em><em>k</em><sub><em>r</em>3</sub>+<em>k</em><sub><em>v</em>1</sub>] + [2<em>K</em><em>T</em><em>M</em>+(2<em>K</em><em>T</em><em>M</em><em>k</em><sub><em>r</em>5</sub>+<em>k</em><em>T</em><em>M</em><em>k</em><sub><em>r</em>4</sub>+<em>k</em><em>M</em><em>k</em><sub><em>v</em>2</sub>)<em>α</em>]<em>α</em><sup>2</sup></span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> see appendix <a href="#JuLowerBoundProof"
+data-reference-type="ref"
+data-reference="JuLowerBoundProof">17</a>. ◻</p>
+</div>
+<h3 id="lower-bound-of-the-real-cost-ju">Lower Bound of the real cost
+<span class="math inline"><em>J</em>(<em>u</em>)</span></h3>
+<p>We capitalize on the previous results to obtain a lower bound on
+<span class="math inline"><em>J</em>(<em>u</em>)</span> for any control
+<span class="math inline"><em>u</em></span>.</p>
+<div id="JuLowerBoundLemma" class="lemm">
+<p><strong>Lemma 1</strong>. <em>A lower bound of the cost <span
+class="math inline"><em>J</em>(<em>u</em>)</span> of the nominal system
+for any control <span class="math inline"><em>u</em></span> is given by:
+<span class="math display">$$J(u) \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    +(\beta - k_{J1}\alpha)z^{2}
+    - k_{J2}\alpha^{2}
+        \label{JuLowerBound}$$</span> where <span
+class="math inline"><em>k</em><sub><em>J</em>1</sub></span> and <span
+class="math inline"><em>k</em><sub><em>J</em>2</sub></span> are defined
+in definition <a href="#kJdefinition" data-reference-type="ref"
+data-reference="kJdefinition">13</a>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> This is a consequence of equations (<a
+href="#J3LowerBound" data-reference-type="ref"
+data-reference="J3LowerBound">[J3LowerBound]</a>), (<a
+href="#J4LowerBound" data-reference-type="ref"
+data-reference="J4LowerBound">[J4LowerBound]</a>) and (<a
+href="#RestBound" data-reference-type="ref"
+data-reference="RestBound">[RestBound]</a>) ◻</p>
+</div>
+<h2 id="Ju0UppererBoundSection">Upper bound on the cost of the nominal
+system controlled by <span
+class="math inline"><em>u</em><sub>0</sub></span></h2>
+<p>As in the previous section, we first compute an expansion with
+integral remainder of the cost; then we study each term of the expansion
+to obtain a global bound in section <a href="#upperBoundJ0"
+data-reference-type="ref" data-reference="upperBoundJ0">7.3.5</a>.</p>
+<h3 id="expansion-of-the-cost-ju_0">Expansion of the cost <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span></h3>
+<div class="definition">
+<p><strong>Definition 14</strong>. <em>Let <span
+class="math inline"><em>x</em><sup>0</sup></span> be the trajectory of
+the nominal problem controlled by <span
+class="math inline"><em>u</em><sub>0</sub></span>. It is defined by the
+dynamics: <span
+class="math display">$$\frac{dx^{0}}{dt}=f(x^{0},u_{0},t) \; , \;
+x^{0}(0)=\chi_{0}
+    \label{dynamicsu0}$$</span> For that trajectory, we set the
+notations: <span class="math display">$$\begin{aligned}
+        \delta x^{0} = x^{0}-x_{0} &amp;  &amp; \tilde{x}^{0} = \delta
+x^{0} - \alpha \tilde{x_{1}}\\
+       &amp; \rho^{0}(\lambda,\mu) = x_{0} + \lambda \mu \; \delta x^{0}
+&amp;
+    \end{aligned}$$</span> Where <span
+class="math inline">(<em>u</em><sub>0</sub>,<em>x</em><sub>0</sub>)</span>
+is the solution of the averaged problem and <span
+class="math inline">$\alpha \tilde{x_{1}}$</span> is <span
+class="math inline"><em>I</em>[<em>f</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>]</span>
+(equation (<a href="#xtilde1" data-reference-type="ref"
+data-reference="xtilde1">[xtilde1]</a>)).</em></p>
+</div>
+<div id="expJu0Prop" class="proposition">
+<p><strong>Proposition 18</strong>. <em>The cost <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>) = ∫<sub>0</sub><sup><em>T</em></sup><em>L</em>(<em>x</em><sup>0</sup>,<em>u</em><sub>0</sub>,<em>t</em>)<em>d</em><em>t</em></span>
+for the optimal command <span
+class="math inline"><em>u</em><sub>0</sub></span> of the averaged
+problem expands the following way: <span
+class="math display">$$\begin{aligned}
+        J(u_{0}) = \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    + \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt
+    \nonumber \\
+    + \int_{0}^{T} \int_{0}^{1} \int_{0}^{1}
+    \lambda H_{xx}(\rho^{0}(\lambda,\mu),u_{0},p_{0},t)(\delta
+x^{0})^{2}  
+    d \lambda d \mu dt
+        \label{expJu0}
+    \end{aligned}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> It is a consequence of proposition <a
+href="#expJuProp" data-reference-type="ref"
+data-reference="expJuProp">14</a> with <span
+class="math inline"><em>u</em> = <em>u</em><sub>0</sub></span>, so that
+<span class="math inline"><em>δ</em><em>u</em> = 0</span>. ◻</p>
+</div>
+<h3 id="comparison-of-x0-and-x_0">Comparison of <span
+class="math inline"><em>x</em><sup>0</sup></span> and <span
+class="math inline"><em>x</em><sub>0</sub></span></h3>
+<div id="deltax0prop" class="proposition">
+<p><strong>Proposition 19</strong>. <em>The following inequality hold
+for <span
+class="math inline"><em>δ</em><em>x</em><sup>0</sup> = <em>x</em><sup>0</sup> − <em>x</em><sub>0</sub></span>:
+<span class="math display">$$|\delta x^{0}| \leq \frac{\alpha}{kT}
+\left(e^{kT}-1\right)
+        \label{deltax0}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> As <span
+class="math inline"><em>δ</em><em>x</em><sup>0</sup> = <em>x</em><sup>0</sup> − <em>x</em><sub>0</sub></span>,
+<span class="math inline"><em>x</em><sup>0</sup></span> follows the
+dynamics (<a href="#dynamicsu0" data-reference-type="ref"
+data-reference="dynamicsu0">[dynamicsu0]</a>) and <span
+class="math inline"><em>x</em><sub>0</sub></span> follows the averaged
+dynamics (<a href="#aveOptTraj" data-reference-type="ref"
+data-reference="aveOptTraj">[aveOptTraj]</a>), we have the following
+integral equation: <span class="math display">$$\begin{aligned}
+         \delta x^{0}&amp; = &amp; \int_{0}^{t} [f(x^{0},u_{0},t) -
+     LP[f,u_{0}](x_{0},t)]dt \\
+          &amp; = &amp; \int_{0}^{t} [f(x^{0},u_{0},t) -
+f(x_{0},u_{0},t)]dt
+      + \int_{0}^{t} [f(x_{0},u_{0},t) - LP[f,u_{0}](x_{0},t)]dt
+     \end{aligned}$$</span> Thus the following inequality holds: <span
+class="math display">|<em>δ</em><em>x</em><sup>0</sup>| ≤ ∥<em>f</em><sub><em>x</em></sub>∥<sub>∞</sub>(∫<sub>0</sub><sup><em>t</em></sup>|<em>δ</em><em>x</em><sup>0</sup>|<em>d</em><em>s</em>) + |<em>I</em>[<em>f</em>,<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>](<em>t</em>)| ≤ <em>k</em><em>T</em>(∫<sub>0</sub><sup><em>t</em></sup>|<em>δ</em><em>x</em><sup>0</sup>|<em>d</em><em>s</em>) + <em>α</em></span>
+Equation (<a href="#deltax0" data-reference-type="ref"
+data-reference="deltax0">[deltax0]</a>) follows from Gronwall
+lemma. ◻</p>
+</div>
+<h3
+id="upper-bound-of-the-third-term-of-the-development-of-ju_0-expju0">Upper
+Bound of the third term of the development of <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span> (<a
+href="#expJu0" data-reference-type="ref"
+data-reference="expJu0">[expJu0]</a>)</h3>
+<div class="proposition">
+<p><strong>Proposition 20</strong>. <em>The following inequality holds:
+<span class="math display">$$\left|\int_{0}^{T}
+HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt \right|
+        \leq \left(e^{kT}-1+\frac{k}{2}\alpha\right)\alpha^{2}
+    \label{J03bound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> By definition of <span
+class="math inline"><em>x̃</em><sup>0</sup></span>, we have <span
+class="math display">$$\tilde{x}^{0} = x^{0} - x_{0} - \alpha
+\tilde{x_{1}},$$</span> so that: <span
+class="math display">$$\begin{aligned}
+        \frac{d \tilde{x}^{0}}{dt} &amp; = &amp; f(x_{0}+\delta
+x^{0},u_{0},t)
+     - LP[f,u_{0}](x_{0},t) + HP[f,u_{0}](x_{0},t)\\
+          &amp; = &amp; f(x_{0}+\delta x^{0},u_{0},t) - f(x_{0},u_{0},t)
+    \end{aligned}$$</span> Thus, by Taylor expansion of <span
+class="math inline"><em>f</em>(<em>x</em><sup>0</sup>,<em>u</em><sub>0</sub>,<em>t</em>)</span>
+with integral remainder, we have: <span class="math display">$$\frac{d
+\tilde{x}^{0}}{dt} = f_{x}(x_{0},u_{0},t) \delta
+        x^{0}  
+               + \int_{0}^{1} \int_{0}^{1}
+               \lambda f_{xx}((x_{0}+ \lambda \mu (\delta
+               x^{0}),u_{0},t)(\delta x^{0})^{2} d \lambda d
+\mu$$</span> Thus, thanks to proposition <a href="#deltax0prop"
+data-reference-type="ref" data-reference="deltax0prop">19</a>, we have:
+<span class="math display">$$\left| \frac{d \tilde{x}^{0}}{dt}\right|
+              \leq (e^{kT}-1)\alpha +\frac{k}{2}\alpha^{2}
+         \label{dx0bound}$$</span> But an integration by part, together
+with the fact that <span
+class="math inline">$HP[H_{x},u_{0}](x_{0},p_{0},t) =-\alpha \frac{d
+\tilde{p_{1}}}{dt}$</span> and that <span
+class="math inline">$\tilde{x}^{0}(0)=\tilde{p_{1}}(T)=0$</span> leads
+to: <span class="math display">$$\int_{0}^{T}
+HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt
+     = \alpha \int_{0}^{T}  \tilde{p_{1}}
+     \frac{d\tilde{x}^{0}}{dt}dt
+         \label{intbypart0}$$</span> Including equation (<a
+href="#dx0bound" data-reference-type="ref"
+data-reference="dx0bound">[dx0bound]</a>) and the fact that <span
+class="math inline">$\|\tilde{p_{1}}\|_{\infty} \leq 1$</span> into
+equation (<a href="#dx0bound" data-reference-type="ref"
+data-reference="dx0bound">[dx0bound]</a>) proves equation (<a
+href="#J03bound" data-reference-type="ref"
+data-reference="J03bound">[J03bound]</a>) ◻</p>
+</div>
+<h3
+id="upper-bound-of-the-fourth-term-of-the-development-of-ju_0-expju0">Upper
+Bound of the fourth term of the development of <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span> (<a
+href="#expJu0" data-reference-type="ref"
+data-reference="expJu0">[expJu0]</a>)</h3>
+<div class="proposition">
+<p><strong>Proposition 21</strong>. <em>The following inequality holds:
+<span class="math display">$$\left|\int_{0}^{T} \int_{0}^{1}
+\int_{0}^{1}
+    \lambda H_{xx}(\rho^{0}(\lambda,\mu),u_{0},p_{0},t)(\delta
+x^{0})^{2}  
+    d \lambda d \mu dt\right|
+    \leq \frac{K}{2k^{2}T}\left(e^{kT}-1\right)^{2}\alpha^{2}
+        \label{J04bound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> This is a consequence of the proposition <a
+href="#deltax0prop" data-reference-type="ref"
+data-reference="deltax0prop">19</a>. ◻</p>
+</div>
+<h3 id="upperBoundJ0">Upper Bound of <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span></h3>
+<p>Inserting equations (<a href="#J03bound" data-reference-type="ref"
+data-reference="J03bound">[J03bound]</a>) and (<a href="#J04bound"
+data-reference-type="ref" data-reference="J04bound">[J04bound]</a>) into
+equation (<a href="#expJu0" data-reference-type="ref"
+data-reference="expJu0">[expJu0]</a> leads to:</p>
+<div id="Ju0UpperBoundLemma" class="lemm">
+<p><strong>Lemma 2</strong>. <em>An upper bound of the cost <span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>)</span> of the
+nominal system controlled by <span
+class="math inline"><em>u</em><sub>0</sub></span> is given by: <span
+class="math display">$$J(u_{0}) \leq \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    + k_{J0}\alpha^{2}
+        \label{Ju0UpperBound}\\
+$$</span> where <span
+class="math inline"><em>k</em><sub><em>J</em>0</sub></span> is defined
+in definition <a href="#kJdefinition" data-reference-type="ref"
+data-reference="kJdefinition">13</a>.</em></p>
+</div>
+<h2 id="proof-of-the-main-theorem">Proof of the main theorem</h2>
+<p>The main theorem is proved in two steps. The first step compares the
+costs to estimate the suboptimality of the real system controlled by
+<span class="math inline"><em>u</em><sub>0</sub></span>. The second step
+compares the trajectories and controls which outperform <span
+class="math inline"><em>u</em><sub>0</sub></span>, to estimate how close
+they are from the trajectory and control driven by <span
+class="math inline"><em>u</em><sub>0</sub></span>.</p>
+<h3 id="ProofSuboptimality">Comparison of the real cost controlled by
+<span class="math inline"><em>u</em><sub>0</sub></span> and the infimum
+cost of the real system</h3>
+<p>Let’s now use the assumption <span class="math inline">$\alpha \leq
+\frac{\beta}{2k_{J1}}$</span> of the first part of the Main Theorem <a
+href="#MainTheorem" data-reference-type="ref"
+data-reference="MainTheorem">2</a> into the equation (<a
+href="#JuLowerBound" data-reference-type="ref"
+data-reference="JuLowerBound">[JuLowerBound]</a>) of Lemma <a
+href="#JuLowerBoundLemma" data-reference-type="ref"
+data-reference="JuLowerBoundLemma">1</a>. The term in <span
+class="math inline"><em>z</em><sup>2</sup></span> is then non negative,
+and we get the lower bound independent of <span
+class="math inline"><em>u</em></span>: <span class="math display">$$J(u)
+\geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    - k_{J2}\alpha^{2}$$</span> As that lower bound holds for any <span
+class="math inline"><em>u</em></span>, it is also a lower bound for the
+infimum cost <span
+class="math inline"><em>J</em><sup>*</sup> = inf<sub><em>u</em></sub><em>J</em>(<em>u</em>)</span>:
+<span class="math display">$$J^{*} \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    - k_{J2}\alpha^{2}$$</span> so that: <span
+class="math display">$$\int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    \leq J^{*} + k_{J2}\alpha^{2}$$</span> Inserting this equation into
+the equation (<a href="#Ju0UpperBound" data-reference-type="ref"
+data-reference="Ju0UpperBound">[Ju0UpperBound]</a>) of Lemma <a
+href="#Ju0UpperBoundLemma" data-reference-type="ref"
+data-reference="Ju0UpperBoundLemma">2</a>, together with the fact that
+<span
+class="math inline"><em>J</em>(<em>u</em><sub>0</sub>) ≥ <em>J</em><sup>*</sup></span>,
+by definition of <span
+class="math inline"><em>J</em><sup>*</sup></span>, proves the
+suboptimality equation (<a href="#suboptimality"
+data-reference-type="ref"
+data-reference="suboptimality">[suboptimality]</a>) in he Main Theorem
+<a href="#MainTheorem" data-reference-type="ref"
+data-reference="MainTheorem">2</a>, since <span
+class="math inline"><em>k</em><sub><em>J</em></sub> = <em>k</em><sub><em>J</em>0</sub> + <em>k</em><sub><em>J</em>2</sub></span>.</p>
+<h3 id="TrajControlComp">Comparison of the controls and trajectories
+with and without <span
+class="math inline"><em>u</em> = <em>u</em><sub>0</sub></span></h3>
+<p>Let’s consider a control <span class="math inline"><em>u</em></span>
+better than <span class="math inline"><em>u</em><sub>0</sub></span>,
+i.e. such that <span
+class="math inline"><em>J</em>(<em>u</em>) ≤ <em>J</em>(<em>u</em><sub>0</sub>)</span>.</p>
+<p>Let’s now use in a stronger manner the assumption <span
+class="math inline">$\alpha \leq \frac{\beta}{2k_{J1}}$</span> of the
+second part of the Main Theorem <a href="#MainTheorem"
+data-reference-type="ref" data-reference="MainTheorem">2</a> into the
+equation (<a href="#JuLowerBound" data-reference-type="ref"
+data-reference="JuLowerBound">[JuLowerBound]</a>) of Lemma <a
+href="#JuLowerBoundLemma" data-reference-type="ref"
+data-reference="JuLowerBoundLemma">1</a>. The coefficient <span
+class="math inline"><em>z</em><sup>2</sup></span> is then lower than
+<span class="math inline">$\frac{\beta}{2}$</span>, and we get the lower
+bound dependent of <span
+class="math inline"><em>z</em><sup>2</sup></span>, that depends on <span
+class="math inline"><em>u</em></span>: <span class="math display">$$J(u)
+\geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    +\frac{\beta}{2}z^{2}
+    - k_{J2}\alpha^{2}$$</span> Thus, together with the equation (<a
+href="#Ju0UpperBound" data-reference-type="ref"
+data-reference="Ju0UpperBound">[Ju0UpperBound]</a>) of Lemma <a
+href="#Ju0UpperBoundLemma" data-reference-type="ref"
+data-reference="Ju0UpperBoundLemma">2</a>, we have the list of
+inequalities: <span class="math display">$$\begin{aligned}
+   \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    +\frac{\beta}{2}z^{2}
+    - k_{J2}\alpha^{2}
+  &amp; \leq &amp; J(u) \leq J(u_{0}) \\
+  &amp; \leq &amp; \int_{0}^{T} L(x_{0},u_{0},t) dt
+    + \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+    + k_{J0}\alpha^{2}\end{aligned}$$</span> So that, with the
+definition of <span
+class="math inline"><em>k</em><sub><em>J</em></sub> = <em>K</em><sub><em>J</em>0</sub> + <em>k</em><sub><em>J</em>2</sub></span>,
+we have <span class="math display">$$z^{2} \leq
+\frac{2k_{J}}{\beta}\alpha^{2}
+    \label{z2bound}$$</span> On the other hand, by definition of <span
+class="math inline"><em>r</em></span>, we have: <span
+class="math display">$$x-x_{0} = r +
+\alpha(\tilde{x_{1}}+y_{1})$$</span> so that, together with the equation
+(<a href="#rinequality" data-reference-type="ref"
+data-reference="rinequality">[rinequality]</a>): <span
+class="math display">∥<em>x</em> − <em>x</em><sub>0</sub>∥<sub>∞</sub><sup>2</sup> ≤ 2(∥<em>r</em>∥<sub>∞</sub><sup>2</sup>+<em>α</em><sup>2</sup>(1+<em>M</em>)<sup>2</sup>) ≤ 2(<em>k</em><sub><em>r</em>1</sub><em>z</em><sup>2</sup>+(<em>k</em><sub><em>r</em>2</sub>(1+<em>M</em>)<sup>2</sup>)<em>α</em><sup>2</sup>)</span>
+Introducing equation (<a href="#z2bound" data-reference-type="ref"
+data-reference="z2bound">[z2bound]</a>) into that equation leads to
+equation (<a href="#closeTrajectory" data-reference-type="ref"
+data-reference="closeTrajectory">[closeTrajectory]</a>) of the second
+part of the Main Theorem <a href="#MainTheorem"
+data-reference-type="ref" data-reference="MainTheorem">2</a>.</p>
+<p>Now let’s consider the fact that, by definition of <span
+class="math inline"><em>v</em></span>: <span
+class="math display"><em>u</em> − <em>u</em><sub>0</sub> = <em>v</em> + <em>α</em><em>v</em><sub>1</sub></span>
+so that: <span
+class="math display">∥<em>u</em> − <em>u</em><sub>0</sub>∥<sub>2</sub><sup>2</sup> ≤ 2(∥<em>v</em>∥<sub>2</sub><sup>2</sup>+<em>α</em><sup>2</sup><em>T</em><sup>2</sup><em>M</em><sup>2</sup>) ≤ 2(<em>k</em><sub><em>v</em>1</sub><em>z</em><sup>2</sup>+(<em>k</em><sub><em>v</em>2</sub><em>T</em><sup>2</sup><em>M</em>)<sup>2</sup><em>α</em><sup>2</sup>)</span>
+Introducing equation (<a href="#z2bound" data-reference-type="ref"
+data-reference="z2bound">[z2bound]</a>) into that equation leads to
+equation (<a href="#closeControl" data-reference-type="ref"
+data-reference="closeControl">[closeControl]</a>) of the second part of
+the Main Theorem <a href="#MainTheorem" data-reference-type="ref"
+data-reference="MainTheorem">2</a>.</p>
+<h1 id="conclusionsec">Conclusion</h1>
+<p>We have shown that averaging on consecutive intervals is a flexible
+and efficient way to approximate signals while getting rid of rapidly
+varying features. We have extended this method to ordinary differential
+equations, control systems and optimal control problems. This provides a
+very flexible framework for the approximation of optimal control
+problems with rapidly varying features.</p>
+<p>Indeed, if <span class="math inline"><em>α</em></span> is a measure
+of the averaging error on the dynamics, we have shown that the level of
+suboptimality due to the use of the solution of the averaged problem
+into the original control system is bound by some <span
+class="math inline"><em>k</em><em>α</em><sup>2</sup></span>, where <span
+class="math inline"><em>k</em></span> depends on very general bounds on
+the dynamics and on the convexity of the system.</p>
+<p>This makes it possible to use a coarser time mesh in the numerical
+computation of the solution of the optimal control problem, as explained
+in section <a href="#numericalSection" data-reference-type="ref"
+data-reference="numericalSection">2.3</a>.</p>
+<p>However, this does not decrease the number of optimizations of the
+Hamiltonian. This stresses, if needed, the requirement for fast
+minization routines in this kind of optimal control problem solving.</p>
+<p>As a final note, we can observe that the control here is not
+constrained. However, using an interior penalty approach as in <span
+class="citation" data-cites="maamria"></span> should be a reasonable
+method to generalize this article’s result to the constrained input
+case.</p>
+<h1 id="proofIboundProp">Proof of Proposition <a href="#IboundProp"
+data-reference-type="ref" data-reference="IboundProp">2</a> about the
+upper bound of <span
+class="math inline"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em>)</span></h1>
+<p><span
+class="math inline"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em>)</span>
+is defined by equation (<a href="#IdynODE" data-reference-type="ref"
+data-reference="IdynODE">[IdynODE]</a>) and <span
+class="math inline"><em>x</em><sub>0</sub></span> is the solution of the
+averaged ODE (<a href="#aveODE" data-reference-type="ref"
+data-reference="aveODE">[aveODE]</a>). We are going to bound <span
+class="math inline"><em>I</em>[<em>g</em>,<em>x</em><sub>0</sub>]</span>.</p>
+<p>Let’s fix <span class="math inline"><em>t</em></span> and let <span
+class="math inline"><em>K</em></span> be so that <span
+class="math inline"><em>t</em> ∈ [<em>t</em><sub><em>K</em></sub>, <em>t</em><sub><em>K</em> + 1</sub>)</span>.
+Then we have: <span class="math display">$$I[g,x_{0}](t) =
+\sum_{k+0}^{K-1}I_{k}[g,x_{0}](t_{k+1}) +
+    I_{K}[g,x_{0}](t)
+    \label{decompI}$$</span> where <span
+class="math inline"><em>I</em><sub><em>j</em></sub>[<em>g</em>,<em>x</em><sub>0</sub>](<em>τ</em>)</span>
+is defined for <span
+class="math inline"><em>τ</em> ∈ [<em>t</em><sub><em>j</em></sub>, <em>t</em><sub><em>i</em> + 1</sub>)</span>
+as: <span class="math display">$$I_{j}[g,x_{0}](\tau) =
+           \int_{t_{j}}^{\tau}
+              \left[
+         g(x_{0}(s),s)
+         - \frac{1}{t_{j+1}-t_{j}}
+         \int_{t_{j}}^{t_{j+1}}g(x_{0}(s),\sigma)d \sigma
+         \right] ds$$</span> We can expand the terms <span
+class="math inline"><em>I</em><sub><em>k</em></sub>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em><sub><em>k</em> + 1</sub>)</span>
+and <span
+class="math inline"><em>I</em><sub><em>K</em></sub><em>g</em>, <em>x</em><sub>0</sub>(<em>t</em>)</span>
+by subtracting and adding the values at <span
+class="math inline"><em>t</em><sub><em>k</em></sub></span>. <span
+class="math display">$$\begin{aligned}
+    I_{k}[g,x_{0}](t_{k+1}) &amp; = &amp;
+    \int_{t_{k}}^{t_{k+1}}  \left[ g(x_{0}(t_{k},s)
+    - \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}}
+    g(x_{0}(t_{k}), \sigma ) d \sigma \right] ds
+      \\ &amp; &amp;
+    +\int_{t_{k}}^{t_{k+1}} [g(x_{0}(s),s) -  g(x_{0}(t_{k}),s)] ds
+     \\ &amp; &amp;
+    + \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}}
+\int_{t_{k}}^{t_{k+1}}
+    [g(x_{0}(s),\sigma)
+    - g(x_{0}(t_{k}),\sigma)] d \sigma ds\end{aligned}$$</span> The
+first term is equal to <span class="math inline">0</span>.</p>
+<p>The terms integrated once and twice in the second and third terms are
+both lower or equal to <span
+class="math inline"><em>λ</em><sub><em>g</em></sub>∥<em>x</em><sub>0</sub>(<em>s</em>) − <em>x</em><sub>0</sub>(<em>t</em><sub><em>k</em></sub>∥</span>
+because <span class="math inline"><em>g</em></span> is Lipschitz in
+<span class="math inline"><em>x</em></span>, with Lipschitz constant
+<span class="math inline"><em>λ</em><sub><em>g</em></sub></span>.</p>
+<p>Moreover, because <span
+class="math inline"><em>x</em><sub>0</sub></span> is the solution of the
+averaged ODE (<a href="#aveODE" data-reference-type="ref"
+data-reference="aveODE">[aveODE]</a>), we have: <span
+class="math display">∥<em>x</em><sub>0</sub>(<em>s</em>) − <em>x</em><sub>0</sub>(<em>t</em><sub><em>k</em></sub>∥ ≤ ∥<em>f</em>∥<sub>∞</sub>(<em>s</em>−<em>t</em><sub><em>k</em></sub>)</span>
+Thus, we have: <span
+class="math display">|<em>I</em><sub><em>k</em></sub>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em><sub><em>k</em> + 1</sub>)| ≤ 2<em>λ</em><sub><em>g</em></sub>∥<em>f</em>∥<sub>∞</sub>∫<sub><em>t</em><sub><em>k</em></sub></sub><sup><em>t</em><sub><em>k</em> + 1</sub></sup>(<em>s</em>−<em>t</em><sub><em>k</em></sub>)<em>d</em><em>s</em></span>
+That is: <span class="math display">$$|I_{k}[g,x_{0}](t_{k+1})| \le 2
+\lambda_{g} \|f\|_{\infty}
+    \left(\frac{T}{N}\right)^{2}
+    \label{Iktk}$$</span> Let’s now expand <span
+class="math inline"><em>I</em><sub><em>K</em></sub>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em>)</span>
+in an analog way starting from <span
+class="math inline"><em>t</em><sub><em>K</em></sub></span>: <span
+class="math display">$$\begin{aligned}
+    I_{K}[g,x_{0}](t) &amp; = &amp;
+    \int_{t_{K}}^{t}  \left[ g(x_{0}(t_{K},s)
+    - \frac{1}{t_{K+1}-t_{K}} \int_{t_{K}}^{t_{K+1}}
+    g(x_{0}(t_{K}), \sigma ) d \sigma \right] ds
+      \\ &amp; &amp;
+    +\int_{t_{K}}^{t} [g(x_{0}(s),s) -  g(x_{0}(t_{K}),s)] ds
+     \\ &amp; &amp;
+    + \frac{1}{t_{K+1}-t_{K}} \int_{t_{K}}^{t} \int_{t_{K}}^{t_{K+1}}
+    [g(x_{0}(s),\sigma)
+    - g(x_{0}(t_{K}),\sigma)] d \sigma ds\end{aligned}$$</span> The
+first term is not <span class="math inline">0</span> here, but it is
+lower or equal to <span class="math inline">$2
+\|g\|_{\infty}\frac{T}{N}$</span>, and the other terms are bounded as
+the ones of <span
+class="math inline"><em>I</em><sub><em>k</em></sub>[<em>g</em>,<em>x</em><sub>0</sub>](<em>t</em><sub><em>k</em> + 1</sub>)</span>.</p>
+<p>Thus we have: <span class="math display">$$|I_{K}[g,x_{0}](t)| \le
+\|g\|_{\infty}\frac{T}{N}
+    + 2 \lambda_{g} \|f\|_{\infty}\left(\frac{T}{N}\right)^{2}
+    \label{IKt}$$</span> Finally, because <span
+class="math inline"><em>K</em> + 1 ≤ <em>N</em></span>, the inequations
+(<a href="#Iktk" data-reference-type="ref"
+data-reference="Iktk">[Iktk]</a>) and (<a href="#IKt"
+data-reference-type="ref" data-reference="IKt">[IKt]</a>) yield to the
+proposition <a href="#IboundProp" data-reference-type="ref"
+data-reference="IboundProp">2</a>.</p>
+<h1 id="proofStationarity">Proof of the stationarity condition of the
+averaged problem</h1>
+<h2 id="averaged-two-boundaries-problem">Averaged two boundaries
+problem</h2>
+<p>Let <span class="math inline"><em>u</em><sub>0</sub></span> be the
+optimal control of the averaged problem (<a href="#averagedyn"
+data-reference-type="ref" data-reference="averagedyn">[averagedyn]</a>)
+and let <span class="math inline"><em>x</em><sub>0</sub></span> be the
+corresponding trajectory. <span
+class="math inline"><em>x</em><sub>0</sub></span> is defined by the ODE
+with initial condition (<a href="#aveOptTraj" data-reference-type="ref"
+data-reference="aveOptTraj">[aveOptTraj]</a>). Let <span
+class="math inline"><em>p</em><sub>0</sub></span> be the costate of the
+optimal trajectory, defined by the ODE with final condition (<a
+href="#aveCostate" data-reference-type="ref"
+data-reference="aveCostate">[aveCostate]</a>), with <span
+class="math inline"><em>H</em></span> the hamiltonian (<a
+href="#Hamiltonian" data-reference-type="ref"
+data-reference="Hamiltonian">[Hamiltonian]</a>).</p>
+<p>The system constituted of the of equations (<a href="#aveOptTraj"
+data-reference-type="ref" data-reference="aveOptTraj">[aveOptTraj]</a>)
+and (<a href="#aveCostate" data-reference-type="ref"
+data-reference="aveCostate">[aveCostate]</a>) is a two boundaries
+problem. It is defined as the two boundaries problem corresponding to
+the averaged optimal control problem.</p>
+<h2 id="first-variation-in-the-direction-of-delta-u">First variation in
+the direction of <span
+class="math inline"><em>δ</em><em>u</em></span></h2>
+<p>Let <span
+class="math inline"><em>δ</em><em>u</em> ∈ <strong>L</strong><sub>[0,<em>T</em>]</sub><sup>2</sup></span>
+a scalar square integrable function on <span
+class="math inline">[0,<em>T</em>]</span>.</p>
+<p>Let <span class="math inline"><em>ϵ</em> &gt; 0</span> and let <span
+class="math inline"><em>u</em><sub><em>ϵ</em></sub> = <em>u</em><sub>0</sub> + <em>ϵ</em><em>δ</em><em>u</em></span>
+the variation of <span class="math inline"><em>u</em><sub>0</sub></span>
+in the direction of <span
+class="math inline"><em>δ</em><em>u</em></span>.</p>
+<p>Since <span
+class="math inline"><em>J</em><sub>0</sub>(<em>u</em><sub>0</sub>) = min<sub><em>u</em></sub><em>J</em><sub>0</sub>(<em>u</em>)</span>,
+the following stationarity condition holds: <span
+class="math display">$$\forall \; \delta u \in \mathbf{L}_{[0,T]}^2,
+    \left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0} =
+0
+        \label{J0min}$$</span></p>
+<p>Let <span class="math inline"><em>x</em><sub><em>ϵ</em></sub></span>
+be the trajectory corresponding to <span
+class="math inline"><em>u</em><sub><em>ϵ</em></sub></span>, defined by
+the dynamics equation <a href="#averagedyn" data-reference-type="ref"
+data-reference="averagedyn">[averagedyn]</a> with <span
+class="math inline"><em>v</em> = <em>u</em><sub><em>ϵ</em></sub></span>:
+<span
+class="math display">$$\frac{dx_{\epsilon}}{dt}=LP[f,u_{\epsilon}](x_{\epsilon},t)\;
+, \;
+        x_{\epsilon}(0)=\xi_{0}
+        \label{aveVarTraj}$$</span></p>
+<p>Let <span class="math inline"><em>δ</em><em>x</em></span> be the
+variation trajectory corresponding to the direction <span
+class="math inline"><em>δ</em><em>u</em></span> given by <span
+class="math inline">$\delta x = \left(\frac{dx_{\epsilon}}{d
+\epsilon}\right)_{\epsilon =0}$</span>.</p>
+<div id="deltax" class="lemm">
+<p><strong>Lemma 3</strong>. <em><span
+class="math inline"><em>δ</em><em>x</em></span> respects the following
+dynamics function: <span class="math display">$$\frac{d(\delta x)}{dt} =
+    LP\left[ \frac{\partial f}{\partial x}, u_{0}\right](x_{0},t) \delta
+x
+        +LP\left[ \frac{\partial f}{\partial u} \delta u,
+u_{0}\right](x_{0},t)
+    \label{VarDyn}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> <span class="math display">$$\frac{d(\delta x)}{dt} =
+\frac{d}{dt}\left(\frac{dx_{\epsilon}}{d \epsilon}\right)_{\epsilon =0}
+              = \left(\frac{d}{d
+\epsilon}\frac{dx_{\epsilon}}{dt}\right)_{\epsilon =0}\\
+              = \left(\frac{d}{d \epsilon}LP[f,u_{0}+\epsilon \delta
+u](x_{\epsilon},t)\right)_{\epsilon =0}$$</span> Let <span
+class="math inline"><em>k</em></span> be so that <span
+class="math inline">[<em>t</em><sub><em>k</em></sub>,<em>t</em><sub><em>k</em> + 1</sub>))</span>.
+Then: <span class="math display">$$\begin{aligned}
+        \frac{d(\delta x)}{dt} &amp; = &amp;
+    \left(\frac{d}{d \epsilon}\left(\frac{1}{t_{k+1}-t_{k}}
+    +\int_{t_{k}}^{t_{k+1}}f(x_{\epsilon}(t),u_{0}(s)+\epsilon \delta
+u(s),s)ds\right)\right)
+    _{\epsilon =0}\\
+         &amp; = &amp; \frac{1}{t_{k+1}-t_{k}}
+    + \int_{t_{k}}^{t_{k+1}}\frac{d}{d \epsilon}
+    \left(f(x_{\epsilon}(t),u_{0}(s)+\epsilon \delta
+u(s),s)\right)_{\epsilon =0}ds \\
+         &amp; = &amp; \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}}
+\left(
+    \frac{\partial f}{\partial x}(x_{0(t),u_{0}(s),s}\delta x(t)
+    +\frac{\partial f}{\partial u}(x_{0(t),u_{0}(s),s}\delta u(s)
+    \right) ds \\
+        &amp; = &amp; LP\left[ \frac{\partial f}{\partial x},
+     u_{0}\right](x_{0},t) \delta x
+       + LP\left[ \frac{\partial f}{\partial u} \delta u,
+u_{0}\right](x_{0},t)
+    \end{aligned}$$</span> ◻</p>
+</div>
+<h2 id="proof-of-the-stationarity-result">Proof of the stationarity
+result</h2>
+<p>Let’s make use of Equation (<a href="#J0min"
+data-reference-type="ref" data-reference="J0min">[J0min]</a>) in
+developing <span
+class="math inline">$\left(\frac{dJ_{0}(u_{\epsilon})}{d
+\epsilon}\right)_{\epsilon=0}$</span> for a given <span
+class="math inline"><em>δ</em><em>u</em></span>.</p>
+<div class="lemm">
+<p><strong>Lemma 4</strong>. <em>The derivative at <span
+class="math inline">0</span> of <span
+class="math inline"><em>J</em><sub>0</sub>(<em>u</em><sub><em>ϵ</em></sub>)</span>
+in <span class="math inline"><em>ϵ</em></span> is related to the
+hamiltonian by the following equation: <span
+class="math display">$$\left(\frac{dJ_{0}(u_{\epsilon})}{d
+\epsilon}\right)_{\epsilon=0}
+      = \int_{0}^{T} LP\left[ \frac{\partial H}{\partial u} \delta
+       u, u_{0}\right](x_{0},p_{0},t) dt
+        \label{J0hamiltonian}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s use the equation (<a href="#averagecost"
+data-reference-type="ref"
+data-reference="averagecost">[averagecost]</a>) and then commute the
+differentiation and integration: <span
+class="math display">$$\left(\frac{dJ_{0}(u_{\epsilon})}{d
+\epsilon}\right)_{\epsilon=0}
+        = \left( \frac{d}{d \epsilon}\left[ \int_{0}^{T}
+        LP[L,u_{\epsilon}](x_{\epsilon},t)dt \right]
+\right)_{\epsilon=0}
+            =  \int_{0}^{T} \left(\frac{d}{d \epsilon}\left[  
+        LP[L,u_{\epsilon}](x_{\epsilon},t)\right]\right)_{\epsilon=0}dt$$</span>
+For any <span class="math inline"><em>k</em> ∈ [0,<em>N</em>−1]</span>
+and for any <span
+class="math inline"><em>t</em> ∈ [<em>t</em><sub><em>k</em></sub>, <em>t</em><sub><em>k</em> + 1</sub>)</span>,
+we have the definition (<a href="#average" data-reference-type="ref"
+data-reference="average">[average]</a>) of <span
+class="math inline"><em>L</em><em>P</em></span>: <span
+class="math display">$$LP[L,u_{\epsilon}](x_{\epsilon},t)
+    = \frac{1}{t_{k+1}-t_{k}}
+    \int_{t_{k}}^{t_{k+1}}L(x_{\epsilon}(t),u_{\epsilon}(s),s)ds$$</span>
+Thus if we commute again the integration and the differentiation: <span
+class="math display">$$\left(\frac{d}{d \epsilon}\left[  
+         LP[L,u_{\epsilon}](x_{\epsilon},t)\right]\right)_{\epsilon=0}
+               = \frac{1}{t_{k+1}-t_{k}}
+                \int_{t_{k}}^{t_{k+1}}
+              \left(\frac{dL(x_{\epsilon}(t),u_{\epsilon}(s),s)}{d  \epsilon}\right)_{\epsilon=0}
+ds$$</span> But by definition of <span
+class="math inline"><em>x</em><sub><em>ϵ</em></sub></span>, <span
+class="math inline"><em>u</em><sub><em>ϵ</em></sub></span>, <span
+class="math inline"><em>δ</em><em>x</em></span> and <span
+class="math inline"><em>δ</em><em>u</em></span>, we have: <span
+class="math display">$$\left(\frac{dL(x_{\epsilon}(t),u_{\epsilon}(s),s)}{d
+\epsilon}\right)_{\epsilon=0}
+            =  \frac{\partial L}{\partial x}(x_{0}(t),u_{0}(s),s) \delta
+x(t)
+          + \frac{\partial L}{\partial u}(x_{0}(t),u_{0}(s),s) \delta
+u(s)$$</span> Thus by averaging on <span
+class="math inline">[<em>t</em><sub><em>k</em></sub>,<em>t</em><sub><em>k</em> + 1</sub>]</span>,
+the result is (<span class="math inline"><em>L</em><em>P</em></span> is
+linear): <span class="math display">$$\left(\frac{d}{d \epsilon}\left[
+        LP[L,u_{0}](x_{\epsilon},t)\right]\right)_{\epsilon=0}  
+             =  LP\left[ \frac{\partial L}{\partial
+x},u_{0}\right](x_{0}(t),t) \delta x(t)  
+               + LP\left[ \frac{\partial L}{\partial u} \delta
+u,u_{0}\right](x_{0}(t),t)$$</span> But because of the dynamics (<a
+href="#aveCostate" data-reference-type="ref"
+data-reference="aveCostate">[aveCostate]</a>) of the averaged costate
+<span class="math inline"><em>p</em><sub>0</sub></span>, we have, with
+the definition (<a href="#Hamiltonian" data-reference-type="ref"
+data-reference="Hamiltonian">[Hamiltonian]</a>) of the Hamiltonian:
+<span class="math display">$$LP\left[ \frac{\partial L}{\partial
+x},u_{0}\right](x_{0}(t),t)
+     = -\frac{dp_{0}}{dt} - p_{0} LP\left[ \frac{\partial f}{\partial
+x},u_{0}\right](x_{0}(t),t)$$</span> Thus integrating <span
+class="math inline">$\left(\frac{d}{d \epsilon}\left[  
+    LP[L,u_{0}](x_{\epsilon},t)\right]\right)_{\epsilon=0}$</span>
+between <span class="math inline">0</span> and <span
+class="math inline"><em>T</em></span>, we obtain: <span
+class="math display">$$\left(\frac{dJ_{0}(u_{\epsilon})}{d
+\epsilon}\right)_{\epsilon=0}  =  
+           \int_{0}^{T} -\frac{dp_{0}}{dt} \delta x
+            - \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial
+x},u_{0}\right](x_{0}(t),t)
+           \delta x(t) dt
+            + \int_{0}^{T}
+            LP\left[ \frac{\partial L}{\partial u} \delta
+u,u_{0}\right](x_{0}(t),t) dt
+            \label{interm1}$$</span> Let’s make an integration by part
+for the first term of that equation: <span
+class="math display">$$\int_{0}^{T} -\frac{dp_{0}}{dt} \delta x =
+-\left[p_{0} \delta x\right]_{0}^{T}
+       + \int_{0}^{T} \frac{d(\delta x)}{dt}  p_{0}$$</span> The
+variation of <span
+class="math inline"><em>p</em><sub>0</sub><em>δ</em><em>x</em></span>
+between <span class="math inline">0</span> and <span
+class="math inline"><em>T</em></span> is null because <span
+class="math inline"><em>δ</em><em>x</em>(0) = 0</span> and <span
+class="math inline"><em>p</em><sub>0</sub>(<em>T</em>) = 0</span>. Thus,
+with the dynamics of <span
+class="math inline"><em>δ</em><em>x</em></span> given by the Lemma <a
+href="#deltax" data-reference-type="ref" data-reference="deltax">3</a>,
+the following holds: <span class="math display">$$\int_{0}^{T}
+-\frac{dp_{0}}{dt} \delta x  =
+         \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial x},
+u_{0}\right](x_{0},t) \delta x(t) dt
+         + \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial u}
+\delta u, u_{0}\right](x_{0},t) dt$$</span> Let’s insert this equation
+in the first term of equation (<a href="#interm1"
+data-reference-type="ref" data-reference="interm1">[interm1]</a>).It
+results in: <span class="math display">$$\left(
+\frac{dJ_{0}(u_{\epsilon})}{d \epsilon} \right)_{\epsilon=0} =
+             \int_{0}^{T} \left[ LP\left[ \frac{\partial L}{\partial u}
+         \delta u,u_{0}\right](x_{0},t)
+          + p_{0} LP\left[ \frac{\partial f}{\partial u} \delta u,
+u_{0}\right](x_{0},t) \right] dt$$</span> This proves the equation (<a
+href="#J0hamiltonian" data-reference-type="ref"
+data-reference="J0hamiltonian">[J0hamiltonian]</a>) by definition of the
+Hamiltonian. ◻</p>
+</div>
+<p>Let’s now make use of equation (<a href="#J0hamiltonian"
+data-reference-type="ref"
+data-reference="J0hamiltonian">[J0hamiltonian]</a>). Let’s first fix
+<span class="math inline"><em>t</em></span> and let <span
+class="math inline"><em>k</em></span> be so that <span
+class="math inline"><em>t</em> ∈ [<em>T</em><sub><em>k</em></sub>, <em>t</em><sub><em>k</em> + 1</sub>)</span>.
+Then we have: <span class="math display">$$LP \left[ \frac{\partial
+H}{\partial u} \delta u,u_{0} \right](x_{0},p_{0},t)  
+          = \frac{1}{t_{k+1}-t_{k}}
+          \int_{t_{k}}^{t_{k+1}}\frac{\partial H}{\partial
+u}(x_{0}(t),u_{0}(s),p_{0}(t),t) \delta u(s) ds$$</span> Let’s
+specialize <span class="math inline"><em>δ</em><em>u</em></span> as a
+“needle variation”: <span class="math display">$$\delta u =
+\frac{t_{k+1}-t_{k}}{\eta} \mathbf{1}_{[t,t+\eta]} \delta v$$</span>
+with <span class="math inline"><em>η</em> &gt; 0</span> so that <span
+class="math inline"><em>t</em> + <em>η</em> &lt; <em>t</em><sub><em>k</em> + 1</sub></span>
+and <span
+class="math inline"><em>δ</em><em>v</em> ∈ <strong>L</strong><sub>[0,<em>T</em>]</sub><sup>2</sup></span>.</p>
+<p>Then we have: <span class="math display">$$LP \left[ \frac{\partial
+H}{\partial u} \delta u,u_{0} \right](x_{0},p_{0},t)  
+          = \frac{1}{\eta}  
+          \int_{t}^{t+\eta} \frac{\partial H}{\partial
+      u}(x_{0}(t),u_{0}(s),p_{0}(t),t) \delta v(s) ds
+          \begin{array}
+          {c}
+              a.e.  \\
+               \longrightarrow  \\
+              \eta \rightarrow 0   
+          \end{array}
+            \frac{\partial H}{\partial u}(x_{0}(t),u_{0}(t),p_{0}(t),t)
+\delta v(t)$$</span> More precisely, the limit is the value of the
+function at <span class="math inline"><em>t</em></span> everywhere the
+function is continue, that is for any <span
+class="math inline"><em>t</em></span> possibly except for a countable
+number of “jumps”. As any countable set is negligible, the limit holds
+almost everywhere.</p>
+<p>Thus, because of the equations (<a href="#J0min"
+data-reference-type="ref" data-reference="J0min">[J0min]</a>) and (<a
+href="#J0hamiltonian" data-reference-type="ref"
+data-reference="J0hamiltonian">[J0hamiltonian]</a>), we have: <span
+class="math display">$$\int_{0}^{T} \frac{\partial H}{\partial
+u}(x_{0}(t),u_{0}(t),p_{0}(t),t) \delta v(t)  =0$$</span> and this is
+true for any <span
+class="math inline"><em>δ</em><em>v</em> ∈ <strong>L</strong><sub>[0,<em>T</em>]</sub><sup>2</sup></span>.
+This proves the stationnarity result: <span
+class="math display">$$\frac{\partial H}{\partial
+u}(x_{0}(t),u_{0}(t),p_{0}(t),t)  = 0 \; a.e.$$</span></p>
+<h4 id="remark">Remark</h4>
+<p>To prove this result, we have used the fact that the control is
+unconstrained. The extension of the main result to the constrained case
+can be considered using the same penalty approach as in <span
+class="citation" data-cites="maamria"></span>. In this approach, the
+constrained problem is approximated by a sequence of unconstrained
+problems, where the stationarity condition holds.</p>
+<h1 id="FormalExp">Formal expansions in <span
+class="math inline"><em>α</em></span></h1>
+<p>We formally expand the state, costate and control variables with
+respect to <span class="math inline"><em>α</em></span>. This step leads
+to the <span><em>definitions</em></span> of the various terms which are
+used throughout the article to finally yield the bounds stated in the
+main theorem.</p>
+<h2 id="expansion-of-the-state-x">Expansion of the state <span
+class="math inline"><em>x</em></span></h2>
+<p>The state variable <span class="math inline"><em>x</em></span> is the
+solution of the original dynamics equation (<a href="#dynamics"
+data-reference-type="ref" data-reference="dynamics">[dynamics]</a>)
+driven by the control <span class="math inline"><em>u</em></span>. Let
+us define a formal expansion of <span
+class="math inline"><em>x</em></span> and <span
+class="math inline"><em>u</em></span> with regards to <span
+class="math inline"><em>α</em></span>: <span
+class="math display"><em>x</em> = <em>x</em><sub>0</sub> + <em>α</em><em>x</em><sub>1</sub></span>
+<span
+class="math display"><em>u</em> = <em>u</em><sub>0</sub> + <em>α</em><em>u</em><sub>1</sub></span>
+Note that the redundant definitions of <span
+class="math inline"><em>x</em><sub>0</sub></span> and <span
+class="math inline"><em>u</em><sub>0</sub></span> are consistent, as
+will be seen later.</p>
+<p>We now separate the expansion terms <span
+class="math inline"><em>x</em><sub>0</sub></span> and <span
+class="math inline"><em>x</em><sub>1</sub></span> of the state into low
+(<span class="math inline"><em>L</em><em>P</em></span>) and high (<span
+class="math inline"><em>H</em><em>P</em></span>) frequencies components:
+<span class="math display">$$x_{0} = \bar{x_{0}} +\tilde{x_{0}} \; , \;
+        x_{1} = \bar{x_{1}} +\tilde{x_{1}}
+    \label{statedev1}$$</span> Because of the equations (<a
+href="#statedev" data-reference-type="ref"
+data-reference="statedev">[statedev]</a>) and (<a href="#statedev1"
+data-reference-type="ref" data-reference="statedev1">[statedev1]</a>),
+and because the derivative of the high frequency signal <span
+class="math inline">$\tilde{x_{1}}$</span> is in <span
+class="math inline">$\frac{1}{\alpha}$</span> <a href="#fn2"
+class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> ,
+the derivative of <span class="math inline"><em>x</em></span> has the
+following expansion in <span class="math inline"><em>α</em></span>:
+<span class="math display">$$\frac{dx}{dt} = \left[ \frac{d
+\bar{x_{0}}}{dt}
+    + \frac{d \tilde{x_{0}}}{dt}
+    + \alpha \frac{d \tilde{x_{1}}}{dt} \right]
+   + \alpha \frac{d \bar{x_{1}}}{dt}
+    \label{derivdev}$$</span> But, because <span
+class="math inline"><em>x</em></span> is the solution of the original
+dynamics equation (<a href="#dynamics" data-reference-type="ref"
+data-reference="dynamics">[dynamics]</a>), using the formal expansions
+in <span class="math inline"><em>α</em></span> of <span
+class="math inline"><em>x</em></span> and <span
+class="math inline"><em>u</em></span>, and thanks to assumption <a
+href="#boundedDeriv" data-reference-type="ref"
+data-reference="boundedDeriv">2</a>, we have another expansion of <span
+class="math inline">$\frac{dx}{dt}$</span> at the first order in <span
+class="math inline"><em>α</em></span>: <span
+class="math display">$$\frac{dx}{dt} = f(x_{0},u_{0},t)
+    + \alpha (f_{u}(x_{0},u_{0},t)u_{1} + f_{x}(x_{0},u_{0},t)x_{1})
+    \label{derivdev1}$$</span> Consequently, identifying the zero order
+terms in equations (<a href="#derivdev" data-reference-type="ref"
+data-reference="derivdev">[derivdev]</a>) and (<a href="#derivdev1"
+data-reference-type="ref" data-reference="derivdev1">[derivdev1]</a>),
+we obtain: <span class="math display">$$\frac{d \bar{x_{0}}}{dt}
+    + \frac{d \tilde{x_{0}}}{dt}
+    + \alpha \frac{d \tilde{x_{1}}}{dt} = f(x_{0},u_{0},t)$$</span> But
+by definition of <span class="math inline">$\bar{x_{0}}$</span> as the
+low frequency part of <span
+class="math inline"><em>x</em><sub>0</sub></span>, we have: <span
+class="math display">$$\frac{d \bar{x_{0}}}{dt} =
+LP[f,u_{0}](x_{0},t)$$</span> Consequently, by definition of <span
+class="math inline"><em>H</em><em>P</em></span>, we have: <span
+class="math display">$$\frac{d \tilde{x_{0}}}{dt}
+    + \alpha \frac{d \tilde{x_{1}}}{dt} = HP[f,u_{0}](x_{0},t)$$</span>
+with initial value <span class="math inline">0</span>. Integration the
+previous equation yields <span class="math display">$$\tilde{x_{0}} +
+\alpha \tilde{x_{1}} = I[f,x_{0},u_{0}]$$</span> But <span
+class="math inline">$I[f,\bar{x_{0}},u_{0}]$</span> is of order 1 in
+<span class="math inline"><em>α</em></span> and <span
+class="math inline">$\tilde{x_{0}}$</span> is of order 0. Thus <span
+class="math inline">$\tilde{x_{0}}=0$</span>, that gives <span
+class="math inline">$x_{0}=\bar{x_{0}}$</span> the solution of the
+averaged problem. A consequence of that is that both definitions of
+<span class="math inline"><em>x</em><sub>0</sub></span> and <span
+class="math inline"><em>u</em><sub>0</sub></span> are consistent.</p>
+<p>Moreover, we have a definition of <span
+class="math inline">$\tilde{x_{1}}$</span> consistent with definition <a
+href="#xpTilde1" data-reference-type="ref"
+data-reference="xpTilde1">5</a>: <span class="math display">$$\alpha
+\tilde{x_{1}} =  I[f,x_{0},u_{0}]$$</span> so that so that the
+derivative of <span class="math inline">$\tilde{x_{1}}$</span> is <span
+class="math inline">$-\frac{1}{\alpha}HP[f_{x},u_{0}](x_{0},p_{0},t)$</span>,
+that is in <span class="math inline">$\frac{1}{\alpha}$</span>.</p>
+<h2 id="costateExpProof">Expansion of the costate <span
+class="math inline"><em>p</em></span></h2>
+<p>The costate variable <span class="math inline"><em>p</em></span> is
+the solution of the costate dynamics equation with ending condition (<a
+href="#Costate" data-reference-type="ref"
+data-reference="Costate">[Costate]</a>). We expand it at the first order
+with respect to <span class="math inline"><em>α</em></span>: <span
+class="math display"><em>p</em> = <em>p</em><sub>0</sub> + <em>α</em><em>p</em><sub>1</sub></span>
+We then separate the expansion terms <span
+class="math inline"><em>p</em><sub>0</sub></span> and <span
+class="math inline"><em>p</em><sub>1</sub></span> into low (<span
+class="math inline"><em>L</em><em>P</em></span>) and high (<span
+class="math inline"><em>H</em><em>P</em></span>) frequencies components:
+<span class="math display">$$p_{0} = \bar{p_{0}} +\tilde{p_{0}} \; , \;
+        p_{1} = \bar{p_{1}} +\tilde{p_{1}}
+    \label{costatedev1}$$</span> Because of the equations (<a
+href="#costatedev" data-reference-type="ref"
+data-reference="costatedev">[costatedev]</a>) and (<a
+href="#costatedev1" data-reference-type="ref"
+data-reference="costatedev1">[costatedev1]</a>), and because the
+derivative of the high frequency signal <span
+class="math inline">$\tilde{p_{1}}$</span> is in <span
+class="math inline">$\frac{1}{\alpha}$</span>, the derivative of <span
+class="math inline"><em>p</em></span> has the following expansion in
+<span class="math inline"><em>α</em></span>: <span
+class="math display">$$\frac{dp}{dt} = \left[ \frac{d \bar{p_{0}}}{dt}
+    + \frac{d \tilde{p_{0}}}{dt}
+    + \alpha \frac{d \tilde{p_{1}}}{dt} \right]
+   + \alpha \frac{d \bar{p_{1}}}{dt}
+    \label{coderivdev}$$</span> On the other hand, <span
+class="math inline"><em>p</em></span> is the solution of the costate
+dynamics equation with ending condition (<a href="#Costate"
+data-reference-type="ref" data-reference="Costate">[Costate]</a>).
+Moreover, we have defined the developments in <span
+class="math inline"><em>α</em></span> of <span
+class="math inline"><em>x</em></span>, <span
+class="math inline"><em>p</em></span> and <span
+class="math inline"><em>u</em></span>.</p>
+<p>Thus we have another development of <span
+class="math inline">$\frac{dp}{dt}$</span> at the first order in <span
+class="math inline"><em>α</em></span>: <span
+class="math display">$$\frac{dp}{dt} = -H_{x}(x_{0},u_{0},p_{0},t)
+    + \alpha (-H_{xu}(x_{0},u_{0},p_{0},t)u_{1}
+    -H_{xx}(x_{0},u_{0},p_{0},t)x_{1} -f_{x}(x_{0},u_{0},t)p_{1})
+    \label{coderivdev1}$$</span> Consequently, identifying the zero
+order terms in equations (<a href="#coderivdev"
+data-reference-type="ref" data-reference="coderivdev">[coderivdev]</a>)
+and (<a href="#coderivdev1" data-reference-type="ref"
+data-reference="coderivdev1">[coderivdev1]</a>), we have: <span
+class="math display">$$\frac{d \bar{p_{0}}}{dt}
+        + \frac{d \tilde{p_{0}}}{dt}
+        + \alpha \frac{d \tilde{p_{1}}}{dt} =
+-H_{x}(x_{0},u_{0},p_{0},t)$$</span> But by definition of <span
+class="math inline">$\bar{p_{0}}$</span> as the low frequency part of
+<span class="math inline"><em>p</em><sub>0</sub></span>, we have: <span
+class="math display">$$\frac{d \bar{p_{0}}}{dt} =
+-LP[H_{x},u_{0}](x_{0},p_{0},t)$$</span> Consequently, by definition of
+<span class="math inline"><em>H</em><em>P</em></span>, we have: <span
+class="math display">$$\frac{d \tilde{p_{0}}}{dt}
+    + \alpha \frac{d \tilde{p_{1}}}{dt} =
+-HP[H_{x},u_{0}](x_{0},p_{0},t)$$</span> with final value <span
+class="math inline">0</span>. Integration of the previous equation
+yields <span class="math display">$$\tilde{p_{0}} + \alpha \tilde{p_{1}}
+= I^{T}[H_{x},(x_{0},p_{0}),u_{0}]$$</span> But <span
+class="math inline"><em>I</em>[−<em>H</em><sub><em>x</em></sub>,<em>x</em><sub>0</sub>,<em>p</em><sub>0</sub>,<em>u</em><sub>0</sub>]</span>
+is of order 1 in <span class="math inline"><em>α</em></span> as <span
+class="math inline">$\tilde{p_{0}}$</span> is of order 0. Thus <span
+class="math inline">$\tilde{p_{0}}=0$</span>, that gives <span
+class="math inline">$p_{0}=\bar{p_{0}}$</span>, the solution of the
+averaged costate equation. A consequence of that is that both
+definitions of <span class="math inline"><em>p</em><sub>0</sub></span>
+are consistent.</p>
+<p>Moreover, we have a definition of <span
+class="math inline">$\tilde{p_{1}}$</span> consistent with definition <a
+href="#xpTilde1" data-reference-type="ref"
+data-reference="xpTilde1">5</a>: <span class="math display">$$\alpha
+\tilde{p_{1}} =  I^{T}[H_{x},(x_{0},p_{0}),u_{0}]
+    \label{ptilde1}$$</span> so that the derivative of <span
+class="math inline">$\tilde{p_{1}}$</span> is <span
+class="math inline">$-\frac{1}{\alpha}HP[H_{x},u_{0}](x_{0},p_{0},t)$</span>,
+that is in <span class="math inline">$\frac{1}{\alpha}$</span>.</p>
+<h1 id="HsigmasigmaProof">Proof of non negativity of <span
+class="math inline"><em>H</em><sub><em>σ</em><em>σ</em></sub></span></h1>
+<p>We make a proof by contradiction.</p>
+<p>Let’s suppose that (<a href="#positive1" data-reference-type="ref"
+data-reference="positive1">[positive1]</a>) is not true. Then there
+exists a negative eigenvalue <span
+class="math inline"> − <em>γ</em></span> of <span
+class="math inline"><em>H</em><sub><em>σ</em><em>σ</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>,
+that is there exists an eigenvector <span class="math inline">$\left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]$</span> so that: <span class="math display">$$H_{\sigma
+\sigma}(x,u,p_{0},t) \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]
+    = - \gamma  \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]$$</span> This implies that the two following equations hold:
+<span class="math display">$$\begin{aligned}
+        H_{xx}(x,u,p_{0},t)y + H_{xu}(x,u,p_{0},t)v &amp; = &amp; -
+\gamma y
+        \label{gammay}\\
+        H_{ux}(x,u,p_{0},t)y + H_{uu}(x,u,p_{0},t)v &amp; = &amp; -
+\gamma v
+        \label{gammav}
+    \end{aligned}$$</span> But <span
+class="math inline">(<em>γ</em><em>I</em><em>d</em> + <em>H</em><sub><em>u</em><em>u</em>)</sub> ≥ (<em>γ</em>+<em>β</em>)<em>I</em><em>d</em> &gt; 0</span>,
+so that it is invertible and the equation (<a href="#gammav"
+data-reference-type="ref" data-reference="gammav">[gammav]</a>) can be
+solved in <span class="math inline"><em>v</em></span>, giving: <span
+class="math display"><em>v</em> = (<em>γ</em><em>I</em><em>d</em>+<em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>))<sup>−1</sup><em>H</em><sub><em>u</em><em>x</em></sub><em>y</em></span>
+Then, replacing <span class="math inline"><em>v</em></span> by its value
+in the equation (<a href="#gammay" data-reference-type="ref"
+data-reference="gammay">[gammay]</a>), we have: <span
+class="math display">(<em>H</em><sub><em>x</em><em>x</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)−<em>H</em><sub><em>x</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)(<em>γ</em><em>I</em><em>d</em>+<em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>))<sup>−1</sup><em>H</em><sub><em>u</em><em>x</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>))<em>y</em> =  − <em>γ</em><em>y</em></span>
+But as <span class="math inline"><em>γ</em> &gt; 0</span>, we have the
+succession of inequalities: <span
+class="math display">(<em>γ</em><em>I</em><em>d</em>+<em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)) ≥ <em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>
+then <span
+class="math display">(<em>γ</em><em>I</em><em>d</em>+<em>H</em><sub><em>u</em><em>u</em></sub>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>))<sup>−1</sup> ≤ <em>H</em><sub><em>u</em><em>u</em></sub><sup>−1</sup>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>
+and then <span class="math display">$$\begin{aligned}
+          (H_{xx}(x,u,p_{0},t) - H_{xu}(x,u,p_{0},t)(\gamma Id +
+      H_{uu}(x,u,p_{0},t))^{-1} H_{0ux}(x,u,p_{0},t)) \\
+          \ge \left[(H_{xx}- H_{xu} H_{uu}^{-1}
+H_{ux})\right](x,u,p_{0},t) \ge 0\end{aligned}$$</span> Thus the
+equation (<a href="#gammay1" data-reference-type="ref"
+data-reference="gammay1">[gammay1]</a>) can not hold, because <span
+class="math inline"> − <em>γ</em> &lt; 0</span> can not be an
+eigenvalue.</p>
+<p>The Proposition <a href="#Hsigmasigma" data-reference-type="ref"
+data-reference="Hsigmasigma">7</a> is thus proved by contradiction.</p>
+<h1 id="proof-of-the-inequalities-on-r-v-r-r_1-and-r_1">Proof of the
+inequalities on <span class="math inline"><em>r</em></span>, <span
+class="math inline"><em>v</em></span>, <span
+class="math inline"><em>r</em> − <em>r</em><sub>1</sub></span> and <span
+class="math inline"><em>r</em><sub>1</sub></span></h1>
+<h2 id="vrinequalitiesproof">Proof of proposition <a
+href="#vrinequalities" data-reference-type="ref"
+data-reference="vrinequalities">12</a></h2>
+<p>Proposition <a href="#vrinequalities" data-reference-type="ref"
+data-reference="vrinequalities">12</a> is important since it bounds
+<span class="math inline"><em>r</em></span> and <span
+class="math inline"><em>v</em></span> with respect to <span
+class="math inline"><em>z</em></span> and <span
+class="math inline"><em>α</em></span>. To obtain a bound on <span
+class="math inline"><em>r</em></span> and <span
+class="math inline"><em>v</em></span> which only depends on <span
+class="math inline"><em>α</em></span>, it will be enough to provide a
+bound of <span class="math inline"><em>z</em></span> involving <span
+class="math inline"><em>α</em></span> only.</p>
+<h3 id="upper-bound-for-r">Upper bound for <span
+class="math inline"><em>r</em></span></h3>
+<div class="proposition">
+<p><strong>Proposition 22</strong>. <em>The dynamics of <span
+class="math inline"><em>r</em></span> is the following: <span
+class="math display">$$\label{rdynsmics}
+        \begin{split}
+       \frac{dr}{dt}  &amp; =  f(r+x_{0}+ \alpha ( \tilde{x_{1}} +
+y_{1}), v + u_{0} + \alpha v_{1}, t)
+                    - f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), u_{0} +
+\alpha v_{1}, t)
+       \\
+         &amp;   + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+           \lambda f_{\sigma
+\sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+               v + u_{0} + \alpha v_{1},t)
+               \left[
+               \begin{array}
+               {c}
+                   \tilde{x_{1}} + y_{1}  \\
+                   v_{1}
+               \end{array}
+               \right]^{2} d \lambda d \mu
+        \end{split}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> By definition of <span
+class="math inline"><em>r</em></span> and <span
+class="math inline"><em>v</em></span>, we have: <span
+class="math display">$$\begin{aligned}
+        r=x-x_{0}-\alpha(\tilde{x_{1}}+y_{1}), &amp; so \; that: &amp;
+x=r+x_{0}+\alpha(\tilde{x_{1}}+y_{1})
+    \\
+        v=u-u_{0}-v_{1}, &amp; so \; that: &amp; u=v+u_{0}+v_{1}
+    \end{aligned}$$</span> Moreover: <span
+class="math display">$$\label{rdynsmics0}
+        \begin{split}
+        \frac{dr}{dt}  =  &amp; \frac{dx}{dt} - \frac{dx_{0}}{dt}
+    - \alpha\frac{d\tilde{x_{1}}}{dt} - \alpha \frac{dy_{1}}{dt}
+       \\
+          = &amp;
+     f(r+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+v_{1},t)-LP[f,u_{0}](x_{0},t)
+       \\
+          &amp; -HP[f,u_{0}](x_{0},t) - \alpha [f_{0x}(y1+\tilde{x_{1}})
++ f_{0u}v_{1}]
+       \\
+           =  &amp;
+     f(r+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+v_{1},t)-f(x_{0},u_{0},t)
+       \\
+         &amp; - \alpha [f_{0x}(y1+\tilde{x_{1}}) + f_{0u}v_{1}]
+    \end{split}$$</span> But a Taylor expansion of <span
+class="math inline">$f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}),
+u_{0} + \alpha v_{1}, t)$</span> is so: <span
+class="math display">$$\label{Taylor}
+    \begin{split}
+   &amp; f(x_{0} ( \tilde{x_{1}} + y_{1}), u_{0} + \alpha v_{1}, t)
+   = f(x_{0},u_{0},t) + \alpha [f_{0x}(y1+\tilde{x_{1}}) + f_{0u}v_{1}]
+   \\
+   &amp; + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+           \lambda f_{\sigma
+\sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+               v + u_{0} + \alpha v_{1},t)
+               \left[
+               \begin{array}
+               {c}
+                   \tilde{x_{1}} + y_{1}  \\
+                   v_{1}  
+               \end{array}
+               \right]^{2} d \lambda d \mu
+               \end{split}$$</span> Introducing equation (<a
+href="#Taylor" data-reference-type="ref"
+data-reference="Taylor">[Taylor]</a>) in equation (<a href="#rdynsmics0"
+data-reference-type="ref" data-reference="rdynsmics0">[rdynsmics0]</a>)
+proves equation (<a href="#rdynsmics" data-reference-type="ref"
+data-reference="rdynsmics">[rdynsmics]</a>). ◻</p>
+</div>
+<div class="proposition">
+<p><strong>Proposition 23</strong>. <em>The following inequality holds:
+<span class="math display">$$\|r\|_{\infty} \leq
+ke^{k\left(1+\frac{K}{\beta}\right)}
+         \left[\sqrt{T}\|Z(\lambda,\mu)\|_{2}
+         +T\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2}
+\alpha\right)\alpha \right]
+        \label{rinftybound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Equation (<a href="#fsigmasigma"
+data-reference-type="ref"
+data-reference="fsigmasigma">[fsigmasigma]</a>) about the upper bound of
+<span
+class="math inline"><em>f</em><sub><em>σ</em><em>σ</em></sub></span>
+leads to: <span class="math display">$$\begin{aligned}
+       \left|f_{\sigma
+\sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+               v + u_{0} + \alpha v_{1},t)
+               \left[
+               \begin{array}
+               {c}
+                   
+                   \tilde{x_{1}} + y_{1}  \\
+                   
+                   v_{1}  \\
+                
+               \end{array}
+               \right]^{2}\right|
+               &amp; \leq &amp; k(|\tilde{x_{1}} + y_{1}|+|v_{1}|)^{2}
+               \\
+               &amp; \leq &amp; k(|\tilde{x_{1}}| + |y_{1}|+|v_{1}|)^{2}
+        \end{aligned}$$</span> Hence: <span
+class="math display">$$\left|f_{\sigma
+\sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+                    v + u_{0} + \alpha v_{1},t)
+                    \left[
+                    \begin{array}
+                    {c}
+                        
+                        \tilde{x_{1}} + y_{1}  \\
+                        
+                        v_{1}  \\
+                     
+                    \end{array}
+                    \right]^{2}\right| \leq k (1+2M)^{2}
+             \label{fsigmasigma1}$$</span> Moreover, the function f is
+Lipschitz in <span class="math inline"><em>x</em></span> and <span
+class="math inline"><em>u</em></span> with Lipschitz constant the bound
+of the derivatives <span class="math inline"><em>k</em></span>, so that:
+<span class="math display">$$|f(r+x_{0}+ \alpha ( \tilde{x_{1}} +
+y_{1}), v + u_{0} + \alpha v_{1}, t)
+                           - f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}),
+u_{0} + \alpha v_{1}, t)|
+               \leq k(|r|+|v|)
+       \label{Lipschitz}$$</span> The equations (<a href="#fsigmasigma1"
+data-reference-type="ref"
+data-reference="fsigmasigma1">[fsigmasigma1]</a>) and (<a
+href="#Lipschitz" data-reference-type="ref"
+data-reference="Lipschitz">[Lipschitz]</a>) in the equation (<a
+href="#rdynsmics" data-reference-type="ref"
+data-reference="rdynsmics">[rdynsmics]</a>) give, together with the fact
+that <span class="math inline"><em>r</em>(0) = 0</span> the following
+inequality: <span class="math display">$$|r(t)| \leq \int_{0}^{t}
+(|r(s)|+|v(s)|)ds +
+       \frac{kT}{2}(2M+1)^{2} \alpha^{2}
+       \label{rbound0}$$</span> But by definition of <span
+class="math inline"><em>Z</em>[<em>λ</em>,<em>μ</em>]</span>, we
+have:</p>
+<p><span class="math display">$$v =  Z[\lambda,\mu]
+         -[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha
+         \tilde{x_{1}})
+    \label{vexpression}$$</span> so that: <span
+class="math display">$$|v(s)|  \leq |Z[\lambda,\mu](s)| +
+     \|H_{uu}^{-1}\|_{\infty}\|H_{ux}\|_{\infty}(|r(s)| + \alpha
+     |\tilde{x_{1}}(s)|)$$</span> But the assumption <a
+href="#convexity" data-reference-type="ref"
+data-reference="convexity">3</a> proves that <span
+class="math inline"><em>H</em><sub><em>u</em><em>u</em></sub></span> is
+invertible and that <span
+class="math inline"><em>H</em><sub><em>u</em><em>u</em></sub><sup>−1</sup></span>
+is bounded by <span class="math inline">$\frac{1}{\beta}$</span>, so
+that: <span class="math display">$$|v(s)|  \leq |Z[\lambda,\mu](s)| +
+\frac{K}{\beta}(|r(s)| + \alpha)
+       \label{vbound0}$$</span> Including equation(<a href="#vbound0"
+data-reference-type="ref" data-reference="vbound0">[vbound0]</a>) in
+equation (<a href="#rbound0" data-reference-type="ref"
+data-reference="rbound0">[rbound0]</a>) leads to: <span
+class="math display">$$|r(t)| \leq k
+\left(1+\frac{K}{\beta}\right)\int_{0}^{t} (|r(s)|)ds +
+      \frac{kKT}{\beta}\alpha + \frac{kT}{2}(2M+1)^{2} \alpha^{2} +
+      k\int_{0}^{T} |Z[\lambda,\mu](t)||dt
+       \label{rbound1}$$</span> But Cauchy property leads to: <span
+class="math display">$$\int_{0}^{T} |Z[\lambda,\mu](t)||dt \leq
+\sqrt{T}\|Z(\lambda,\mu)]\|_{2}
+       \label{Cauchy}$$</span> Including equation (<a href="#Cauchy"
+data-reference-type="ref" data-reference="Cauchy">[Cauchy]</a>) in
+equation (<a href="#rbound1" data-reference-type="ref"
+data-reference="rbound1">[rbound1]</a>) lead to: <span
+class="math display">$$|r(t)| \leq k
+       \left(1+\frac{K}{\beta}\right)\int_{0}^{t} (|r(s)|)ds +
+       k\sqrt{T}\|Z(\lambda,\mu)\|_{2} +
+      kT\left[\frac{K}{\beta} + \frac{1}{2}(2M+1)^{2}
+\alpha\right]\alpha
+       \label{rbound2}$$</span> Equation (<a href="#rbound2"
+data-reference-type="ref" data-reference="rbound2">[rbound2]</a>),
+together with Gronwall lemma, proves equation (<a href="#rinftybound"
+data-reference-type="ref"
+data-reference="rinftybound">[rinftybound]</a>). ◻</p>
+</div>
+<h4 id="proof-of-equation-rinequality">Proof of Equation (<a
+href="#rinequality" data-reference-type="ref"
+data-reference="rinequality">[rinequality]</a>)</h4>
+<p>Let’s take the square of equation (<a href="#rinftybound"
+data-reference-type="ref"
+data-reference="rinftybound">[rinftybound]</a>): <span
+class="math display">$$\|r\|_{\infty}^{2} \leq
+2k^{2}e^{2k\left(1+\frac{K}{\beta}\right)}
+         \left[T\|Z(\lambda,\mu)\|_{2}^{2}
+         +T^{2}\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2}
+         \alpha\right)^{2} \alpha^{2} \right]$$</span> Let’s now
+multiply by <span class="math inline"><em>λ</em></span> and integrate
+relatively to <span class="math inline"><em>λ</em></span> and <span
+class="math inline"><em>μ</em></span> between <span
+class="math inline">0</span> and <span class="math inline">1</span>:
+<span class="math display">$$\frac{1}{2}\|r\|_{\infty}^{2} \leq
+2k^{2}e^{2k\left(1+\frac{K}{\beta}\right)}
+         \left[Tz^{2} +
+\frac{1}{2}T^{2}\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2}
+         \alpha\right)^{2} \alpha^{2} \right]$$</span></p>
+<p>Multiplying by 2 that equation proves Equation (<a
+href="#rinequality" data-reference-type="ref"
+data-reference="rinequality">[rinequality]</a>).</p>
+<h3 id="upper-bound-for-v">Upper bound for <span
+class="math inline"><em>v</em></span></h3>
+<p>Let’s apply the triangular inequality for the <span
+class="math inline"><strong>L</strong><sub>2</sub></span> norm to the
+expression of <span class="math inline"><em>v</em></span> (<a
+href="#vexpression" data-reference-type="ref"
+data-reference="vexpression">[vexpression]</a>): <span
+class="math display">$$\|v\|_{2} \leq  \|Z[\lambda,\mu]\|_{2}
+         +\|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r
+         +\alpha\tilde{x_{1}})\|_{2}$$</span> But: <span
+class="math display">$$\|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r
+         +\alpha\tilde{x_{1}}\|_{2} \leq \sqrt{T}
+\|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r
+         +\alpha\tilde{x_{1}})\|_{\infty} \leq
+     \frac{K \sqrt{T}}{\beta}(\|r\|_{\infty} + \alpha
+     \|\tilde{x_{1}}\|_{\infty})$$</span> Thus, taking the squares:
+<span class="math display">$$\|v\|_{2}^{2} \leq 3\left[
+\|Z[\lambda,\mu]\|_{2}
+    + \frac{K^{2}T}{\beta^{2}}(\|r\|_{\infty}^{2} + \alpha^{2}
+    \|\tilde{x_{1}}\|_{\infty}^{2})\right]$$</span> Let’s multiply by
+<span class="math inline"><em>λ</em></span> and integrate relatively to
+<span class="math inline"><em>λ</em></span> and <span
+class="math inline"><em>μ</em></span> between <span
+class="math inline">0</span> and <span class="math inline">1</span>:
+<span class="math display">$$\frac{1}{2}\|v\|_{2}^{2} \leq 3\left[ z^{2}
+    + \frac{K^{2}T}{2\beta^{2}}(\|r\|_{\infty}^{2} + \alpha^{2}\right]
+    \leq 3\left[\left(1 + \frac{K^{2}Tk_{r1}}{2\beta^{2}} \right)z^{2}
+    + \frac{K^{2}T}{2\beta^{2}}(1+k_{r2})\alpha^{2}\right]$$</span>
+Multiplying by 2 that equation proves Equation (<a href="#vinequality"
+data-reference-type="ref"
+data-reference="vinequality">[vinequality]</a>).</p>
+<h2 id="rr1r1inequalitiesproof">Proof of proposition <a
+href="#rr1r1inequalities" data-reference-type="ref"
+data-reference="rr1r1inequalities">13</a></h2>
+<p>We now turn our attention to the variable <span
+class="math inline"><em>r</em></span>, which can be approximated by the
+variable <span class="math inline"><em>r</em><sub>1</sub></span>, up to
+an error which is bounded by a term that depends only on <span
+class="math inline"><em>z</em></span> and <span
+class="math inline"><em>α</em></span>.</p>
+<p>The variable <span class="math inline"><em>r</em></span> follows the
+dynamic (<a href="#rdynsmics" data-reference-type="ref"
+data-reference="rdynsmics">[rdynsmics]</a>) with <span
+class="math inline"><em>r</em>(0) = 0</span>, and <span
+class="math inline"><em>r</em><sub>1</sub></span> follows the dynamic
+(<a href="#r1dynamics" data-reference-type="ref"
+data-reference="r1dynamics">[r1dynamics]</a>).</p>
+<p>Thus <span
+class="math inline"><em>r</em> − <em>r</em><sub>1</sub></span> follows
+the dynamics: <span class="math display">$$\begin{aligned}
+       \frac{d(r-r_{1})}{dt}  &amp; = &amp; f(r+x_{0}+ \alpha (
+\tilde{x_{1}} + y_{1}), v + u_{0} + \alpha v_{1}, t)
+                    - f(r_{1}+x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), v
++ u_{0} + \alpha v_{1}, t)
+        \\
+         &amp;  &amp; + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+           \lambda f_{\sigma
+\sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+               v + u_{0} + \alpha v_{1},t)
+               \left[
+               \begin{array}
+               {c}
+                   
+                   \tilde{x_{1}} + y_{1}  \\
+                   
+                   v_{1}  \\
+                
+               \end{array}
+               \right]^{2} d \lambda d \mu
+    \end{aligned}$$</span> Thus, in a similar way than for the upper
+bound of <span class="math inline"><em>r</em></span>, the following
+inequality holds: <span class="math display">$$|r(t)-r_{1}(t)| \leq
+k\int_{0}^{t} |r(s)-r_{1}(s)|ds +
+       \frac{kT}{2}(2M+1)^{2} \alpha^{2}$$</span> The equation (<a
+href="#rr1inequality" data-reference-type="ref"
+data-reference="rr1inequality">[rr1inequality]</a>) follows from
+Gronwall lemma.</p>
+<p>The equation (<a href="#r1inequality" data-reference-type="ref"
+data-reference="r1inequality">[r1inequality]</a>) is then the
+consequence of equations (<a href="#rinequality"
+data-reference-type="ref"
+data-reference="rinequality">[rinequality]</a>) and (<a
+href="#rr1inequality" data-reference-type="ref"
+data-reference="rr1inequality">[rr1inequality]</a>), together with:
+<span
+class="math display">∥<em>r</em><sub>1</sub>∥<sub>∞</sub><sup>2</sup> ≤ 2(∥<em>r</em>∥<sub>∞</sub><sup>2</sup>+∥<em>r</em>−<em>r</em><sub>1</sub>∥<sub>∞</sub><sup>2</sup>)</span></p>
+<h1 id="ProofExpJU">Proof of the expansion of the real cost (proposition
+<a href="#expJuProp" data-reference-type="ref"
+data-reference="expJuProp">14</a>)</h1>
+<div id="expLprop" class="proposition">
+<p><strong>Proposition 24</strong>. <em><span
+class="math inline"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+expands the following way: <span
+class="math display"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>) = <em>L</em>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>) + <em>L</em><sub><em>x</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>)<em>δ</em><em>x</em> + <em>L</em><sub><em>u</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>)<em>δ</em><em>u</em> + ∫<sub>0</sub><sup>1</sup>∫<sub>0</sub><sup>1</sup><em>λ</em><em>L</em><sub><em>σ</em><em>σ</em></sub>(<em>ρ</em>(<em>λ</em>,<em>μ</em>),<em>t</em>)(<em>δ</em><em>σ</em>)<sup>2</sup><em>d</em><em>λ</em><em>d</em><em>μ</em></span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> It is a Taylor expansion of <span
+class="math inline"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+with integral remainder. ◻</p>
+</div>
+<div id="expdxtildeprop" class="proposition">
+<p><strong>Proposition 25</strong>. <em>The dynamics <span
+class="math inline">$\frac{d \tilde{x}}{dt}$</span> of <span
+class="math inline"><em>x̃</em></span> expands the following
+way:</em></p>
+<p><em><span class="math display">$$\frac{d \tilde{x}}{dt} =
+f_{x}(x_{0},u_{0},t) \delta x  + f_{u}(x_{0},u_{0},t) \delta u
+           + \int_{0}^{1} \int_{0}^{1}
+           \lambda f_{\sigma \sigma}(\rho(\lambda,\mu),t)(\delta
+\sigma)^{2} d \lambda d \mu
+        \label{expdxtilde}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> By definition of <span
+class="math inline"><em>x̃</em></span>, we have <span
+class="math display">$$\tilde{x} = x - x_{0} - \alpha
+\tilde{x_{1}},$$</span> so that: <span
+class="math display">$$\begin{aligned}
+        \frac{d \tilde{x}}{dt} &amp; = &amp; f(x_{0}+\delta x,u_{0} +
+\delta u,t)
+     - LP[f,u_{0}](x_{0},t) + HP[f,u_{0}](x_{0},t)\\
+          &amp; = &amp; f(x_{0}+\delta x,u_{0} + \delta u,t) -
+f(x_{0},u_{0},t)
+    \end{aligned}$$</span> The equation (<a href="#expdxtilde"
+data-reference-type="ref" data-reference="expdxtilde">[expdxtilde]</a>)
+follows by Taylor expansion of <span
+class="math inline"><em>f</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+with integral remainder. ◻</p>
+</div>
+<div id="expL1prop" class="proposition">
+<p><strong>Proposition 26</strong>. <em><span
+class="math inline"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>))</span>
+rewrites the following way: <span class="math display">$$L(x,u,t) =
+L(x_{0},u_{0},t) + H_{0x} (\tilde{x} +\alpha \tilde{x_{1}})
+               - p_{0} \frac{d \tilde{x}}{dt}
+           + \int_{0}^{1} \int_{0}^{1}
+           \lambda H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta
+\sigma)^{2} d \lambda d \mu
+        \label{expL1}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> We have the following identities: <span
+class="math display">$$\delta x = \tilde{x} + \alpha
+\tilde{x_{1}}$$</span> and: <span
+class="math display"><em>L</em><sub><em>x</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>) = <em>H</em><sub>0<em>x</em></sub> − <em>p</em><sub>0</sub><em>f</em><sub><em>x</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>)</span>
+Moreover, because of the stationary condition of the averaged problem,
+we have: <span
+class="math display"><em>L</em><sub><em>u</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>) =  − <em>p</em><sub>0</sub><em>f</em><sub><em>u</em></sub>(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>,<em>t</em>)</span>
+Finally we change the integral remainder of the expansion of <span
+class="math inline"><em>L</em>(<em>x</em>,<em>u</em>,<em>t</em>)</span>
+in equation (<a href="#expL" data-reference-type="ref"
+data-reference="expL">[expL]</a>) with: <span
+class="math display"><em>L</em><sub><em>σ</em><em>σ</em></sub>(<em>ρ</em>(<em>λ</em>,<em>μ</em>),<em>t</em>) = <em>H</em><sub><em>σ</em><em>σ</em></sub>(<em>ρ</em>(<em>λ</em>,<em>μ</em>),<em>p</em><sub>0</sub>,<em>t</em>) − <em>p</em><sub>0</sub><em>f</em><sub><em>σ</em><em>σ</em></sub>(<em>ρ</em>(<em>λ</em>,<em>μ</em>),<em>t</em>)</span>
+Thus equation (<a href="#expL" data-reference-type="ref"
+data-reference="expL">[expL]</a>) leads to: <span
+class="math display">$$\begin{aligned}
+        L(x,u,t) = L(x_{0},u_{0},t + H_{0x} (\tilde{x} +\alpha
+\tilde{x_{1}})
+               - p_{0} \left[f_{x}(x_{0},u_{0},t) +
+           f_{u}(x_{0},u_{0},t)
+           \right. \\ \left.
+           + \int_{0}^{1} \int_{0}^{1}
+           \lambda f_{\sigma \sigma}(\rho(\lambda,\mu),t)](\delta
+\sigma)^{2} d \lambda d \mu\right]
+           + \int_{0}^{1} \int_{0}^{1}
+           \lambda H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta
+\sigma)^{2} d \lambda d \mu
+        \label{expL1}
+    \end{aligned}$$</span> Inserting equation (<a href="#expdxtilde"
+data-reference-type="ref" data-reference="expdxtilde">[expdxtilde]</a>)
+in this equation proves proposition <a href="#expL1prop"
+data-reference-type="ref" data-reference="expL1prop">26</a>. ◻</p>
+</div>
+<div class="proposition">
+<p><strong>Proposition 27</strong>. <em>The following equality holds:
+<span class="math display">$$\int_{0}^{T} -p_{0} \frac{d\tilde{x}}{dt}dt
+= -
+        \int_{0}^{T} LP[H_{x},u_{0}](x_{0},t) \tilde{x}dt
+    \label{partintp0}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s make an integration by part: <span
+class="math display">$$\int_{0}^{T} -p_{0} \frac{d\tilde{x}}{dt} dt
+         = - [p_{0}\tilde{x}]_{0}^{T} +  \int_{0}^{T}
+     \frac{dp_{0}}{dt} \tilde{x} dt$$</span> This leads to the equation
+(<a href="#partintp0" data-reference-type="ref"
+data-reference="partintp0">[partintp0]</a>) because <span
+class="math inline"><em>x̃</em>(0) = 0</span>, <span
+class="math inline"><em>p</em><sub>0</sub>(<em>T</em>) = 0</span> and:
+<span class="math display">$$\frac{dp_{0}}{dt} =  -
+LP[H_{x},u_{0}](x_{0},t)$$</span> ◻</p>
+</div>
+<p>Now inserting the equation (<a href="#partintp0"
+data-reference-type="ref" data-reference="partintp0">[partintp0]</a>) in
+the equation (<a href="#expL1" data-reference-type="ref"
+data-reference="expL1">[expL1]</a>) integrated between <span
+class="math inline">0</span> and <span
+class="math inline"><em>T</em></span> leads to equation (<a
+href="#expJu" data-reference-type="ref"
+data-reference="expJu">[expJu]</a>), which ends the proof of proposition
+<a href="#expJuProp" data-reference-type="ref"
+data-reference="expJuProp">14</a>.</p>
+<h4 id="remark-1">Remark</h4>
+<p>The remaining appendix sections are devoted to the obtention of a
+lower bound on <span class="math inline"><em>J</em>(<em>u</em>)</span>.
+This is achieved by obtaining a lower bound on each term of the
+expansion (<a href="#expJu" data-reference-type="ref"
+data-reference="expJu">[expJu]</a>) of <span
+class="math inline"><em>J</em>(<em>u</em>)</span>. Only the complicated
+terms require an extensive study; this study is detailed in sections <a
+href="#J3LowerBoundProof" data-reference-type="ref"
+data-reference="J3LowerBoundProof">15</a>, <a href="#J4LowerBoundProof"
+data-reference-type="ref" data-reference="J4LowerBoundProof">16</a>, <a
+href="#JuLowerBoundProof" data-reference-type="ref"
+data-reference="JuLowerBoundProof">17</a> and finally <a
+href="#RestBoundProof" data-reference-type="ref"
+data-reference="RestBoundProof">18</a>.</p>
+<h1 id="J3LowerBoundProof">Proof of the lower bound of the third term
+(Proposition <a href="#J3LowerBoundProp" data-reference-type="ref"
+data-reference="J3LowerBoundProp">15</a>)</h1>
+<div class="proposition">
+<p><strong>Proposition 28</strong>. <em>The following inequality holds:
+<span class="math display">$$\int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t)
+\tilde{x} dt   
+            \geq -(2KTk_{r5}+k(1+2M))\alpha^{2}  +   
+        \alpha \int_{0}^{T} \tilde{p_{1}} \frac{dr_{1}}{dt} dt
+            \label{J3LowerBound0}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> By definition of <span
+class="math inline"><em>r</em></span>, we have: <span
+class="math display"><em>x̃</em> = <em>r</em> + <em>α</em><em>y</em><sub>1</sub> = (<em>r</em>−<em>r</em><sub>1</sub>) + (<em>r</em><sub>1</sub>+<em>α</em><em>y</em><sub>1</sub>)</span>
+So that <span
+class="math display">∫<sub>0</sub><sup><em>T</em></sup><em>H</em><em>P</em>[<em>H</em><sub><em>x</em></sub>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>,<em>p</em><sub>0</sub>,<em>t</em>)<em>x̃</em><em>d</em><em>t</em> = ∫<sub>0</sub><sup><em>T</em></sup><em>H</em><em>P</em>[<em>H</em><sub><em>x</em></sub>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>,<em>p</em><sub>0</sub>,<em>t</em>)(<em>r</em>−<em>r</em><sub>1</sub>)<em>d</em><em>t</em> + ∫<sub>0</sub><sup><em>T</em></sup><em>H</em><em>P</em>[<em>H</em><sub><em>x</em></sub>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>,<em>p</em><sub>0</sub>,<em>t</em>)(<em>r</em><sub>1</sub>+<em>α</em><em>y</em><sub>1</sub>)<em>d</em><em>t</em></span>
+But because of equation (<a href="#rr1inequality"
+data-reference-type="ref"
+data-reference="rr1inequality">[rr1inequality]</a>), we have <span
+class="math display">|∫<sub>0</sub><sup><em>T</em></sup><em>H</em><em>P</em>[<em>H</em><sub><em>x</em></sub>,<em>u</em><sub>0</sub>](<em>x</em><sub>0</sub>,<em>p</em><sub>0</sub>,<em>t</em>)(<em>r</em>−<em>r</em><sub>1</sub>)<em>d</em><em>t</em>| ≤ <em>T</em>∥<em>H</em><em>P</em>[<em>H</em><sub><em>x</em></sub>,<em>u</em><sub>0</sub>]∥<sub>∞</sub><em>k</em><sub><em>r</em>5</sub><em>α</em><sup>2</sup> ≤ 2<em>K</em><em>T</em><em>k</em><sub><em>r</em>5</sub><em>α</em><sup>2</sup></span>
+Moreover, by definition of <span class="math inline">$\alpha
+\tilde{p_{1}}$</span>, we have: <span
+class="math display">$$HP[H_{x},u_{0}](x_{0},p_{0},t) = -\alpha
+\frac{d\tilde{p_{1}}}{dt}(t)$$</span> So that the following inequality
+holds: <span class="math display">$$\int_{0}^{T}
+HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+    \geq -2KTk_{r5}\alpha^{2} - \alpha \int_{0}^{T}  
+    \frac{d\tilde{p_{1}}}{dt}(\tilde{x_{1}}+ \alpha y_{1}) dt$$</span>
+If we make an integration by part and use the fact that <span
+class="math inline">$\tilde{p_{1}}(T)=\tilde{x_{1}}(0)=y_{1}(0)=0$</span>,
+we get: <span class="math display">$$\int_{0}^{T}
+HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+    \geq -2KTk_{r5}\alpha^{2} +
+    \alpha \int_{0}^{T}  
+    \tilde{p_{1}}\left(\frac{d\tilde{x_{1}}}{dt} +
+\alpha\frac{dy_{1}}{dt}\right) dt$$</span> <span
+class="math inline"><em>y</em><sub>1</sub></span> follows the dynamics
+(<a href="#optauxstate" data-reference-type="ref"
+data-reference="optauxstate">[optauxstate]</a>) and <span
+class="math inline">$\|\tilde{p_{1}}\|_{\infty} \leq 1$</span>, so that:
+<span class="math display">$$\left|\alpha^{2}
+\int_{0}^{T}  \tilde{p_{1}}\frac{dy_{1}}{dt} dt\right|
+        \leq  k\alpha^{2}
+(\|y_{1}+\tilde{x_{1}}\|_{\infty}  +\|v_{1}\|_{\infty}
+    \leq k(2M+1) \alpha^{2}$$</span> So that the inequality (<a
+href="#J3LowerBound0" data-reference-type="ref"
+data-reference="J3LowerBound0">[J3LowerBound0]</a>) is proved. ◻</p>
+</div>
+<div class="proposition">
+<p><strong>Proposition 29</strong>. <em>The dynamics of <span
+class="math inline"><em>r</em><sub>1</sub></span> expands the following
+way: <span class="math display">$$\label{r1dynamicsexp}
+    \begin{split}
+        \frac{dr_{1}}{dt}  = &amp; [f_{0x}r_{1} + f_{0u}v]
+         \\
+    &amp; + \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} +
+\alpha(\tilde{x_{1}}+y_{1})),
+    u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+    \left[\begin{array}
+    {c}
+        r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+         v + \alpha v_{1}
+    \end{array}\right]^{2} d \lambda d \mu
+     \\
+    &amp;- \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+    u_{0} + \lambda \mu \alpha v_{1},t)
+    \left[\begin{array}
+    {c}
+       \tilde{x_{1}}+y_{1}  \\
+         \alpha v_{1}
+    \end{array}\right]^{2} d \lambda d \mu
+    \end{split}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The dynamics of <span
+class="math inline"><em>r</em><sub>1</sub></span> (equation (<a
+href="#r1dynamics" data-reference-type="ref"
+data-reference="r1dynamics">[r1dynamics]</a>)) is the difference between
+the quantities <span
+class="math inline"><em>f</em>(<em>r</em><sub>1</sub>+<em>x</em><sub>0</sub>+<em>α</em>(<em>x</em><sub>1</sub>+<em>y</em><sub>1</sub>),<em>v</em>+<em>u</em><sub>0</sub>+<em>α</em><em>v</em><sub>1</sub>,<em>t</em>)</span>
+and <span
+class="math inline"><em>f</em>(<em>x</em><sub>0</sub>+<em>α</em>(<em>x</em><sub>1</sub>+<em>y</em><sub>1</sub>),<em>u</em><sub>0</sub>+<em>α</em><em>v</em><sub>1</sub>,<em>t</em>)</span>.</p>
+<p>Let’s make the Taylor expansions of these quantities at <span
+class="math inline">(<em>x</em><sub>0</sub>,<em>u</em><sub>0</sub>)</span>:
+<span class="math display">$$\begin{aligned}
+    f(r_{1}+x_{0} &amp; + &amp; \alpha(x_{1}+y_{1}),v+u_{0}+\alpha
+v_{1},t) \\
+    &amp;=&amp;f(x_{0},u_{0},t)\\
+     &amp;&amp; + f_{0x} (r_{1} + \alpha(x_{1}+y_{1})) + f_{0u}(v+\alpha
+v_{1})
+    \\
+     &amp;&amp; +  \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} +
+\alpha(\tilde{x_{1}}+y_{1})),
+    u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+    \left[\begin{array}
+    {c}
+        r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+         v + \alpha v_{1}\\
+    \end{array}\right]^{2} d \lambda d \mu\end{aligned}$$</span> and
+<span class="math display">$$\begin{aligned}
+    f(x_{0} &amp; + &amp; \alpha(x_{1}+y_{1}), u_{0}  + \alpha v_{1},t)
+\\
+    &amp;=&amp;f(x_{0},u_{0},t)\\
+     &amp;&amp; +  \alpha [f_{0x}(x_{1}+y_{1})) + f_{0u}v_{1}]
+    \\
+     &amp;&amp; +  \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+    u_{0} + \lambda \mu \alpha v_{1},t)
+    \left[\begin{array}
+    {c}
+        \tilde{x_{1}}+y_{1}  \\
+          v_{1} \\
+    \end{array}\right]^{2} d \lambda d \mu \end{aligned}$$</span> The
+simplifications between the two expansions while we take their
+differences gives the dynamics of <span
+class="math inline"><em>r</em><sub>1</sub></span> (<a
+href="#r1dynamicsexp" data-reference-type="ref"
+data-reference="r1dynamicsexp">[r1dynamicsexp]</a>). ◻</p>
+</div>
+<p>The consequence of that dynamics expansion is that: <span
+class="math display">$$\label{Expansion2}
+    \begin{split}
+    &amp; \alpha \int_{0}^{T}  \tilde{p_{1}} \frac{dr_{1}}{dt}dt  
+    =\alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v] dt
+    \\
+    &amp;
+     + \alpha  \int_{0}^{T}  \tilde{p_{1}}
+     \left[\int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} +
+\alpha(\tilde{x_{1}}+y_{1})),
+    u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+    \left[\begin{array}
+    {c}
+        r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+         v + \alpha v_{1}
+    \end{array}\right]^{2} d \lambda d \mu\right]dt
+    \\ &amp;
+     - \alpha^{3} \int_{0}^{T} \tilde{p_{1}}
+     \left[ \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+    u_{0} + \lambda \mu \alpha v_{1},t)
+    \left[\begin{array}
+    {c}
+        \tilde{x_{1}}+y_{1}  \\
+        v_{1}
+    \end{array}\right]^{2} d \lambda d \mu \right]dt
+    \end{split}$$</span></p>
+<div class="proposition">
+<p><strong>Proposition 30</strong>. <em>Let’s define the terms: <span
+class="math display">$$R_{1} = \alpha \int_{0}^{T}  \tilde{p_{1}}
+     \left[\int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} +
+\alpha(\tilde{x_{1}}+y_{1})),
+    u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+    \left[\begin{array}
+    {c}
+        r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+         v + \alpha v_{1}\\
+    \end{array}\right]^{2} d \lambda d \mu\right]dt$$</span> and <span
+class="math display">$$R_{2} = \alpha^{3} \int_{0}^{T} \tilde{p_{1}}
+     \left[ \int_{0}^{1} \int_{0}^{1}
+    \lambda f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+    u_{0} + \lambda \mu \alpha v_{1},t)
+    \left[\begin{array}
+    {c}
+        \tilde{x_{1}}+y_{1}  \\
+         v_{1} \\
+    \end{array}\right]^{2} d \lambda d \mu \right]dt$$</span> Then the
+following inequalities hold: <span class="math display">$$|R_{1}| \leq
+\frac{3k}{2}[(k_{r3}T + k_{v1}] \alpha z^{2}  
+    +[(k_{r4}T + k_{v2} + T(1+2M)^{2}] \alpha^{3}
+        \label{R1bound}$$</span> and <span
+class="math display">$$|R_{2}| \leq \frac{kT}{2}(1+2M)^{2} \alpha^{3}
+        \label{R2bound}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Equation (<a href="#fsigmasigma"
+data-reference-type="ref"
+data-reference="fsigmasigma">[fsigmasigma]</a>) about the upper bound of
+<span
+class="math inline"><em>f</em><sub><em>σ</em><em>σ</em></sub></span>
+leads to: <span class="math display">$$\begin{aligned}
+    &amp;&amp;  \left|f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+    u_{0} + \lambda \mu \alpha v_{1},t)
+    \left[\begin{array}
+    {c}
+        r_{1} + \alpha(\tilde{x_{1}}+y_{1}  \\
+         v + \alpha v_{1} \\
+    \end{array}\right]^{2}\right|\\
+    &amp;\leq &amp; 3k[|r_{1}+\alpha(\tilde{x_{1}}+y_{1})| + |v+\alpha
+v_{1}|]^{2} \\
+    &amp;\leq &amp; 3k[|r_{1}| + |v|+\alpha(|\tilde{x_{1}}+y_{1}| +
+|v_{1}|)]^{2} \\
+    &amp;\leq &amp; 3k[r_{1}^{2} + v^{2}+\alpha(|\tilde{x_{1}}+y_{1}| +
+|v_{1}|)^{2}]
+    \end{aligned}$$</span> Thus, together with the fact that <span
+class="math inline">$\tilde{p_{1}} \leq 1$</span>, we have: <span
+class="math display">$$\begin{aligned}
+       |R_{1}|&amp; \leq &amp;\frac{3k \alpha}{2}[\|r_{1}\|_{2}^{2} +
+\|v\|_{2}^{2}+ \alpha^{2}T(2M+1)^{2}]
+      \\ |R_{1}| &amp; \leq &amp;\frac{3k
+\alpha}{2}[\|r_{1}\|_{\infty}^{2} + \|v\|_{2}^{2}+
+\alpha^{2}T(2M+1)^{2}]      
+   \end{aligned}$$</span> Equations (<a href="#r1inequality"
+data-reference-type="ref"
+data-reference="r1inequality">[r1inequality]</a>) and (<a
+href="#vinequality" data-reference-type="ref"
+data-reference="vinequality">[vinequality]</a>) then lead to equation
+(<a href="#R1bound" data-reference-type="ref"
+data-reference="R1bound">[R1bound]</a>).</p>
+<p>Equation (<a href="#fsigmasigma" data-reference-type="ref"
+data-reference="fsigmasigma">[fsigmasigma]</a>) about the upper bound of
+<span
+class="math inline"><em>f</em><sub><em>σ</em><em>σ</em></sub></span>
+leads also to:</p>
+<p><span class="math display">$$\left|
+                 f_{\sigma \sigma}(x_{0} + \lambda
+\mu\alpha(\tilde{x_{1}}+y_{1}),
+             u_{0} + \lambda \mu \alpha v_{1},t)
+             \left[\begin{array}
+             {c}
+                 r_{1} + \alpha(\tilde{x_{1}}+y_{1}  \\
+                  v + \alpha v_{1} \\
+             \end{array}\right]^{2}\right|
+         \leq k(|\tilde{x_{1}}+y_{1}| + |v_{1}|)^{2} \leq
+k(1+2M)^{2}$$</span> That proves equation (<a href="#R2bound"
+data-reference-type="ref" data-reference="R2bound">[R2bound]</a>) by
+triple integration and multiplication by <span
+class="math inline"><em>α</em><sup>3</sup></span>. ◻</p>
+</div>
+<p>The equations (<a href="#R1bound" data-reference-type="ref"
+data-reference="R1bound">[R1bound]</a>) and (<a href="#R2bound"
+data-reference-type="ref" data-reference="R2bound">[R2bound]</a>)
+included in equation (<a href="#R2bound" data-reference-type="ref"
+data-reference="R2bound">[R2bound]</a>) (<a href="#Expansion2"
+data-reference-type="ref" data-reference="Expansion2">[Expansion2]</a>)
+lead to: <span class="math display">$$\begin{aligned}
+    \alpha \int_{0}^{T}  \tilde{p_{1}} \frac{dr_{1}}{dt}dt  
+   &amp; = &amp;\alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v]
+dt \\
+   &amp;&amp; -\frac{3k}{2}(k_{r2}T + k_{v1})Ma z^{2}
+   - \frac{k}{2}[3(k_{r4}T+k_{v2})
++4T(1+2M)^{2}]\alpha^{3}\end{aligned}$$</span> Introducing that equation
+into equation (<a href="#J3LowerBound0" data-reference-type="ref"
+data-reference="J3LowerBound0">[J3LowerBound0]</a>) leads to equation
+(<a href="#J3LowerBound" data-reference-type="ref"
+data-reference="J3LowerBound">[J3LowerBound]</a>) and thus the
+proposition <a href="#J3LowerBoundProp" data-reference-type="ref"
+data-reference="J3LowerBoundProp">15</a>.</p>
+<h1 id="J4LowerBoundProof">Proof of the lower bound of the fourth term
+(Proposition <a href="#J4LowerBoundProp" data-reference-type="ref"
+data-reference="J4LowerBoundProp">16</a>)</h1>
+<div id="J4LowerBound0Prop" class="proposition">
+<p><strong>Proposition 31</strong>. <em>The following inequality holds:
+<span class="math display">$$\label{J4LowerBound0}
+    \begin{split}
+            &amp;\int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda
+H_{\sigma
+        \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+        d \lambda d \mu dt  \\
+        &amp;\geq  
+        -2KTM^{2} \alpha^{2} + \beta z^{2}
+    \\
+        &amp;+ 2\alpha \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda
+\left[y_{1},v_{1}\right]
+    H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] d \lambda d \mu dt
+        \end{split}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s use the fact that: <span
+class="math display">$$\delta \sigma =
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]
+    +\alpha
+    \left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]$$</span> to expand <span
+class="math inline"><em>H</em><sub><em>σ</em><em>σ</em></sub>(<em>ρ</em>(<em>λ</em>,<em>μ</em>),<em>p</em><sub>0</sub>,<em>t</em>)(<em>δ</em><em>σ</em>)<sup>2</sup></span>:
+<span class="math display">$$\label{expJ4}
+       \begin{split}
+        H_{\sigma
+        \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2} &amp; =
+    H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right]^{2}\\ &amp;
+    +\alpha^{2}
+    H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+        \left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  
+        \end{array}
+        \right]^{2}
+        \\
+           &amp; + 2 \alpha [y_{1},v_{1}]
+    H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v
+        \end{array}
+        \right]
+        \end{split}$$</span> The second term is easily upper bounded in
+absolute value (equation (<a href="#HsigmasigmaEq"
+data-reference-type="ref"
+data-reference="HsigmasigmaEq">[HsigmasigmaEq]</a>) about the upper
+bound of <span
+class="math inline"><em>H</em><sub><em>σ</em><em>σ</em></sub></span>):
+<span class="math display">$$\left|H_{\sigma
+\sigma}(\rho(\lambda,\mu),p_{0},t)
+        \left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]^{2}\right|
+    \leq K(|y_{1}|+|v_{1}|)^{2}
+    \leq 4KM^{2}$$</span> so that: <span class="math display">$$\left|
+\int_{0}^{T} \int_{0}^{1} \int_{0}^{1}
+    H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+        \left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]^{2}\right|
+    d \lambda d \mu dt
+    \leq 2KTM^{2}        
+        \label{J42bound}$$</span> To upper bound the first term, let’s
+expand it in its components: <span class="math display">$$\label{expJ41}
+       \begin{split}
+            H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right]^{2}
+    &amp;=H_{xx}(\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}\\
+    &amp;+2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)v
+    \\
+    &amp;+H_{uu}(\rho(\lambda,\mu),p_{0},t)v^{2}
+    \end{split}$$</span> Now let’s use the definition of <span
+class="math inline">$Z[\lambda,\mu](t) = v
++[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha
+\tilde{x_{1}}$</span> to expand the terms in <span
+class="math inline"><em>v</em></span> and <span
+class="math inline"><em>v</em><sup>2</sup></span>: <span
+class="math display">$$\label{expv}
+        \begin{split}
+        2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)v &amp;
+=
+    2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]
+         \\  &amp;  
+    -
+2[H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+    \end{split}$$</span> and <span class="math display">$$\label{expv2}
+        \begin{split}
+       H_{uu}(\rho(\lambda,\mu),p_{0},t)v^{2}  &amp; =  
+       H_{uu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]^{2}
+        \\
+          &amp; +
+[H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+        \\
+    &amp; -
+2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]
+    \end{split}$$</span> Introducing equations (<a href="#expv"
+data-reference-type="ref" data-reference="expv">[expv]</a>) and (<a
+href="#expv2" data-reference-type="ref"
+data-reference="expv2">[expv2]</a>) in equation (<a href="#expJ41"
+data-reference-type="ref" data-reference="expJ41">[expJ41]</a>) leads
+to: <span class="math display">$$\begin{aligned}
+            H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} &amp; = &amp;
+    [H_{xx}-H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+        \\
+         &amp;  &amp; +H_{uu}Z[\lambda,\mu]^{2}
+    \end{aligned}$$</span> Because of assumption <a href="#convexity"
+data-reference-type="ref" data-reference="convexity">3</a> on the
+convexity, this proves that: <span class="math display">$$H_{\sigma
+\sigma}(\rho(\lambda,\mu),p_{0},t)
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} \geq \beta Z[\lambda,\mu]^{2}$$</span> so that:
+<span class="math display">$$\int_{0}^{T} \int_{0}^{1} \int_{0}^{1}
+        H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+    \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} d \lambda d \mu dt
+    \geq \beta z^{2}
+        \label{J41bound}$$</span> Including equations (<a
+href="#J41bound" data-reference-type="ref"
+data-reference="J41bound">[J41bound]</a>) and (<a href="#J42bound"
+data-reference-type="ref" data-reference="J42bound">[J42bound]</a>) into
+equation (<a href="#expJ4" data-reference-type="ref"
+data-reference="expJ4">[expJ4]</a>) leads to equation (<a
+href="#J4LowerBound0" data-reference-type="ref"
+data-reference="J4LowerBound0">[J4LowerBound0]</a>). ◻</p>
+</div>
+<div id="J41boundProp" class="proposition">
+<p><strong>Proposition 32</strong>. <em>Let’s denote: <span
+class="math display">$$J_{41} = 2\alpha \int_{0}^{T} \int_{0}^{1}
+\int_{0}^{1} \lambda \left[y_{1},v_{1}\right]
+    [H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)-H_{\sigma
+\sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] d \lambda d \mu dt$$</span> Then the following bound
+holds: <span class="math display">$$|J_{41}| \leq 4
+            \sqrt{3}KM\alpha\left[\left((Tk_{r1}+\frac{1}{2}k_{v1}\right)z^{2}
+            +\left(Tk_{r2}+\frac{1}{2}k_{v2}+\frac{T}{2}(M^{2}+2)\right)\alpha^{2}\right]
+        \label{J41bound2}$$</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s expand <span
+class="math inline">$\left[y_{1},v_{1}\right]
+    [H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma
+\sigma}(w_{0},t)]
+            \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]$</span> into its coordinates: <span
+class="math display">$$\begin{split}
+        &amp; \left[y_{1},v_{1}\right]
+    [H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma
+\sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right] \\ &amp; =  
+    y_{1}[H_{xx}(\rho(\lambda,\mu),p_{0}t)-H_{xx}(w_{0},t)](r+\alpha\tilde{x_{1}})
+           \\
+             &amp; +
+y_{1}[H_{xu}(\rho(\lambda,\mu),p_{0}t)-H_{xu}(w_{0},t)]v
+           \label{J41exp}\\
+             &amp; +
+v_{1}[H_{ux}(\rho(\lambda,\mu),p_{0}t)-H_{ux}(w_{0},t)](r+\alpha\tilde{x_{1}})
+           \\
+             &amp; +
+        v_{1}[H_{uu}(\rho(\lambda,\mu),p_{0}t)-H_{uu}(w_{0},t)]v
+           \end{split}$$</span> But the second derivatives of <span
+class="math inline"><em>H</em>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>
+are Lipschitz in <span
+class="math inline">(<em>x</em>,<em>u</em>)</span> of Lipschitz constant
+<span class="math inline"><em>K</em></span> because the third
+derivatives of <span
+class="math inline"><em>H</em>(<em>x</em>,<em>u</em>,<em>p</em><sub>0</sub>,<em>t</em>)</span>
+are bounded by <span class="math inline"><em>K</em></span>. Thus with
+the definition of <span
+class="math inline"><em>ρ</em>(<em>λ</em>,<em>μ</em>)</span> and <span
+class="math inline"><em>w</em><sub>0</sub></span>, equation (<a
+href="#J41exp" data-reference-type="ref"
+data-reference="J41exp">[J41exp]</a>) leads to: <span
+class="math display">$$\begin{aligned}
+           \left|\left[y_{1},v_{1}\right]
+       \right. &amp; \left.
+    [H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma
+\sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] \right|  \\
+    &amp;\leq
+    \lambda\mu K \sqrt{(r+\alpha\tilde{x_{1}})^{2} +
+\alpha^{2}v_{1}^{2}}
+    (|y_{1}||r+\alpha\tilde{x_{1}}| + |y_{1}||v| +
+    |v||r+\alpha\tilde{x_{1}}|+|v_{1}||v|&amp;
+           \\
+            &amp; \leq   K \sqrt{(r+\alpha)^{2} +
+        \alpha^{2}M^{2}}(2M(|r|+\alpha) + 2M|v|)
+          \\
+            &amp; \leq  2MK \sqrt{2r^{2}+2\alpha^{2} +
+        M^{2}\alpha^{2}}\sqrt{3(r^{2}+v^{2}+\alpha^{2})}&amp;
+           \\
+            &amp; \leq  2MK \sqrt{3} \;
+(2r^{2}+v^{2}+(M^{2}+2)\alpha^{2})
+        \end{aligned}$$</span> Thus, with a triple integration after
+multiplication by <span class="math inline"><em>λ</em></span>, we get:
+<span class="math display">$$|J_{41}| \leq 4
+            \sqrt{3}KM\alpha\left[T\|r\|_{\infty}^{2} +
+        \frac{T}{2}\|v\|_{2}^{2}+((M^{2}+2)\alpha^{2}\right]$$</span>
+Then, using equations (<a href="#rinequality" data-reference-type="ref"
+data-reference="rinequality">[rinequality]</a>) and (<a
+href="#vinequality" data-reference-type="ref"
+data-reference="vinequality">[vinequality]</a>) lead to equation (<a
+href="#J41bound" data-reference-type="ref"
+data-reference="J41bound">[J41bound]</a>). ◻</p>
+</div>
+<p>Applying propositions <a href="#J4LowerBound0Prop"
+data-reference-type="ref" data-reference="J4LowerBound0Prop">31</a> and
+<a href="#J41boundProp" data-reference-type="ref"
+data-reference="J41boundProp">32</a> lead to: <span
+class="math display">$$\begin{aligned}
+        &amp;&amp;\int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda
+H_{\sigma
+    \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+    d \lambda d \mu dt \\ &amp;&amp; \geq  
+    -2KM \left[TM+\sqrt{3}(2Tk_{r2}+k_{v2}+T(M^{2}+2))\alpha\right]
+\alpha^{2}
+        \\
+         &amp;  &amp; + \left[\beta -
+2\sqrt{3}KM(2Tk_{r1}+k_{v1})\alpha\right] z^{2}
+        \\
+    &amp;&amp;+ 2 \alpha \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda
+\left[y_{1},v_{1}\right]
+    H_{\sigma \sigma}(w_{0},t)
+    \left[
+    \begin{array}
+    {c}
+        r+\alpha\tilde{x_{1}}  \\
+        v  \\
+    \end{array}
+    \right] d \lambda d \mu dt
+    \end{aligned}$$</span> That proves proposition <a
+href="#J4LowerBoundProp" data-reference-type="ref"
+data-reference="J4LowerBoundProp">16</a> because <span
+class="math inline"><em>H</em><sub>0<em>σ</em><em>σ</em></sub> = <em>H</em><sub><em>σ</em><em>σ</em></sub>(<em>w</em><sub>0</sub>,<em>t</em>)</span>
+does not depend on <span class="math inline"><em>λ</em></span> and <span
+class="math inline"><em>μ</em></span>.</p>
+<h1 id="JuLowerBoundProof">Proof of Bound in absolute value for the sum
+of the integral terms of the right hand sides of equations (<a
+href="#J3LowerBound" data-reference-type="ref"
+data-reference="J3LowerBound">[J3LowerBound]</a>) and (<a
+href="#J4LowerBound" data-reference-type="ref"
+data-reference="J4LowerBound">[J4LowerBound]</a>)</h1>
+<p>Thanks to the fact that <span
+class="math inline">$r+\alpha\tilde{x_{1}}=
+r_{1}+((r-r_{1})+\alpha\tilde{x_{1}})$</span>, we have <span
+class="math inline"><em>R</em> = <em>R</em><sub>3</sub> + <em>R</em><sub>4</sub></span>,
+where <span class="math inline"><em>R</em><sub>3</sub></span> and <span
+class="math inline"><em>R</em><sub>4</sub></span> are defined as: <span
+class="math display">$$R_{3}=\alpha \int_{0}^{T}
+\tilde{p_{1}}\left[f_{0x}r_{1} + f_{0u}v
+     + \left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+     \left[
+    \begin{array}
+    {c}
+        r_{1}  \\
+        v  \\
+    \end{array}
+    \right]\right] dt$$</span> and <span
+class="math display">$$R_{4}=\alpha \int_{0}^{T}
+\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r_{1}+\alpha\tilde{x_{1}}  \\
+        0  \\
+    \end{array}
+    \right] dt$$</span></p>
+<div class="proposition">
+<p><strong>Proposition 33</strong>. <em>The following inequality holds:
+<span
+class="math display">|<em>R</em><sub>3</sub>| ≤ <em>k</em><em>M</em>((<em>T</em><em>k</em><sub><em>r</em>3</sub>+<em>k</em><sub><em>v</em>1</sub>)<em>α</em><em>z</em><sup>2</sup>+(<em>T</em><em>k</em><sub><em>r</em>4</sub>+<em>k</em><sub><em>v</em>2</sub>)<em>α</em><sup>3</sup>)</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s develop <span
+class="math inline">$\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+     \left[
+    \begin{array}
+    {c}
+        r_{1}  \\
+        v  \\
+    \end{array}
+    \right]$</span> into coordinates: <span
+class="math display">$$\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+     \left[
+    \begin{array}
+    {c}
+        r_{1}  \\
+        v  \\
+    \end{array}
+    \right]
+    =H_{0xx}y_{1}r_{1} + H_{0ux}y_{1}v + H_{0xu}v_{1}r_{1} +
+    H_{0uu}v_{1}v$$</span> so that: <span
+class="math display">$$\begin{aligned}
+        \tilde{p_{1}}&amp;\left[f_{0x}r_{1} + f_{0u}v
+     + \left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+     \left[
+    \begin{array}
+    {c}
+        r_{1}  \\
+        v  \\
+    \end{array}
+    \right]\right]\\
+    &amp; =(f_{0x}\tilde{p_{1}}+H_{0xx}y_{1} + H_{0xu}v_{1}) r_{1}
+    + (f_{0u}\tilde{p_{1}}+H_{0ux}y_{1} + H_{0uu}v_{1}) v
+    \end{aligned}$$</span></p>
+<p>Now let’s use the costate dynamics (<a href="#auxcostate"
+data-reference-type="ref" data-reference="auxcostate">[auxcostate]</a>)
+of the auxiliary problem, together with its stationarity condition (<a
+href="#auxstationarity" data-reference-type="ref"
+data-reference="auxstationarity">[auxstationarity]</a>). Then we get:
+<span class="math display">$$\tilde{p_{1}}\left[f_{0x}r_{1} + f_{0u}v
+     + \left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+     \left[
+    \begin{array}
+    {c}
+        r_{1}  \\
+        v  \\
+    \end{array}
+    \right]\right]
+    = -\frac{dq_{1}}{dt}r_{1} - q_{1}\left[f_{0x}r_{1} +
+f_{0u}v\right]$$</span> An integration by parts, together with the fact
+that <span
+class="math inline"><em>r</em><sub>1</sub>(0) = <em>q</em><sub>1</sub>(<em>T</em>) = 0</span>
+leads to: <span class="math display">$$R_{3}= \alpha \int_{0}^{T}
+q_{1}\left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1} +
+f_{0u}v\right]\right)$$</span> But <span
+class="math inline"><em>r</em><sub>1</sub></span> follows the dynamics
+(<a href="#r1dynamics" data-reference-type="ref"
+data-reference="r1dynamics">[r1dynamics]</a>), so that a Taylor
+expansion of <span
+class="math inline">$f(r_{1}+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+\alpha
+v_{1},t)$</span> at <span
+class="math inline">$(x_{0}+\alpha(\tilde{x_{1}}+y_{1}),u_{0}+\alpha
+v_{1})$</span> leads to: <span
+class="math display">$$\left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1} +
+f_{0u}v\right]\right)
+  = \int_{0}^{1} \int_{0}^{1} \lambda
+  f_{\sigma\sigma}(x_{0}+\alpha(\tilde{x_{1}}+y_{1}) + \lambda\mu r_{1},
+  u_{0}+\alpha v_{1} + \lambda\mu v,t)
+  \left[
+  \begin{array}
+  {c}
+       r_{1} \\
+       v  \\
+      
+  \end{array}
+  \right]^{2} d\lambda d\mu$$</span> so that, thanks to equation (<a
+href="#fsigmasigma" data-reference-type="ref"
+data-reference="fsigmasigma">[fsigmasigma]</a>) about the bound of <span
+class="math inline"><em>f</em><sub><em>σ</em><em>σ</em></sub></span>:
+<span
+class="math display">$$\left|q_{1}\left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1}
++ f_{0u}v\right]\right)\right|
+    \leq \frac{1}{2}kM(|r_{1}|+|v|)^{2} \leq
+kM(r_{1}^{2}+v^{2})$$</span> An integration on <span
+class="math inline">[0,<em>T</em>]</span> and a multiplication by <span
+class="math inline"><em>α</em></span> leads to <span
+class="math display">|<em>R</em><sub>3</sub>| ≤ <em>k</em><em>M</em>(<em>T</em>∥<em>r</em><sub>1</sub>∥<sub>∞</sub><sup>2</sup>+∥<em>v</em>∥<sub>2</sub><sup>2</sup>)</span>
+That equation, together with the bounds on <span
+class="math inline"><em>r</em><sub>1</sub></span> (<a
+href="#r1inequality" data-reference-type="ref"
+data-reference="r1inequality">[r1inequality]</a>) and <span
+class="math inline"><em>v</em></span> (<a href="#vinequality"
+data-reference-type="ref"
+data-reference="vinequality">[vinequality]</a>) lead to equation (<a
+href="#R3bound" data-reference-type="ref"
+data-reference="R3bound">[R3bound]</a>). ◻</p>
+</div>
+<div class="proposition">
+<p><strong>Proposition 34</strong>. <em>The following inequality holds:
+<span
+class="math display">|<em>R</em><sub>4</sub>| ≤ 2<em>K</em><em>T</em><em>M</em>(1+<em>k</em><sub><em>r</em>5</sub><em>α</em>)<em>α</em><sup>2</sup></span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Let’s develop <span
+class="math inline">$\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r_{1}+\alpha\tilde{x_{1}}  \\
+        0  \\
+    \end{array}
+    \right]$</span> into coordinates: <span
+class="math display">$$\left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r_{1}+\alpha\tilde{x_{1}}  \\
+        0  \\
+    \end{array}
+    \right]
+    =\left(H_{0xx}y_{1}+H_{0uu}v_{1}\right)((r-r_{1}) + \alpha
+\tilde{x_{1}})$$</span> Thus, thanks to the bound on <span
+class="math inline"><em>r</em> − <em>r</em><sub>1</sub></span> (<a
+href="#rr1inequality" data-reference-type="ref"
+data-reference="rr1inequality">[rr1inequality]</a>), its absolute value
+can be bounded: <span class="math display">$$\left|
+        \left[y_{1},v_{1}\right]
+    H_{0 \sigma \sigma}
+    \left[
+    \begin{array}
+    {c}
+        r_{1}+\alpha\tilde{x_{1}}  \\
+        0  \\
+    \end{array}
+    \right]\right|
+    \leq 2KM(\|r-r_{1}\|_{\infty}+\alpha)
+    \leq 2KM(k_{r5}\alpha^{2}+\alpha)
+    \leq 2KM(1+k_{r5}\alpha)\alpha$$</span> An integration between <span
+class="math inline">0</span> and <span
+class="math inline"><em>T</em></span> and a multiplication by <span
+class="math inline"><em>α</em></span> lead to equation (<a
+href="#R4bound" data-reference-type="ref"
+data-reference="R4bound">[R4bound]</a>). ◻</p>
+</div>
+<h1 id="RestBoundProof">Proof of equation (<a href="#RestBound"
+data-reference-type="ref"
+data-reference="RestBound">[RestBound]</a>)</h1>
+<p>This is a consequence of equations (<a href="#R3bound"
+data-reference-type="ref" data-reference="R3bound">[R3bound]</a>) and
+(<a href="#R4bound" data-reference-type="ref"
+data-reference="R4bound">[R4bound]</a>), together with the fact that
+<span
+class="math inline"><em>R</em> = <em>R</em><sub>3</sub> + <em>R</em><sub>4</sub></span>.</p>
+<section class="footnotes footnotes-end-of-document"
+role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>Actually it is not required that
+<span class="math inline"><em>α</em></span> be small. Its purpose is to
+give a one dimensional direction to a variation in a high dimensional
+space.<a href="#fnref1" class="footnote-back"
+role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>The integral of <span
+class="math inline"><em>H</em><em>P</em></span> is in <span
+class="math inline"><em>α</em></span>, so we consider that the
+derivative of <span class="math inline"><em>H</em><em>P</em></span> is
+formally in <span class="math inline">$\frac{1}{\alpha}$</span><a
+href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>

@@ -1,0 +1,761 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{soul}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\makeatother
+
+\begin{document}
+
+1. Introduction
+
+Constructing the ordered monoid  is studying how the comparison relations cope with addition and subtraction.
+
+Once that done, we will be ready to solve additive and subtractive inequations, may these be with large or strict inequalities.
+
+NB: We replace “inequalities” by the French “inequations, to prevent any confusions with inequalities that are not to be solved in an unknown variable .
+
+2. Order and addition
+
+The addition of a given natural integer is a translation to the right, as comparison of two natural integer is placing them one another on the natural integer line.
+
+That’s why the addition and the comparison of natural integers have very general mutual behaviour.
+
+2.1 Addition of a natural integer to another one
+
+\textbf{Theorem 1}
+
+\emph{If }\emph{ is a natural integer, then for any natural integer }\emph{, }\emph{.}
+
+\emph{Moreover, if }\emph{ (that is }\emph{), then the inequality is strict: }\emph{.}
+
+\textbf{Corollary 1}
+
+\emph{If }\emph{ is a natural integer, then for any natural integer }\emph{, }\emph{.}
+
+\emph{Moreover, if }\emph{ (that is }\emph{), then the inequality is strict: }\emph{.}
+
+The corollary 1 is straight-fully deduced from the theorem 1, because of the commutativity of the addition.
+
+
+
+\textbf{Proof of the theorem 1}
+
+For , we have , and thus .
+
+Let’s denote  the set of positive integers, and let’s prove by recursion on  that, for any natural integer , .
+
+\ul{Initialisation}\ul{: }
+
+Then, for any natural integer ,  is the follower of , and is thus to the right of .
+
+\ul{Consequently, }\ul{.}
+
+\ul{Recursion}\ul{: Assume that, for some }\ul{, we have }\ul{.}
+
+\ul{Assume }\ul{ is any natural integer.}
+
+Then, by the associativity and commutativity of the addition, .
+
+But, by recursion hypothesis,  and thus, by transitivity of the comparison relation , we end the proof by: .
+
+QED
+
+2.2 Add a given natural integer to two ordered natural integers
+
+\textbf{Theorem 2}
+
+\emph{Assume }\emph{ is a natural integer, and }\emph{. Then the following assertions hold:}
+
+\begin{itemize}
+\tightlist
+\item \emph{if }\emph{, then }\emph{;}
+\item \emph{moreover, if }\emph{, then }\emph{;}
+\item \emph{if }\emph{, then }\emph{;}
+\item \emph{moreover, if }\emph{, then }\emph{.}
+\end{itemize}
+
+By definition, that means that the addition of a given natural integer is a strictly increasing function.
+
+
+
+\textbf{Corollary 2}
+
+\emph{Assume }\emph{ is a natural integer, and }\emph{. Then the following assertions hold:}
+
+\begin{enumerate}
+\tightlist
+\item \emph{if }\emph{, then }\emph{;}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item \emph{moreover, if }\emph{, then }\emph{;}
+\item \emph{if }\emph{, then }\emph{;}
+\item \emph{moreover, if }\emph{, then }\emph{.}
+\end{itemize}
+
+The corollary 2 is straight-fully deduced from the theorem 2, because of the commutativity of the addition.
+
+\textbf{Proof of Theorem 2}
+
+The assertions (3) and (4) are deduced from the assertions (1) and (2), by exchange of the roles of  and .
+
+Moreover, the assertion (1) is deduced from the assertion (2), plus the fact that, if , then , and thus .
+
+Let’s prove by recursion on the natural integer , that for any  such as , we have .
+
+\ul{Initialisation}\ul{: }
+
+\ul{The assertion is obvious, because }\ul{ and }\ul{.}
+
+\ul{Recursion}\ul{: }
+
+\ul{Assume that for some }\ul{, for any }\ul{ such as }\ul{, we have }\ul{.}
+
+\ul{Assume }\ul{ and }\ul{ are natural integers such as }\ul{.}
+
+\ul{Then, by commutativity and associativity of the addition, }\ul{, and }\ul{.}
+
+\ul{Moreover, as }\ul{ and these are integers, we have }\ul{, that is }\ul{.}
+
+\ul{Thus, by recursion hypothesis: }\ul{.}
+
+\ul{QED}
+
+
+
+2.3 Sums of the lowest terms and of the greatest terms
+
+\textbf{Theorem 3}
+
+\emph{Assume }\emph{ are four natural integers such as }\emph{ and }\emph{. }
+
+\emph{Then }\emph{.}
+
+\emph{Moreover, if at least one of the inequalities is strict (that is }\emph{ or }\emph{, or both }\emph{), then }\emph{.}
+
+\textbf{Proof}
+
+Assume  are four natural integers such as  and 
+
+If none of the inequalities is strict, that means that  and , so that , and thus .
+
+Else, we may assume that , otherwise we just have to exchange the respective roles of  and , and of  and , which is correct because of the commutativity of the addition.
+
+Then, because of theorem 2,  and, because of corollary 2 and , , and thus .
+
+QED
+
+3. Order and subtraction
+
+The subtraction of a given natural integer is a translation to the left, as comparison of two natural integer is placing them one another on the natural integer line.
+
+That’s why the subtraction and the comparison of natural integers have very general mutual behavior.
+
+
+
+3.1 Subtraction of a natural integer from another one
+
+\textbf{Theorem 4}
+
+\emph{If }\emph{ is a natural integer, then for any natural integer }\emph{, such as }\emph{, }\emph{.}
+
+\emph{Moreover, if }\emph{ (that is }\emph{), then the inequality is strict: }\emph{.}
+
+\textbf{Proof}
+
+For , we have , and thus .
+
+Let’s denote  the set of positive integers, and let’s prove by recursion on  that, for any natural integer ,such as , .
+
+\ul{Initialisation}\ul{: }
+
+Then, for any natural integer , the follower of  is , and thus  is to the left of .
+
+\ul{Consequently, }\ul{.}
+
+\ul{Recursion}\ul{: Assume that, for some }\ul{, we have }\ul{.}
+
+\ul{Assume }\ul{ is any natural integer, such as }\ul{.}
+
+Then, by the commutativity of the addition, and the distributivity of the subtraction on the addition, , with .
+
+But, by recursion hypothesis,  and thus, by transitivity of the comparison relation , we end the proof by: .
+
+QED
+
+
+
+3.2 Subtract a given natural integer from two ordered natural integers
+
+\textbf{Theorem 5}
+
+\emph{Assume }\emph{ is a natural integer, and }\emph{, such as }\emph{ and }\emph{. }
+
+\emph{Then the following assertions hold:}
+
+\begin{itemize}
+\tightlist
+\item \emph{if }\emph{, then }\emph{;}
+\end{itemize}
+
+\begin{itemize}
+\tightlist
+\item \emph{moreover, if }\emph{, then }\emph{;}
+\item \emph{if }\emph{, then }\emph{;}
+\item \emph{moreover, if }\emph{, then }\emph{.}
+\end{itemize}
+
+By definition, that means that the subtraction of a given natural integer is a strictly increasing function.
+
+\textbf{Proof}
+
+The assertions (3) and (4) are deduced from the assertions (1) and (2), by exchange of the roles of  and .
+
+Moreover, the assertion (1) is deduced from the assertion (2), plus the fact that, if , then , and thus .
+
+Let’s prove by recursion on the natural integer , that for any  such as , we have .
+
+\ul{Initialisation}\ul{: }
+
+\ul{The assertion is obvious, because }\ul{ and }\ul{.}
+
+\ul{Recursion}\ul{: }
+
+\ul{Assume that for some }\ul{, for any }\ul{ such as }\ul{, we have }\ul{.}
+
+\ul{Assume }\ul{ and }\ul{ are natural integers such as }\ul{, and }
+
+\ul{Then, by the commutativity of the addition, and the distributivity of the subtraction on the addition, } and \ul{, with } and \ul{ }
+
+
+
+\ul{Moreover, as }\ul{ and these are natural integers, we have }\ul{, that is }\ul{.}
+
+\ul{Thus, by recursion hypothesis: }\ul{.}
+
+\ul{QED}
+
+3.3 Subtract two ordered natural integers from a given natural integer
+
+\textbf{Theorem 6}
+
+\emph{Assume }\emph{ is a natural integer, and }\emph{, such as }\emph{ and }\emph{. }
+
+\emph{Then the following assertions hold:}
+
+\begin{enumerate}
+\tightlist
+\item \emph{if }\emph{, then }\emph{;}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item \emph{moreover, if }\emph{, then }\emph{;}
+\item \emph{if }\emph{, then }\emph{;}
+\item \emph{moreover, if }\emph{, then }\emph{.}
+\end{itemize}
+
+By definition, that means that the subtraction from a given natural integer is a strictly decreasing function.
+
+\textbf{Proof}
+
+The assertions (3) and (4) are deduced from the assertions (1) and (2), by exchange of the roles of  and .
+
+Moreover, the assertion (1) is deduced from the assertion (2), plus the fact that, if , then , and thus .
+
+Let’s prove by recursion on the natural integer , that for any  such as , we have .
+
+\ul{Initialisation}\ul{: }\ul{ and }
+
+\ul{The only numbers that can be subtracted from }\ul{ are }\ul{, and thus }\ul{ is impossible for }\ul{.}
+
+\ul{For }\ul{, the only possible case for }\ul{ is }\ul{ and }\ul{.}
+
+\ul{Then }\ul{. That proves the inequality for }\ul{.}
+
+
+
+
+
+\ul{Recursion}\ul{: }
+
+\ul{Assume that for some }\ul{, for any }\ul{ such as }\ul{, we have }\ul{.}
+
+\ul{Assume }\ul{ and }\ul{ are natural integers such as }\ul{, and }
+
+\ul{Then, by the commutativity of the addition, and the distributivity of the subtraction on the addition, } and \ul{, with } and \ul{ }
+
+\ul{Moreover, as }\ul{ and these are }\ul{natural}\ul{ integers, we have }\ul{ , that is }\ul{.}
+
+\ul{Thus, by recursion hypothesis: }\ul{.}
+
+\ul{QED}
+
+\ul{4. The additive inequations in }
+
+\ul{An inequation (also called inequality) in }\ul{ is a comparison between an expression containing the unknown variable }\ul{, and a constant value.}
+
+\ul{4.1 The inequations of the type }\emph{a+x}\emph{≤}\emph{b}\ul{ and }\emph{x+a}\emph{≤}\emph{b}
+
+\ul{\textbf{Theorem 7}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in }\emph{ (the solution is the void set }\emph{ø}\emph{).}
+\end{enumerate}
+
+\textbf{Corollary 3}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of the set }\emph{ of natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in }\emph{ (the solution is the void set }\emph{ø}\emph{).}
+\end{enumerate}
+
+The corollary 3 is straight-fully deduced from the theorem 7, because of the commutativity of the addition. As a matter of fact, the inequations  and  are equivalent, so that we may prove either the Theorem 7, or the corollary 3.
+
+\textbf{Proof of corollary 3}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+If , then for any natural integer , , so that it can not be less or equal to .
+
+Assume now , and let’s subtract  to both members of the inequality, to obtain the equivalent inequality: , that is valid because .
+
+If we move the parentheses in the left member of the inequality, we obtain: .
+
+Consequently, the solution is all the ’s such as , that is the finite set .
+
+QED
+
+4.2 \ul{The inequations of the type }\emph{a+x<b}\ul{ and }\emph{x+a<b}
+
+\ul{\textbf{Theorem 8}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in }\emph{ (the solution is the void set }\emph{ø}\emph{).}
+\end{enumerate}
+
+\textbf{Corollary }\textbf{4}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in }\emph{ (the solution is the void set }\emph{ø}\emph{).}
+\end{enumerate}
+
+The corollary 4 is straight-fully deduced from the theorem 8, because of the commutativity of the addition. As a matter of fact, the inequations  and  are equivalent, so that we may prove either the Theorem 7, or the corollary 4.
+
+\textbf{Proof of corollary 4}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+If , then for any natural integer , , so that it can not be strictly less than .
+
+Assume now , and let’s subtract  to both members of the inequality, to obtain the equivalent inequality: , that is valid because .
+
+If we move the parentheses in the left member of the inequality, we obtain: .
+
+Consequently, the solution is all the ’s such as , that is the finite set .
+
+QED
+
+\ul{4.3 The inequations of the type }\ul{ and }
+
+\ul{\textbf{Theorem 9}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ of the natural integers starting from }\emph{).}
+\item \emph{else (}\emph{), any natural integer }\emph{ is a solution (the solution is the whole set }\emph{).}
+\end{enumerate}
+
+\textbf{Corollary }\textbf{5}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ starting from }\emph{).}
+\item \emph{else (}\emph{), any natural integer }\emph{ is a solution (the solution is the whole set }\emph{).}
+\end{enumerate}
+
+The corollary 5 is straight-fully deduced from the theorem 8, because of the commutativity of the addition. As a matter of fact, the inequations  and  are equivalent, so that we may prove either the Theorem 7, or the corollary 5.
+
+\textbf{Proof of corollary 5}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+If , then for any natural integer , , so that  for any .
+
+Assume now , and let’s subtract  to both members of the inequality, to obtain the equivalent inequality: , that is valid because .
+
+If we move the parentheses in the left member of the inequality, we obtain: .
+
+Consequently, the solution is all the ’s such as , that is the infinite set .
+
+QED
+
+4.4 \ul{The inequations of the type }\ul{ and }
+
+\ul{\textbf{Theorem 10}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ of the natural integers starting from }\emph{).}
+\item \emph{else (}\emph{), any natural integer }\emph{ is a solution (the solution is the whole set }\emph{).}
+\end{enumerate}
+
+\textbf{Corollary }\textbf{6}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ of the natural integers starting from }\emph{).}
+\item \emph{else (}\emph{), any natural integer }\emph{ is a solution (the solution is the whole set }\emph{).}
+\end{enumerate}
+
+The corollary 6 is straight-fully deduced from the theorem 10, because of the commutativity of the addition. As a matter of fact, the inequations  and  are equivalent, so that we may prove either the Theorem 10, or the corollary 6.
+
+\textbf{Proof of corollary 6}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+If , then for any natural integer , , so that , and the solution is the whole set .
+
+Assume now , and let’s subtract  to both members of the inequality, to obtain the equivalent inequality: , that is valid because .
+
+If we move the parentheses in the left member of the inequality, we obtain: .
+
+Consequently, the solution is all the ’s such as , that is the infinite set .
+
+QED
+
+4.5 Recapitulative Table
+
+The following table sums up the solutions of the additive inequations in .
+
+ and  are given natural integer, and  is the unknown variable that we want to find.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Inequation & Condition & Solution & Else & Alternate solution \\
+\midrule
+a+x≤b / x+a≤b & a≤b & x≤b-a & a>b & no solution in N \\
+a+x<b / x+a<b & a<b & x<b-a & a≥b & no solution in N \\
+a+x≥b / x+a≥b & a<b & x≥b-a & a≥b & any x in N \\
+a+x>b / x+a>b & a≤b & x>b-a & a>b & any x in N \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+Table 1: Solutions of the additive inequations in .
+
+
+
+
+
+5. Subtractive inequations of type 1
+
+We study now the subtractive inequations of type 1, that compare  and .
+
+5\ul{.1 The inequations of the type }\emph{x-a}\emph{≤}\emph{b}
+
+\ul{\textbf{Theorem 10}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{as }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and calculate , we must have .
+
+The solutions are thus the  that respect the double inequality , the finite subset of  made of the natural integers from  to .
+
+QED
+
+5\ul{.2 The inequations of the type }\emph{x-a<b}
+
+\ul{\textbf{Theorem 11}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in }\emph{ for the inequation.}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and calculate , we must have .
+
+The solutions should be the  that respect the double inequality .
+
+But that interval is not void if and only if .
+
+Consequently, the solution is the void set if , and the interval of the  such as  if .
+
+QED
+
+5\ul{.3 The inequations of the type }\emph{x-a}\emph{≥}\emph{b}
+
+\ul{\textbf{Theorem 12}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{as }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ of the natural integers from }\emph{ to infinity).}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and calculate , we must have .
+
+Because  the solutions are thus the  that respect the inequality , the infinite subset of  made of the natural integers starting from .
+
+QED
+
+5\ul{.3 The inequations of the type }\emph{\textbf{x-a>b}}
+
+\ul{\textbf{Theorem 13}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{as }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the infinite subset of }\emph{ of the natural integers from }\emph{ to infinity).}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and calculate , we must have .
+
+Because  the solutions are thus the  that respect the inequality , the infinite subset of  made of the natural integers starting from .
+
+QED
+
+4.5 Recapitulative Table
+
+The following table sums up the solutions of the subtractive inequations of type 1 in .
+
+ and  are given natural integer, and  is the unknown variable that we want to find.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Inequation & Condition & Solution & Else & Alternate solution \\
+\midrule
+x-a≤b & - & a≤x≤b+a & - & - \\
+x-a<b & b≠0 & a≤x<b+a & b=0 & no solution in N \\
+x-a≥b & - & x≥b+a & - & - \\
+x-a>b & - & x>b+a & - & - \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+Table 2: Solutions of the subtractive inequations of type 1 in .
+
+
+
+
+
+6. Subtractive inequations of type 2
+
+We study now the subtractive inequations of type 2, that compare  and .
+
+6\ul{.1 The inequations of the type }\emph{a-x}\emph{≤}\emph{b}
+
+\ul{\textbf{Theorem 14}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), the solutions are the }\emph{ such as }\emph{.}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and exchange the terms, we must have .
+
+Then we may apply the theorem 9, with the roles of  and  inverted, and with the additional condition 
+
+QED
+
+6\ul{.2 The inequations of the type }\emph{a-x<b}
+
+\ul{\textbf{Theorem 15}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), the solutions are the }\emph{ such as }\emph{.}
+\end{enumerate}
+
+
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and exchange the terms, we must have ..
+
+Then we may apply the theorem 10, with the roles of  and  inverted, and with the additional condition 
+
+QED
+
+6\ul{.3 The inequations of the type }\emph{a-x}\emph{≥}\emph{b}
+
+\ul{\textbf{Theorem 16}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in the set }\emph{ of natural integers.}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and exchange the terms, we must have , which is redondant with , because .
+
+Then we may apply the theorem 7, with the roles of  and  inverted.
+
+QED
+
+
+
+6\ul{.2 The inequations of the type}\emph{ a-x>b}
+
+\ul{\textbf{Theorem 16}}
+
+\ul{\emph{Assume }}\ul{\emph{ and }}\ul{\emph{ are natural integers, and we wish to solve the following inequation in }}\ul{\emph{: }}\ul{\emph{. Then the solution of that inequation is:}}
+
+\begin{enumerate}
+\tightlist
+\item \ul{\emph{if }}\ul{\emph{, the solutions are the }}\emph{ such as }\emph{ (the finite subset of }\emph{ of the natural integers from }\emph{ to }\emph{).}
+\item \emph{else (}\emph{), there is no solution in the set }\emph{ of natural integers.}
+\end{enumerate}
+
+\textbf{Proof}
+
+Assume  and  are natural integers, and let’s find all the  such as .
+
+First of all, in order to have a valid subtraction , we must have .
+
+Moreover, if we add  to both members of the inequality, and exchange the terms, we must have which is redondant with , because .
+
+Then we may apply the theorem 8, with the roles of  and  inverted.
+
+QED
+
+6.5 Recapitulative Table
+
+The following table sums up the solutions of the subtractive inequations of type 2 in .
+
+ and  are given natural integer, and  is the unknown variable that we want to find.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Inequation & Condition & Solution & Else & Alternate solution \\
+\midrule
+a-x≤b & b≤a & a-b≤x≤a & b>a & x≤a \\
+a-x<b & b<a & a-b<x≤a & b≥a & x≤a \\
+a-x≥b & b≤a & x≤a-b & b>a & no solution in N \\
+a-x<b & b<a & x<a-b & b≥a & no solution in N \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+Table 2: Solutions of the subtractive inequations of type 1 in .
+
+
+
+
+
+7. Conclusion
+
+That note on the inequalities and inequations is rather complicated to memorise.
+
+So… Don’t try to memorise it, just train yourself with the exercises given in the test.
+
+Ah! and for the training, just apply the method, add or subtract the same quantities, being careful about the good definition of the subtraction, as well as the the direction of the comparison.
+
+And don’t mix large and strict inequalities!
+
+
+
+ of
+
+\end{document}

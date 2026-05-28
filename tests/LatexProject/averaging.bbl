@@ -1,0 +1,202 @@
+\begin{thebibliography}{10}
+
+\bibitem{Arnold-celestial}
+V.~I. Arnold.
+\newblock {\em Mathematical Methods of Classical Mechanics}.
+\newblock Springer-Verlag, 1978.
+
+\bibitem{ArnoldODE}
+V.~I. Arnold.
+\newblock {\em Geometrical Methods in the Theory o f Ordinary Differential
+  Equations}.
+\newblock Springer-Verlag, 1983.
+
+\bibitem{balachandra}
+M.~Balachandra.
+\newblock An averaging theorem for two-point boundary value problems with
+  applications to optimal control.
+\newblock {\em Journal of Mathematical Analysis and Applications}, 55:46--60,
+  1976.
+
+\bibitem{Barron1993}
+E.~N. Barron.
+\newblock Averaging in lagrange and minimax problems of optimal control.
+\newblock {\em SIAM Journal on Control and Optimization}, 31(6):1630--1652,
+  November 1993.
+
+\bibitem{bensPert}
+Alain Bensoussan.
+\newblock {\em Perturbation Methods in Optimal Control}.
+\newblock Series in Modern Applied Mathematics. Wiley/Gauthier-Villars, 1988.
+
+\bibitem{Bonnard-Caillau2006}
+Jean-Baptiste~Caillau Bernard~Bonnard and Romain Dujol.
+\newblock Averaging and optimal control of elliptic keplerian orbits with low
+  propulsion.
+\newblock {\em Systems and Control Letters}, 55:755--760, 2006.
+
+\bibitem{bonnard-BSM}
+Jean-Baptiste~Caillau Bernard~Bonnard and Romain Dujol.
+\newblock Energy minimization of single input orbit transfer by averaging and
+  continuation.
+\newblock {\em Bull. Sci. math.}, 130:707--719, 2006.
+
+\bibitem{BonnardCaillauIHP}
+Bernard Bonnard and Jean-Baptiste Caillau.
+\newblock Riemannian metric of the averaged energy minimization problem in
+  orbital transfer with low thrust.
+\newblock {\em Ann. Inst. H. Poincar{\'e}, Analyse non lin{\'e}aire},
+  24:395--411, 2007.
+
+\bibitem{Bry1}
+A.E. Bryson and Y.C. Ho.
+\newblock {\em Applied Optimal Control}.
+\newblock Ginn and Company: Waltham, MA, 1969.
+
+\bibitem{chaplais}
+Fran{\c c}ois Chaplais.
+\newblock Averaging and deterministic optimal control.
+\newblock {\em SIAM Journal on Control and Optimization}, 25(3):767--780, May
+  1986.
+
+\bibitem{CohenDV:94}
+A.~Cohen, I.~Daubechies, and P.~Vial.
+\newblock Wavelet bases on the interval and fast algorithms.
+\newblock {\em J. of Appl. and Comput. Harmonic Analysis}, 1:54--81, 1993.
+
+\bibitem{lepreux}
+Christophe Coudurier, Olivier Lepreux, and Nicolas Petit.
+\newblock Optimal bang-bang control of a mechanical double oscillator using
+  averaging methods.
+\newblock In {\em 9th IFAC Vienna International Confererence on Mathematical
+  Modelling, MATHMOD 2018}, 2018.
+
+\bibitem{EpenoyEclipse}
+Ch. Ferrier and R.~Epenoy.
+\newblock Optimal control for engines with electro-ionic propulsion under
+  constraint of eclipse.
+\newblock {\em Acta Astronautica}, 48(4):181--192, 2001.
+
+\bibitem{GaitsgorySIAM2008}
+Luke Finlay, Vladimir Gaitsgory, and Ivan Lebedev.
+\newblock Duality in linear programming problems related to deterministic long
+  run average problems of optimal control.
+\newblock {\em SIAM Journal on Control and Optimization}, 47(4):1667--1700,
+  2008.
+
+\bibitem{GaitsgoryCDC2009}
+Luke Finlay, Vladimir Gaitsgory, and Ivan Lebedev.
+\newblock Duality in linear programming problems related to deterministic long
+  run average problems of optimal control with applications to periodic
+  optimization.
+\newblock In {\em Proc. of the Joint 48th IEEE Conference on Decision and
+  Control and 28th Chinese Control Conference}, pages 1207--1211, 2009.
+
+\bibitem{GaitsgorySIAM2006}
+Vladimir Gaitsgory and Sergey Rossomakhine.
+\newblock Linear programming approach to deterministic long run average
+  problems of optimal control.
+\newblock {\em SIAM Journal on Control and Optimization}, 44(6):2006--2037,
+  2006.
+
+\bibitem{GaitsgoryCDC2006}
+Vladimir Gaitsgory and Sergey Rossomakhine.
+\newblock Occupational measures formulation and linear programming solution of
+  deterministic long run average problems of optimal control.
+\newblock In {\em Proceedings of the 45th IEEE Conference on Decision and
+  Control}, pages 5012--5017, 2006.
+
+\bibitem{EpenoyGeoffroy1997}
+Sophie Geffroy and Richard Epenoy.
+\newblock Optimal low-thrust transfers with constraints-generalization of
+  averaging techniques.
+\newblock {\em Acta Astronautica}, 41(3):133--149, 1997.
+
+\bibitem{goumri}
+Somaya Goumri.
+\newblock Transfert orbital d'un engin a faible poussee.
+\newblock Technical report, MINES ParisTech, 2015.
+
+\bibitem{hernandez-lasserre}
+On{\'e}simo Hern{\'a}ndez-Lerma and Jean~B. Lasserre.
+\newblock Average cost optimal policies for markov control processes with borel
+  state space and unbounded costs.
+\newblock {\em Systems and Control Letters}, 15:349--356, 1990.
+
+\bibitem{maamria}
+D.~Maamria, F.~Chaplais, A.~Sciarretta, and N.~Petit.
+\newblock Impact of regular perturbations in input constrained optimal control
+  problems.
+\newblock {\em Optimal Control, Applications and Methods}, 41(4):1321--1351,
+  July 2020.
+
+\bibitem{Mallat98}
+St{\'e}phane Mallat.
+\newblock {\em A Wavelet Tour of Signal Processing}.
+\newblock Academic Press, first edition, 1998.
+
+\bibitem{Ogulenko}
+A.~P. Ogulenko and O.~D. Kichmarenko.
+\newblock Averaging of the problem of optimal control on time scales.
+\newblock {\em Journal of Mathematical Sciences}, 212(3):290--304, January
+  2016.
+
+\bibitem{Oppenheim2010}
+Alan~V. Oppenheim and Ronald~W. Schafer.
+\newblock {\em Discrete-Time Signal Processing}.
+\newblock Pearson, third edition, 2010.
+
+\bibitem{poincare}
+H.~Poincar{\'e}.
+\newblock {\em Les m{\'e}thodes nouvelles de la m{\'e}canique c{\'e}leste}.
+\newblock Gauthier-Villars, 1892.
+
+\bibitem{Buckdahn}
+J.~Renault R.~Buckdahn, M.~Quincampoix.
+\newblock On representation formulas for long run averaging optimal control
+  problem.
+\newblock {\em Journal of Differential Equtaions}, 259:5554--5581, 2015.
+
+\bibitem{robillart}
+M.~Robillart, P.~Schalbart, F.~Chaplais, and B.~Peuportier.
+\newblock Model reduction and model predictive control of energy-efficient
+  buildings for electrical heating load shifting.
+\newblock {\em Journal of Process Control}, 74:23--34, 2019.
+
+\bibitem{sanders}
+J.A. Sanders and F.~Verhulst.
+\newblock {\em Averaging Methods in Nonlinear Dynamical Systems}.
+\newblock Springer-Verlag, 1985.
+
+\bibitem{Stranneby2004}
+Dag Stranneby and William Walker.
+\newblock {\em Digital Signal Processing and Applications}.
+\newblock Newnes, second edition, 2004.
+
+\bibitem{LiTan2008}
+Li~Tan.
+\newblock {\em Digital Signal Processing}.
+\newblock Academic Press, 2008.
+
+\bibitem{TsaiHaddaACC1994}
+Ching-Chih Tsai and Abraham~H. Haddad.
+\newblock Averaging, aggregation and optimal control of stochastic hybrid
+  systems with singularly perturbed morkovian switching behavior.
+\newblock In {\em Proceedings of the American Conference 1994}, pages
+  1868--1872, 1994.
+
+\bibitem{chaplais-denoising}
+Panagiotis Tsiotras, Fran{\c c}ois Chaplais, and Dongwon Jung.
+\newblock Redundant wavelet processing on the half-axis with applications to
+  signal denoising with small delays: Theory and experiments.
+\newblock {\em International Journal on Adaptive Control and Signal
+  Processing}, 20(9):447 -- 474, 2006.
+
+\bibitem{VargasCDC2009}
+Alessandro~N. Vargas and Jo{\~a}o B.~R. do~Val.
+\newblock Average optimal stationary policies: convexity and convergence
+  conditions in linear stochastic control systems.
+\newblock In {\em Proc. of the joint 48th IEEE Conference on Decision and
+  Control and 28th Chinese Control Conference}, pages 3388--3393, 2009.
+
+\end{thebibliography}

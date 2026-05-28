@@ -1,0 +1,3449 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{amsmath,amssymb,amsthm,epsfig,graphics,hyperref}
+
+\newtheorem{definition}{Definition}
+% \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+
+% \newtheorem{system}{Assumption}
+\newtheorem{problem}{Problem}
+\newtheorem{solution}{Solution method}
+
+
+%\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemm}{Lemma}
+\newtheorem{coro}{Corollary}
+
+%\theoremstyle{definition}
+\newtheorem{rema}{Remark}
+\newtheorem{assumption}{Assumption}
+
+\begin{document}
+
+
+\title{Empirical averaging in deterministic optimal control}
+\date{\today}
+\author{Sandrine Bernard\thanks{Ecole Normale Supérieure de Cachan
+61, avenue du Président Wilson
+94235 Cachan cedex France}, François Chaplais\thanks{Centre 
+Automatique et Systèmes, Mines-ParisTech, 60 bvd 
+Saint-Michel 75272 PARIS cedex 06, France, email: 
+\href{mailto:francois.chaplais@mines-paristech.fr}{francois.chaplais@mines-paristech.fr}}, Fabienne 
+Chaplais\thanks{Mathedu,France, email: \href{mailto:fabienne@mathedu.fr}{fabienne@mathedu.fr}}
+}
+% \thanks{S. Bernard wishes to thank 
+% Djamaleddine Maamria for his kind and efficient help during her work 
+% at CAS.}
+
+
+
+\maketitle
+
+\begin{abstract}
+    A windowed averaged scheme is defined for general control 
+    systems. The same method is used to average costs in optimal 
+    control problems (OCPs). A numerical parameter $\alpha$ can be computed, which 
+    expresses the distance between the original system and the 
+    averaged system in a weak sense. 
+    
+    Then, if we use the optimal control of the averaged OCP in the 
+    original OCP, the suboptimality of the control is bounded by an  
+    expression of the form $C\alpha^{2}$.
+\end{abstract}
+
+\section{Introduction}
+We consider here optimal control problems which feature fast 
+dependency on time. This is the case, for instance, if the problems 
+depend on data which features high frequency phenomenons, i.e., 
+features that happen at a much smaller time scale than the response 
+time of the dynamics.
+
+We consider here the solution of these control problems using  the 
+Pontryagin's minimum principle. In this perspective, we have to solve 
+a two point boundary value problem, be it through direct or indirect 
+methods. To do that, we have to discretize the boundary problem. In 
+our case, the size of the mesh is dictated by the high frequency 
+features of the data, which is much smaller than the time scale of the 
+dynamics. The question that is addressed in this paper is to find a 
+solution method whose mesh size is dictated by the dynamics and not by
+the data.
+
+When the fast data is periodic with respect to time, a classic 
+approach to the solving of differential equations is averaging.
+Historically, the method of averaging was introduced to study the 
+motion of celestial bodies by solving a simple two body equation 
+which is perturbed by the influence of other bodies (see the  
+section in \cite{sanders} about the history of averaging). As 
+developed in \cite{poincare}, the framework was that of the 
+perturbation of an orbit by the small influence of a periodic input.
+Averaging was then generalized in a geometric framework, notably in 
+\cite{Arnold-celestial,ArnoldODE}. A comprehensive book on the subject
+is \cite{sanders}. In this framework, the faster oscillating phenomenon is 
+either periodic or satisfies some kind of ergodicity assumption.
+
+The previous references consider a non controlled dynamical systems. 
+We turn our attention now to controlled systems, and, in particular, 
+optimal control problems (OCPs).
+
+In this perspective, we add to the differential equation an extra parameter $u$ which is the open 
+loop control of the system. If we have non-linearities in the 
+dynamics, common sense dictates that averaging be performed {\em 
+after} the control is introduced, by contrast to the approach where 
+the control would be introduced {\em after} the differential system 
+is averaged. Indeed, the high frequency content of the control may 
+interact with the high frequency content of the data; therefore the 
+averaging must be applied once this interaction is taken into account.
+
+In the case of ordinary differential equations, the approximation value of the 
+averaging method is determined by the proximity of the nominal and 
+averaged trajectories.
+
+However, in the case of controlled systems, there are as many trajectories to 
+consider as there are different controls. Fortunately, in optimal 
+control, there is a simple way to evaluate the performance of an approximation method:
+\begin{itemize}
+	\item  We first consider the optimal cost $J_{0}$ for the nominal 
+	control system.
+
+	\item  On the other hand, we considered the optimal control 
+	$u^{*}$ for the approximated control system, and we use it to 
+	control the {\em nominal} system. This generates a cost $J^{*}$.
+
+	\item  Naturally, $J^{*}$ is greater than $J_{0}$. As a 
+	consequence, we can evaluate the 
+	quality of the approximation method by considering the loss of optimality
+	$J^{*}-J_{0}$ which is non negative.
+\end{itemize}
+
+Let us review some previous work on this topic.
+
+An early work \cite{balachandra} applies averaging to two point 
+boundary value problems, but its application to optimal control is 
+limited to what is essentially the linear quadratic case.
+In \cite{chaplais}, the method of averaging is applied to optimal 
+control, both in open loop (the system is then periodic with respect 
+to the fast time), and in closed loop 
+(which is  a study of the Hamilton-Jacobi equation under an ergodicity 
+assumption). The study of the HJB equation is improved in 
+\cite{Barron1993}. Observe that, in these two references, the horizon 
+is finite and the oscillatory input is fast. 
+
+References 
+\cite{GaitsgoryCDC2006,GaitsgorySIAM2006,GaitsgorySIAM2008,GaitsgoryCDC2009} 
+consider an optimal control problem ``in the long run'', that is, 
+with slow and ``normal'' time scales, using 
+averaging techniques. The convergence of the optimal cost is proved, 
+but there is no estimation of the loss of optimality that the 
+approximation method produces. 
+
+Reference \cite{Ogulenko} constructs the method of averaging for controlled systems on time scales, 
+and determines the algorithm of correspondence of controls over the 
+original and averaged systems. It is an interesting work, but we 
+shall prove in this article that the order of efficiency of the method is 
+under-estimated (it should be two).
+
+As we pointed out before, the application of averaging to celestial 
+mechanics is a classic. It has been naturally transposed to the 
+context of optimal control. Specifically, the optimal control of low thrust engines 
+in space have been studied from a geometric view point and in the 
+periodic case.  Such a approach has been adopted in 
+\cite{bonnard-BSM,Bonnard-Caillau2006,BonnardCaillauIHP}. Averaging  
+has also been used for similar problems 
+\cite{EpenoyGeoffroy1997,EpenoyEclipse} in a spirit that is close to
+\cite{chaplais}. All of these references assume that the fast 
+dynamics are either periodic or satisfy an ergodicity assumption.
+
+There are applications of averaging in optimal control that are more 
+data driven (by contrast to autonomous celestial mechanics). Energy 
+management of thermal systems consider the optimal control of the 
+temperature of buildings \cite{robillart}. Naturally, this heavily depends of the 
+weather data, which naturally features fast oscillating components 
+(with respect to the building's inertia).
+
+Reference \cite{lepreux} considers a buoy which is subject to the 
+oscillating influence of waves.
+
+
+Averaging has been also used is stochastic optimal 
+control, notably of Markov chains (see for instance 
+\cite{hernandez-lasserre,VargasCDC2009,TsaiHaddaACC1994}). Indeed, 
+when there exists a cycle in a discrete state Markov chain that has 
+high transition probabilities, then this cycle is gone through very 
+fast and averaging can be applied. An alternative to the classical 
+averaging scheme is ergodic theory \cite{Buckdahn}.
+
+In this article, we consider optimal control problems which are 
+influenced by some fast perturbation data (with respect to the time 
+constant of the system). The approach is somehow different from what 
+exists in the litterature. 
+
+Here we consider, as far as rapidly oscillating inputs are 
+considered, that the behavior of the system is similar to the response of 
+a single integrator. This is why we first define our  averaging 
+method by the effect of integration on general signals. The averaged 
+signal 
+is defined by its successive averages on consecutive intervals. This 
+transformation can be from various points of view:
+\begin{itemize}
+	\item  In the frequency domain, this averaging method is  low 
+	pass filter, although not a very good one 
+	\cite{LiTan2008,Stranneby2004,Oppenheim2010}. Indeed, it is a Finite 
+	Impulse Response filter, and thus its transfer function is not 
+	compactly supported.
+
+	\item  In the time domain, this averaging operator is an 
+	orthogonal projection on the Haar basis. More efficient 
+	approximation methods exist in the wavelet framework \cite{Mallat98}; however 
+	specific tools must be used for compactly supported signals 
+	\cite{CohenDV:94,chaplais-denoising} and, in practice, their have 
+	boundary effects that are not desirable when noise is present.
+
+	\item  From a statistical point of view, this method can viewed 
+	as the computation of a sequence of empirical expectations, 
+	typically for a non stationnary signal. This why we call our 
+	method {\em empirical} averaging.
+\end{itemize}
+
+From this approximation technique we derive a similar one for 
+ordinary differential equations, control systems, and ultimately 
+optimal control problems.
+
+In all of these contexts, the performance of the averaging method is 
+evaluated by the difference between the output of the reference 
+signal and the averaged one, through an integrator. The maximum value 
+for this difference is called $\alpha$.
+
+
+It is a very simple thing to evaluate and as a consequence, it may be 
+applied to a wide range of situations.
+
+An important feature of this problem is that the mesh size of the two 
+point boundary value problem is not dictated by the fast data, but 
+rather by the time constant of the system (which is larger than the 
+width of the averaging interval). The minimization consists in 
+the minimization of an averaged Hamiltonian.
+
+This numerical technique has already been applied to the optimal 
+control of a low thrust space engine that must reach its final orbit; 
+the controls in the Keplerian case (where periodicity exists) and in the non Keplerian 
+case (where the influence of the moon and of the sun breaks the 
+periodicity) have been successfully computed \cite{goumri}.
+
+
+
+% this method has been used is Robillart, Goumri
+
+
+ The paper is organized as follows.
+ Section \ref{settingssec} presents 
+the original  OCP. It then presents windowed averaging for functions, 
+differential equations and control systems. It then presents the 
+concept of 
+averaged OCP that is used in this 
+paper. This is where the averaging error $\alpha$ is defined. Section \ref{Example} 
+describes the example of the orbit 
+transfer of low thrust space engine in the non keplerian case 
+\cite{goumri}. Sections \ref{expansions} 
+and \ref{FormalExp} compute formal expansions of the state and of the costate of 
+the nominal problem with respect to the parameter $\alpha$. 
+Auxilliary variables that will be used later in the course of the 
+article are defined here. Section \ref{auxProblem} introduces an auxiliary problem of optimization as 
+well as new auxiliary variables. The main assumptions (bounded 
+derivatives and convexity) are given before we state the auxiliary 
+problem.
+The main result is exposed in section \ref{MainTheoremSection}. It is 
+a
+result on the control cost, trajectories and the optimal control.
+ Section \ref{proof} is devoted to the proof of the main theorem.
+ A conclusion is presented is section \ref{conclusionsec}. 
+ 
+ Note that, for a fluent reading of the paper, 
+ complicated computations are detailed in the appendices.
+  
+\section{Problem statement}\label{settingssec}
+\subsection{Nominal Problem}\label{NominalProblem}
+We wish to solve the following Optimal Control Problem (OCP) :
+\begin{equation}
+    \min_{u}\int_{0}^{T}L(x,u,t)dt
+    \label{cost}
+\end{equation}
+where $x$ is is a finite dimensional state which satisfies the 
+dynamics :
+\begin{equation}
+    \frac{dx}{dt}=f(x,u,t) \; , \; x(0)=\chi_{0}
+    \label{dynamics}
+\end{equation}
+where $u$ is an integrable finite dimensional and unconstrained control.
+The assumptions on $f$ and $L$ are given in section \ref{Assumptions}.
+
+\subsection{Averaged Problem}
+If the dependency of $f$ or $L$ with respect 
+to time contains fast oscillations, the nominal problem may be 
+difficult to solve because the mesh size is dictated by the fast 
+oscillation rate. To avoid this, we define an averaged problem with 
+the help of a very simple low pass filter.
+This averaging method applies to any kind of time-varying (or 
+data-driven) system.
+
+\subsubsection{Filtering of a signal by windowed averaging}
+We consider a signal defined on an interval and split this
+interval into $N$ consecutive intervals.  On each interval we compute 
+the average of the signal.
+\begin{definition}\label{filtering}
+Let $N$ an integer, and g an integrable function on $[0,T]$.  
+Let us subdivide $[0,T]$ into $N$ intervals $[t_{k},t_{k+1}]$, with:
+\begin{equation}
+    t_{k}=k\frac{T}{N} \; , \; k = 0..N
+    \label{intervals}
+\end{equation}
+The averages of $g$ on these intervals define the low pass 
+filter $LP$ on $g$:
+\begin{equation}
+     LP[g](t) = \frac{1}{t_{k+1}-t_{k}}\int_{t_{k}}^{t_{k+1}}g(s)ds
+     \; , \; t\in \left[t_{k},t_{k+1}\right) \; , \; k=0..N-1
+    \label{LdefP}
+\end{equation}
+The difference $g-LP[g]$, that is the averaging error, defines the high pass filter $HP$ on $g$:
+\begin{equation}
+    HP=Id-LP
+    \label{HPdef}
+\end{equation}
+We then denote I[g] the antiderivative of the averaging error:
+\begin{equation}
+    I[g](t)=\int_{0}^{t}HP[g](s)ds \; , \; t\in[0,T]
+    \label{defI}
+\end{equation}
+\end{definition}
+We show now that the upper bound of the function $I[g]$ is small when $N$ is big and 
+$g$ is bounded.
+\begin{proposition}
+    The following bound holds for any bounded function $g$ and any 
+    $t\in[0,T]$:
+   \begin{equation}
+    |I[g](t)| \leq 2 \|g\|_{\infty}\frac{T}{N}
+    \label{BoundI}
+\end{equation} 
+\end{proposition}
+\begin{proof}
+    Let us first prove that for any $k=0..N$ 
+ \[ \int_{t_{k}}^{t_{k+1}}HP[g](t)dt = 0 \] 
+ Indeed:
+\[
+         \int_{t_{k}}^{t_{k+1}}HP[g](t)dt  =  \int_{t_{k}}^{t_{k+1}}g(t)dt
+            -\int_{t_{k}}^{t_{k+1}}
+      \left[\frac{1}{t_{k+1}-t_{k}}\int_{t_{k}}^{t_{k+1}}g(s)ds]\right]dt
+        =  0
+\]
+  Hence, for $t\in[t_{k}t_{k+1}[$:
+ \[  I[g](t) = \int_{t_{k}}^{t} HP[g](s)ds\]
+ But $|LP[g](s)|\leq \|g\|_{\infty}$, so that $|HP[g](s)|\leq 2 
+ \|g\|_{\infty}$.
+ This gives finally:
+   \[  |I[g](t)|\leq 2 \|g\|_{\infty}(t-t_{n+1}) \leq 2 
+    \|g\|_{\infty}\frac{T}{N} \] 
+\end{proof}
+Thus we may define a small number $\alpha$ that represents how close 
+the signal $g$ is closed to its averaged signal $LP[g]$:
+\begin{equation}
+	\alpha = \|I[g]\|_{\infty}
+	\label{alphaSignal}
+\end{equation}
+\paragraph{Example 1}
+Let us suppose that $g$ is periodical with period $\frac{T}{N}$.
+Then $LP[g]$ is constant equal to the mean of $g$ over a period.
+The function $HP[g]$ is a periodic signal with $0$ average.
+The function $I[g]$ is the periodic antiderivative of $HP(g)$ with 
+value $0$ at $0$. Its upper bound $\alpha$ is of order $\frac{T}{N}$.
+\paragraph{Example 2}
+Let us suppose that $g$ is periodical with period $\epsilon$ a small 
+divisor of $T$, and $N=1$. Then $LP[g]$ is constant equal to the 
+mean of $g$ over the many periods in $[0,T]$.
+The function $HP[g]$ is a periodic signal of small period $\epsilon$ with $0$ average.
+The function $I[g]$ is the periodic antiderivative  of $HP(g)$ with 
+value $0$ at $0$. Its upper bound $\alpha$ is of order $\epsilon$.
+This example shows that $\alpha$ can be small with  seemingly large 
+intervals.
+
+
+\subsubsection{Averaging errors for ordinary differential equation}
+Let us consider the ordinary differential equation (ODE):
+\begin{equation}
+    \frac{dx}{dt}=f(x,t) \; , \; x(0)=\chi_{0}
+    \label{ODE}
+\end{equation}
+with $f$ Lipschitz with respect to $x$ and integrable with respect to 
+t.
+
+
+The averaged ODE is defined as:
+\begin{equation}
+    \frac{dx_{0}}{dt}=LP[f](x_{0},t) \; , \; x_{0}(0)=\chi_{0}
+    \label{aveODE}
+\end{equation}
+where the low-pass filter $LP$ on a general function $g(x,t)$ is defined as:
+\begin{equation}
+   LP[g](\xi,t)  =  \frac{1}{t_{k+1}-t_{k}} 
+    \int_{t_{k}}^{t_{k+1}}g(\xi,s)ds
+    \; , \;  t \in [t_{k},t_{k+1}) \; , \; k=0..N-1
+    \label{avedDynODE}
+\end{equation}
+As a summary, $LP[g]$ averages $g$ with respect to time on rectangular adjacent 
+windows, leaving the state variable unchanged.
+
+The state $x_{0}$ is well defined and bounded because $f$, and thus 
+$LP[f]$, is Lipschitz.
+
+We consider now $x_{0}$ the solution of (\ref{aveODE}) and $g(x,t)$ a 
+general function of the state and time. We establish a bound in the 
+following propostion that will be used for the definition of the 
+small parameter $\alpha$, which will measure in section 
+\ref{alphaDefinition} the averaging error for optimal control 
+problems.
+
+\begin{proposition}\label{IboundProp}
+    Let $g(x,t)$ be bounded Lipschitz in x with a Lipschitz constant 
+    $\lambda_{g}$, and let's suppose that $f(x,t)$ is bounded.
+    Let $I[g,x_{0}]$ the function of $t$ defined by:
+    \begin{equation}
+        I[g,x_{0}](t)=\int_{0}^{t}\left[g(x_{0}(s),s)-LP[g](x_{0}(s),s)\right]ds
+        \label{IdynODE}
+    \end{equation}
+    where $x_{0}$ is the solution of the averaged ODE (\ref{aveODE})
+    Then the following bound holds:
+    \begin{equation}
+    |I[g](t)| \leq 2 (\|g\|_{\infty} + \lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{BoundODE}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+   see appendix \ref{proofIboundProp}.
+\end{proof}
+
+We now estimate the distance between the trajectories obtained 
+respectively from the nominal and averaged system.
+\begin{proposition}
+    Let $x$ defined by the ODE (\ref{ODE}) and let $x_{0}$ defined by 
+    the averaged ODE (\ref{aveODE}).
+    Let $\lambda$ the Lipschitz constant of f in $x$ and define
+    $$\alpha = \sup_{t\in[0,T]}(|I[f](t)|)$$ 
+    Then the following bound holds:
+    \begin{equation}
+        \|x-x_{0}\|_{\infty} \leq \alpha \frac{e^{\lambda 
+	T}-1}{\lambda}
+    \end{equation}    
+\end{proposition}
+In other words, the averaging error $ \|x-x_{0}\|_{\infty}$ is in 
+first order in $\alpha$, that is small when $N$ is big because 
+$f$ is Lipschitz and thus bounded on $[0,T]$.
+\begin{proof}
+        We have
+    \begin{eqnarray*}
+        |x(t)-x_{0}(t)| & = & \left|\int_{0}^{t}
+	f(x(s),s) -f(x_{0}(s),s)
+	+  f(x_{0}(s),s) 
+	- LP[f](x_{0}(s)\right| ds\\
+         & \leq & \lambda\int_{0}^{t}|x(s)-x_{0}(s)|ds +\alpha\\
+    \end{eqnarray*}
+    which leads to the result thanks to the Gronwall lemma.
+
+\end{proof}
+
+\subsubsection{Averaging of a controlled system}
+
+In the scope of this article, we define, for the integer $N>0$, and 
+any functions $u(t)$ and $g(x,u(t),t)$, an averaged function $LP[g,u]$
+\begin{equation}\label{average}
+	\begin{split}
+    LP[g,u](x,t)= &
+    \frac{N}{T}\int_{\frac{kT}{N}}^{\frac{(k+1)T}{N}}g(x,u(s),s)ds\\ 
+    & \textrm{ for } t\in\left[
+    \frac{kT}{N},\frac{(k+1)T}{N}\right) \textrm{ and } k\in[0,N-1]
+	\end{split}
+\end{equation}
+As a summary, $LP[g]$ averages $g$ with respect to time (this 
+includes the open loop control) on rectangular adjacent windows, 
+leaving the state (or costate) unchanged.
+
+\subsubsection{Statement of the averaged problem}\label{aveProblem}
+We define the averaged OCP which consists in minimizing the cost
+\begin{equation}
+    J_{0}(v)=\int_{0}^{T}LP[L,v](y(s),s)ds
+    \label{averagecost}
+\end{equation}
+where $y$ is the state defined by
+\begin{equation}
+    \frac{dy}{dt}=LP[f,v](y,t)\; , \; y(0)=\xi_{0}
+    \label{averagedyn}
+\end{equation}
+The system (\ref{averagedyn}) is a well defined differential equation.
+\begin{assumption}\label{aveOCPsolution}
+    The averaged OCP
+    admits an optimal control $u_{0}$ with a corresponding trajectory 
+    $x_{0}$.
+\end{assumption}
+The optimal trajectory $x_{0}$ is defined by the ODE:
+\begin{equation}
+    \frac{dx_{0}}{dt}=LP[f,u_{0}](x_{0},t)\; , \; x_{0}(0)=\xi_{0}
+    \label{aveOptTraj}
+\end{equation}
+
+\subsubsection{Stationnarity condition for the averaged problem}
+    \begin{theorem}
+    Let H be the Hamiltonian of the nominal problem:
+    \begin{equation}
+        H(x,u,p,t) = L(x,u,t) + p \; f(x,u,t)
+        \label{Hamiltonian}
+    \end{equation}
+    Let $p_{0}$ be the costate of the averaged problem, defined along the 
+    optimal trajectory $x_{0}$ by the backwards differential equation:
+    \begin{equation}
+        \frac{dp_{0}}{dt}=-LP\left[\frac{\partial H}{\partial x},u_{0}\right]
+	                              (x_{0},p_{0},t)\; , \; p_{0}(T)=0
+        \label{aveCostate}
+    \end{equation}
+    Then the following stationarity condition holds:
+     \begin{equation}
+        \frac{\partial H}{\partial u}
+	       (x_{0}(t),u_{0}(t),p_{0}(t),t)=0 \; a.e.
+        \label{StatCond}
+    \end{equation}
+    where $a.e.$ stands for almost everywhere in $t \in [0,T]$.
+\end{theorem}
+\begin{proof}
+    see appendix \ref{proofStationarity}
+\end{proof}
+
+\subsubsection{Introduction of a small $\alpha$}\label{alphaDefinition}
+We want to define a small $\alpha$ as we have done for signals and 
+differential equations.
+
+For a function $g(x,u,t)$, the difference 
+$g(x_{0}(t),u_{0}(t),t)-LP]g,u_{0}](x_{0}(t),t)$ is the result of high pass 
+filtering $HP]g,u](x_{0}(t),t)$. 
+Let's define the antiderivative:
+\begin{equation}
+    I[g,x_{0},u_{0}](t)=\int_{0}^{t}HP[g,u_{0}](x_{0}(s),s)ds
+    \label{Icontrol}
+\end{equation}
+Then, as a consequence of Proposition 
+\ref{IboundProp}, the following bound holds:
+\begin{equation}
+    |I[g,x_{0},u_{0}](t)| \le (2 \|g\|_{\infty} + \lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{boundIcontrol}
+\end{equation}
+In other words, $\|I[g,x_{0},u_{0}]\|_{\infty}$ can be made small if $N$ is 
+large, $f$ is bounded and $g$ is bounded and Lipschitz.
+
+Let's define similarly the backwards antiderivative
+\begin{equation}
+    I^{T}[g,x_{0},u_{0}](t)=\int_{t}^{T}HP[g,u_{0}](x_{0}(s),s)ds
+    \label{ITcontrol}
+\end{equation}
+Then, with a similar proof, the same inequality holds:
+\begin{equation}
+    |I^{T}[g,x_{0},u_{0}](t)| \le (2 \|g\|_{\infty} + \lambda_{g}T  \|f\|_{\infty})\frac{T}{N}
+    \label{boundIcontrol2}
+\end{equation}
+Consequently, $\|I^{T}[g,x_{0},u_{0}]\|_{\infty}$ can also be made 
+small  if $N$ is large, $f$ is bounded and $g$ is bounded and Lipschitz.
+
+\begin{definition}\label{alphadef}
+    For the rest of that document, we consider the small number $\alpha$ 
+    defined as:
+    \begin{equation}
+            \alpha = \sup  
+                        \left(
+              \| I[f,x_{0},u_{0}]\|_{\infty} \; , \;
+                  \left\|I^{T}\left[\frac{\partial H}{\partial x},(x_{0},p_{0}),u_{0}\right]\right\| _{\infty}
+                 \right) 
+        \label{alpha}
+    \end{equation}
+\end{definition}
+
+We shall see that $\alpha$ measures how close the nominal and 
+averaged problems are. Observe that $\alpha$ is small, for instance, when $N$ is big and assumption 
+\ref{boundedDeriv} below holds (bounded functions and their derivatives).
+
+Observe that that $\alpha$ depends only on the solution of the 
+averaged problem.
+
+\subsection{Numerical perspective}\label{numericalSection}
+Technically, the proof of our main approximation result is based on 
+the Pontryagin principle. This is a theoretical result which holds 
+independently of the actual numerical method used to solve the nominal (resp. 
+averaged) problem.
+
+Now that we have stated what the averaged optimal control problem is, 
+we can begin to evaluate its benefit when solving numerically a 
+general 
+optimal control problem.
+
+Let us consider a direct method for the solving of problem 
+(\ref{cost},\ref{dynamics}). To do so, we discretize the dynamics into
+\begin{equation}
+	x_{k+1}=x_{k}+\delta t \; f(x_{k},u_{k},t_{k})
+	\label{discretized}
+\end{equation}
+In order to represent accurately the influence of the data on the 
+system, the discretization step $\delta t$ must be a suitable 
+sampling rate for the data. In this article's framework, $\delta t$ is 
+much smaller than the time constant of the system. The approximation 
+of the cost is obtained by using a quadrature rule for the integral. 
+Without using extra knowledge on the system, the time step of 
+the quadrature is $\delta t$.
+
+In this framework, the optimal control problem becomes a finite 
+dimensional optimization problem with a finite number of equality 
+constraints.
+
+We consider now a similar direct method to solve the averaged problem (\ref{averagecost},\ref{averagedyn}).
+To avoid confusion, we denote by  capital $T_{K}$ the boundaries of 
+the averaging intervals, and $X_{K}$ denotes the state of the 
+discretized averaged system. The dynamics of $X$ is
+\begin{equation}
+	X_{K+1}=X_{K}+\int_{T_{K}}^{T_{K+1}}f(X_{K},u(s),s)ds
+	\label{discretizedAverage}
+\end{equation}
+where a suitable quadrature rule is used to compute the integral. 
+Consistently with the discretization (\ref{discretized}), we consider 
+the sampling rate of the control and data to be $\delta t$. The 
+computation of the cost is handled similarly.
+
+We see that, while (\ref{discretized}) only consider the differential 
+aspect of the dynamics, the averaged dynamics 
+(\ref{discretizedAverage}) incorporates the integral action of a 
+dynamical system.
+
+Let us now consider the benefit of solving the averaged problem versus 
+solving the nominal problem. To make things even simpler, let us use 
+a Riemann integral for the computation of (\ref{discretizedAverage}) 
+and define
+\[
+R=\frac{T_{K+1}-T_{K}}{\delta t}
+\]
+We assume that $R$ is a (large) integer. Indeed, $\delta t$ is 
+dictated by the sampling rate of the data, while $T_{K+1}-T_{K}$ is 
+dictated by the time constant of the system, which is much larger.
+
+We see that the number of control variables $u_{k}$ is the same in 
+both problems. However, the \emph{number of constraints} 
+(\ref{discretizedAverage}) for the averaged problem is $R$ times smaller than the number of 
+constraints (\ref{discretized}) for the original problem. This is the 
+main benefit of using averaging to solve the optimal control problem 
+with direct methods.
+
+Finally, observe that the definition of the averaged costate 
+(\ref{aveCostate}) indicates what should be an indirect method, i.e. 
+based on the Pontryagin principle, for the solving of the averaged problem. 
+In this case, the benefit 
+of using the averaging method is a coarser grid for the two point 
+boundary value problem.
+\section{Applicative Example}\label{Example}
+We describe here the example of the orbit 
+transfer of low thrust space engine in the non keplerian case 
+\cite{goumri}. Ionic thrust engines work as follows: instead of 
+using a chemichal reaction to eject material, ions are ejected from 
+the engines using an eletro-magnetic field. The resulting thrust is 
+much lower than with a classical engine, but the required mass for 
+the same acceleration is proportionnally smaller (within the 
+operating range).
+\subsection{Description of the problem}
+A geostationary satellite (communication, meteo, TV) can not reach 
+its orbit directly with a classical launcher. It is rather set on a 
+transfer elliptic orbit and then brought to its geostationnary orbit 
+by its own means: see figure \ref{geostat}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=100mm]{geostationnaire.pdf}
+    \caption{Setting a geostationnary satellite to its operational orbit}
+    \label{geostat}
+\end{figure}
+
+The orbit transfer is done by a ionic thrust engine rather than a 
+conventional engine in order to save the mass of fuel and oxygen 
+needed by a conventional engine. Thus the transfer is slow and needs 
+a lot of orbits (about 90).
+
+The optimisation criteria is either the time length of the orbit 
+transfer or the mass loss and thus the initial mass need.
+\subsection{Characteristics of the optimal control problem}
+The dynamics of the satellite is very close to an orbital movement, 
+so that the parameters may be divided into:
+\begin{itemize}
+    \item  orbital slow parameters,
+
+    \item  angular speed position on the orbit,
+    
+    \item plus the mass, that is also slowly decreasing.
+\end{itemize}
+Thus the problem is ill conditioned. Indeed, the optimal 
+control probem, with a 90 orbits horizon, needs a very great amount 
+of time samples, so that the two boundary value problem can not be reasonably numerically solved.
+\subsection{Averaging on successive orbits}
+In order to take advantage of the almost orbital movement, an 
+averaging process is done on each orbit, so that the time sampling 
+can be coarser and the optimal control problem can be numerically 
+solved.
+
+Note that a time conversion is done, defining the angular positin on 
+the orbit as the new ``time'', so that the dynamic is nearly periodic 
+of period $2 \pi$.
+\subsubsection{Keplerian Case}
+When only the earh gravity is taken into account, we are in the so 
+called Kepkerian case, and the dynmic is periodic, with the low 
+thrust of the ionic engine, the control parameter, as only perturbation.
+In that case, a ``classical'' averaging scheme on successive orbits can be performed.
+\paragraph{Result}
+The solution of the averaged problem is a progressive modification of 
+the orbit until it is the geastationary one, as shown on Figure 
+\ref{trajectory}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics{trajectoire.pdf}
+    \caption{Successive orbits during the orbital tranfer in the 
+    Kepkerian Case}
+    \label{trajectory}
+\end{figure}
+
+The costs of the orbital tranfer are respectively a duration of 
+1235.4457 days and a mass loss of 208.7603 kilos.
+
+The thrust strategy is divide into two phases, with a transition at 
+about half the orbital transfer:
+\begin{itemize}
+    \item  an acceleration phase, where the satellite is accelerated 
+    at its apogee and perigee, so that apogee and perigee heights are 
+    both increaased,
+    
+    \item   a deceleration phase, where the satellite is decelerated 
+    at its apogee and accelerated at its perigee, so that apogee and 
+    perigee heights are respectively decreased and increased.
+\end{itemize}
+\subsubsection{Non-Keplerian Case}
+Moon and sun gravity forces can not be neglected in the context of a 
+low thrust transfer. So that they are taken into account in a further 
+version of the optimal orbit transfer search.
+
+But this results in a non-Keplerian problem, that is only nearly 
+periodic and not exactly periodic in the angular position on the 
+orbit.
+
+This is why an windowed averaging scheme on $2 \pi$ wide successive 
+windows is interesting. But we can wonder whether that averaging 
+scheme leads to costs and thrust strategy that are close to the 
+Keplerian case. 
+
+The answer is \emph{yes}:
+\begin{itemize}
+\item the costs of the optimal averaged problem of orbital transfer 
+are respectively a duration of 135.0423 days and a mass loss of 
+208.1386 kilos, that are very close to the corresponding costs in the 
+Keplerian case.
+\item The thrust strategy is divided into the same two phases, 
+acceleration and then deceleration, as in the Keplerian phase
+\end{itemize}
+This is true even though the costates are quite different in the different 
+configurations.
+\subsection{Conclusion of the example}
+The widowed averaging scheme proves to be as affective in the 
+periodic case (Keplerian) than in the non-periodic case 
+(non-Keplerian case with moon and sum gravity forces).
+And this is very useful in order to have an accurate \emph{and} numerically 
+solvable optimal orbit transfer problem.
+The fact that the solution is nearly optimal, with close to each other 
+trajectories, is the result of the present paper.
+
+\section{A priori expansions and definitions of auxiliary 
+variables}\label{expansions}
+We are now going to define auxiliary variables by means of formal 
+expansions with respect to $\alpha$. In what follows, $u_{0}$, 
+$x_{0}$ and $p_{0}$ denote the optimal control, state and costate of 
+the averaged problem as described in section \ref{aveProblem}.
+\subsection{Notations}
+ \begin{definition}
+    We denote the following variables from the state $x$ (resp. $x_{0}$), the control 
+    $u$ (resp. $u_{0}$) and the costate $p$ ($p_{0})$:
+    \begin{align*}
+	\sigma = (x,u) \; , \; \sigma_{0} = (x_{0},u_{0}) \\
+	w = (x,u,p) \; , \; w_{0} = (x_{0},u_{0},p_{0})
+    \end{align*}
+\end{definition}
+where $p$ is the costate of the nominal problem defined by the ODE 
+with final condition:
+    \begin{equation}
+        \frac{dp}{dt}=-\frac{\partial H}{\partial x}
+	                              (x,u,p,t)\; , \; p(T)=0
+        \label{Costate}
+    \end{equation}
+	
+\begin{definition}
+    We denote the derivatives up to second order of functions with 
+    respect to the variables 
+    $x$, $u$ or $\sigma $ with indexes, on the model: 
+    \begin{align*}
+        f_{x}  =  \frac{\partial f}{\partial x} \\
+	H_{uu}  =  \frac{\partial^{2} f}{\partial u^{2}} 
+    \end{align*}
+ \[
+             H_{\sigma \sigma}  =
+            \left[ \begin{array}
+             {cc}
+                 
+                H_{xx}  & H_{xu}   \\
+                 
+                 H_{ux}  & H_{uu}   \\
+                 
+                  
+             \end{array} \right]
+ \]
+ \end{definition}
+ 
+ \subsection{Formal expansion in $\alpha$}
+ The variable $\alpha$ defined by the equation (\ref{alpha}) is 
+ viewed as a 
+ small quantity\footnote{Actually it is not required that $\alpha$ be 
+ small. Its purpose is to give a one dimensional direction to a 
+ variation in a high dimensional space.}. In Appendix \ref{FormalExp} 
+ we compute a formal expansion of the state $x$ and the costate $p$ 
+ at the first order with respect to $\alpha$.
+ 
+ These formal expansions lead to the definition of auxiliary 
+ variables $\tilde{x_{1}}$ and $\tilde{p_{1}}$ as follows:
+\begin{definition}\label{xpTilde1}
+	We define the auxiliary variables $\tilde{x_{1}}$ and 
+	$\tilde{p_{1}}$ the following way:
+	\begin{equation}\label{xtilde1}
+		\alpha \tilde{x_{1}} =  I[f,x_{0},u_{0}]
+	\end{equation}
+	and
+		\begin{equation*}
+		\alpha \tilde{p_{1}} =  I^{T}[H_{x},(x_{0},p_{0}),u_{0}]
+	\end{equation*}
+\end{definition}
+
+The error terms $\tilde{x_{1}}$ and $\tilde{p_{1}}$ correspond to the 
+deviation error due to the approximation of the dynamics with respect 
+to their fast oscillating behavior.
+
+In definition \ref{deltaDefs} of 
+section \ref{auxVariables} we define deviations that are defined in 
+{\em magnitude}, by contrast to the sole averaging error (at the 
+optimum) which is considered here.
+
+ 
+A consequence of the definition of $\alpha \tilde{x_{1}}$ in 
+definition \ref{xpTilde1} and $\alpha$ in definition \ref{alphadef} is that:
+\begin{equation}
+    \|\tilde{x_{1}}\|_{\infty} \leq 1
+    \label{xtilde1le1}
+\end{equation}
+
+And a consequence of the definition of $\alpha \tilde{p_{1}}$ in 
+definition(\ref{xpTilde1}) and 
+$\alpha$ in definition \ref{alphadef} is that:
+\begin{equation}
+    \|\tilde{p_{1}}\|_{\infty} \leq 1
+    \label{ptilde1le1}
+\end{equation}
+
+\section{Auxiliary Problem}\label{auxProblem}
+We define an auxiliary problem which is similar to the study of the 
+second variation in \cite{Bry1}.
+\subsection{Assumptions}\label{Assumptions}
+We make two kinds of assumption on the problem data; the 
+first is related to the regularity of the functions involved, and the 
+second is a convexity assumption (Legendre-Clebsch) that is common in optimal control 
+\cite{Bry1,bensPert,chaplais}.
+\begin{assumption}[Regularity]\label{boundedDeriv}
+    The derivatives, up to the third order, of $f$ and $L$ with respect to $x$ and $u$ are 
+bounded by some $k>0$. 
+\end{assumption}
+A consequence of that assumption is that the value $\alpha$ defined by 
+equation (\ref{alpha}) is well defined and small if $N$ is sufficiently 
+big (or if the problem is periodic of small period).
+
+As a consequence, we can bound the second derivative of the dynamics 
+$f$:
+\begin{proposition}
+\begin{equation}
+        \left|f_{\sigma \sigma}(X,U,t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| \leq k(|Y|+|V|)^{2}
+    \label{fsigmasigma}
+\end{equation}
+for any $(X,U,Y,V)$.
+\end{proposition}
+\begin{proof}
+\begin{eqnarray*}
+     \left|f_{\sigma \sigma}(X,U,t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| &
+	= &  |f_{xx}(X,U,t)Y^{2}  
+	         + 2f_{xu}(X,U,t)YV + f_{uu}(X,U,t)V^{2}| \\
+     & \leq & k(|Y|+|V|)^{2}
+\end{eqnarray*}    
+\end{proof}
+
+Moreover, as $p_{0}$ is the solution of the ODE with final condition (\ref{aveCostate}), it is 
+differentiable and thus continuous of the bounded interval $[0,T]$, 
+so that it is bounded. So that another consequence  of the 
+assumption \ref{boundedDeriv} involves the derivatives of the 
+Hamiltonian:
+\begin{proposition}
+    The hamiltonian $H(x,u,p_{0},t)$ and its derivatives up to the 
+    third order in $u$ and $x$ are bounded by a constant K.
+\end{proposition}
+\begin{proof}
+    Take $K=(1+\|p_{0}\|_{\infty}) k$.
+\end{proof}
+As a consequence, the Hessian of the Hamiltonian is bounded: 
+\begin{proposition}
+\begin{equation}
+        \left|H_{\sigma \sigma}(X,U,p_{0}t)\left[
+        \begin{array}
+        {c}
+            
+            Y  \\
+            
+            V  \\
+            
+             
+        \end{array}
+        \right]^{2}\right| \leq K(|Y|+|V|)^{2}
+    \label{HsigmasigmaEq}
+\end{equation}
+for any $(X,U,Y,V)$.
+\end{proposition}
+\begin{proof}
+    Similar as for $f_{\sigma \sigma}$.
+\end{proof}
+\begin{assumption}[Strong Legendre-Clebsch condition \cite{Bry1}]\label{convexity}
+    There exists $\beta > 0$ so that for any $(x,u)$, the following 
+    holds:
+    \begin{equation}
+        H_{uu}(x,u,p_{0},t) \ge \beta Id
+        \label{beta}
+    \end{equation}
+   and
+   \begin{equation}
+       \left[H_{xx} - H_{xu}(H_{uu})^{-1}H_{ux}\right](x,u,p_{0},t) \ge 0
+       \label{positive}
+   \end{equation}
+\end{assumption}
+The consequence of equation (\ref{beta}) is that $H_{uu}$ is 
+invertible and $\|H_{uu}^{-1}\|_{\infty} \le \frac{1}{\beta} $ on any 
+$(x,u,p_{0})$.
+
+The consequence of equation (\ref{positive}) is :
+\begin{proposition}\label{Hsigmasigma}
+    \begin{equation}
+        H_{\sigma \sigma}(x,u,p_{0},t) \ge 0
+        \label{positive1}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+	see Appendix \ref{HsigmasigmaProof}
+ \end{proof}
+
+\subsection{Auxiliary Problem Definition and Properties}\label{AuxProblemStatement}
+\begin{definition}\label{secondVariation}
+         Let's define the following notations:
+   \[
+       H_{0 \sigma \sigma} = H_{\sigma \sigma} (w_{0},t) 
+       = 
+       \left[\begin{array}
+       {cc}
+           
+           H_{0xx} & H_{0xu}  \\
+           
+           H_{0ux} &  H_{0uu}   \\         
+            
+       \end{array}\right]
+   \]
+  and
+    \[
+        f_{0x}=f_{x}(\sigma_{0},t) \; , \; f_{0u}=f_{u}(\sigma_{0},t)
+    \]
+    Then we define the auxiliary problem as the linear quadratic OCP 
+    for the state y steered by the control v:
+    \begin{eqnarray}
+        \frac{dy}{dt} & = & f_{0x}[\tilde{x_{1}}+y] + f_{0u}v \; , \; 
+	y(0)=0
+        \label{auxstate}\\
+        J_{1}(v) & = & \int_{0}^{T} \left[\frac{1}{2} \left[
+        \begin{array}
+        {cc}
+            
+            y & v  \\
+             
+        \end{array}
+        \right]
+	H_{0 \sigma \sigma} \left[
+	\begin{array}
+	{c}
+	    
+	    y  \\
+	    
+	    v  \\
+	    
+	\end{array}
+	\right]
+	+ \tilde{p_{1}} \left(f_{0x}y + f_{0u}v\right)
+	\right]dt
+        \label{auxcost}
+    \end{eqnarray}
+\end{definition}
+where $\tilde{x}_{1}$ and $\tilde{p}_{1}$ are defined in definition 
+\ref{xpTilde1} as the averaging errors on the dynamics of the optimal 
+state and costate at the optimal solution of the averaged problem 
+(as defined in section \ref{aveProblem}).
+
+\begin{proposition}
+    There exists an optimal cost $v_{1}$ for the auxiliary problem.
+\end{proposition}
+\begin{proof}
+    It is a convex linear quadratic problem because $H_{0 \sigma \sigma}$ is 
+    non-negative (equation  (\ref{positive1})).
+\end{proof}
+\begin{definition}
+	We denote $v_{1}$ an optimal control of the auxialty problem, $y_{1}$ the trajectory corresponding to 
+	$v_{1}$ and $q_{1}$ the corresponding costate.
+\end{definition}
+\begin{proposition}
+	$y_{1}$ follows the dynamics:
+	\begin{equation}
+	    \frac{dy_{1}}{dt} = f_{0x}(y_{1}+\tilde{x_{1}}) + f_{0u}v_{1} \; , \; 
+		y_{1}(0)=0
+	    \label{optauxstate}
+	\end{equation}
+\end{proposition}
+\begin{proof}
+	This is the definition of the dynamics of the auxiliary 
+	problem.
+\end{proof}
+Moreover, we have:
+\begin{proposition}
+	The stationarity condition $\frac{\partial H_{1}}{\partial u}(y_{1},v_{1},p_{1})  
+	= 0$ may be written the following way:
+	\begin{equation}
+	    H_{0xu} y_{1} + H_{0uu} v_{1} +(\tilde{p_{1}} + q_{1}) f_{0u} = 0
+	    \label{auxstationarity}
+	\end{equation}
+	Moreover, the costate $q_{1}$ of the auxiliary problem follows the 
+	dynamics:
+	\begin{equation}
+	    \frac{dq_{1}}{dt} = - H_{0xx} y_{1} - H_{0xu} v_{1} -
+	    (\tilde{p_{1}} +q_{1}) f_{0x}
+	    \; , \; q_{1}(T) = 0
+	    \label{auxcostate}
+	\end{equation}
+\end{proposition}
+\begin{proof}
+	The hamiltonian of the auxiliary problem expands in:
+\begin{equation}
+	\label{auxhamiltonian}
+	\begin{split}
+    H_{1}(y,v,q) & = \frac{1}{2}\left(H_{0xx}y^{2} + 2 H_{0xu}yv + 
+	H_{0uu}v^{2}\right) \\
+    & + \tilde{p_{1}}\left(f_{0x}y +f_{0u}v\right)
+    +q_{1}\left[f_{0x}(y+\tilde{x_{1}}) + f_{0u}v\right]
+    \end{split}
+\end{equation}
+\end{proof}
+
+Finally, we have:
+\begin{proposition}\label{AuxProblemBound}
+    $y_{1}$, $v_{1}$ and $q_{1}$ are bounded by a constant $M$.
+ \end{proposition}
+\begin{proof}
+    The auxiliary problem is smooth and convex.
+\end{proof}
+
+\subsection{More auxiliary variables and their upper 
+bounds}\label{auxVariables}
+\begin{definition}\label{deltaDefs}
+    For any $u \in \mathbf{L}_{[0,T]}^{2}$, $x$ is the trajectory of 
+    the nominal dynamics (\ref{dynamics}).
+    
+    Let's then define the following notations:
+    \begin{eqnarray*}
+        \delta x = x-x_{0} &  & \tilde{x} = \delta x - \alpha \tilde{x_{1}}\\
+       \delta u = u-u_{0} &  & \tilde{u} = \delta u\\
+      \delta \sigma = (\delta x,\delta u) & & \rho(\lambda,\mu) = \sigma_{0} + \lambda \mu \delta \sigma 
+    \end{eqnarray*}
+    Where $(u_{0},x_{0})$ is a solution of the averaged problem and 
+    $\alpha \tilde{x_{1}}$ is $I[f,x_{0},u_{0}]$ (equation (\ref{xtilde1})).
+\end{definition}
+The $\delta$ variables are deviations in magnitude around the optimal 
+control $u_{0}$, after a correction due to the pure averaging error on the 
+various dynamics.
+\begin{definition}
+    We define the following variables:
+\[
+            r=\tilde{x} - \alpha y_{1} \; , \; v=\tilde{u} - \alpha v_{1} 
+\]
+\[
+Z[\lambda,\mu](t) = v        +[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha \tilde{x_{1}})
+\]
+\[
+        z^{2} = \int_{0}^{1} \int_{0}^{1} \lambda \|Z[\lambda,\mu]\|_{2}^{2} d \lambda d \mu
+\]
+\end{definition}
+
+Here $r$ and $v$ are variations with respect to the solution of the 
+averaged optimal control problem, with the extra corrective terms
+\begin{itemize}
+	\item  the averaging error on the optimal dynamics {\em 
+	considered as a pure signal}
+
+	\item  the correction term that corresponds to the second 
+	variation in reference \cite{Bry1}, as defined in definition 
+	\ref{secondVariation}.
+\end{itemize}
+
+The quantity $z^{2}$ is repeatedly used in \cite{bensPert} to study 
+perturbations in optimal control; it has been used later in \cite{maamria} 
+in a similar manner.
+
+We will bound $\|r\|_{\infty}^{2}$ and $\|v\|_{2}^{2}$ with respect to $z^{2}$ and 
+$\alpha^{2}$. Bounding then $z^{2}$ with respect to $\alpha^{2}$ will 
+lead to the main result.
+\begin{definition}\label{krv12definition}
+    We define the following constants:
+    
+    \begin{eqnarray*}
+         k_{r1} & =  & 4 k^{2}T e^{2k\left(1+\frac{K}{\beta}\right)} 
+         \\
+         k_{r2} & = & \frac{\left(\frac{K}{\beta}+\frac{1}{2}(1+2M)^{2} 
+         \alpha\right)^{2}}{\left(1+\frac{K}{\beta}\right)^{2}} 
+         \left(e^{k\left(1+\frac{K}{\beta}\right)}-1\right)^{2}
+         \\
+         k_{v1} & = & 6\left( 2 + \frac{K^{2}T k_{r1}}{\beta^{2}}\right) 
+          \\
+          k_{v2} & =  &\frac{6K^{2}T(k_{r2}+1)}{\beta^{2}}
+     \end{eqnarray*}
+	 
+	with:
+	
+	- $k$ is introduced in assumption \ref{boundedDeriv} about 
+	the boundedness of the derivatives of $f(x,u,t)$ and $L(x,u,t)$.
+	
+	- $K=(1+\|p_{0}\|_{\infty}) k$ 
+	
+	- $M$ is the upper bound of the optimal trajectory of the 
+	auxiliary problem introduced in section \ref{AuxProblemStatement} 
+	(proposition \ref{AuxProblemBound}).
+	
+	- $\alpha$ is the (hopefully) small quantity defined in equation 
+	(\ref{alpha}).
+	
+	- $\beta$ is the convexity constant of $H_{uu}$ introduced in equation 
+	(\ref{beta}) inside of the Legendre-Clebsch conditions of 
+	assumption \ref{convexity}.
+	
+\end{definition}
+\begin{proposition}\label{vrinequalities}
+    The following inequalities hold:
+\begin{equation}
+        \|r\|_{\infty}^{2} \leq k_{r1}z^{2} + k_{r2} \alpha^{2} 
+    \label{rinequality}
+\end{equation}
+and: 
+\begin{equation}\
+    \|v\|_{2}^{2} \leq k_{v1} z^{2} + k_{v2} \alpha^{2}
+    \label{vinequality}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    see appendix \ref{vrinequalitiesproof}
+\end{proof}
+We now define an extra correction term that will be used furter on. 
+We will show that this correction term is also bounded by values 
+that depend only on $z$ and $\alpha$.
+\begin{definition}
+    $r_{1}$ is defined by the following dynamics:
+    \begin{equation}
+		\begin{split}
+        \frac{dr_{1}}{dt} =  &
+	f(r_{1}+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+\alpha 
+	v_{1},t)\\ 
+	& -  f(x_{0}+\alpha(\tilde{x_{1}}+y_{1}),u_{0}+\alpha v_{1},t)
+	\\ r_{1}(0) & =0
+	\end{split}
+        \label{r1dynamics}
+    \end{equation}
+\end{definition}
+The state $r_{1}$ is driven by the difference between the dynamics 
+with state $r_{1}$ and input $v$, and the nominal velocity of the 
+system for the value of the state and controls that include all the 
+previously introduced correction terms.
+
+We will bound $\|r-r_{1}\|_{\infty}$ in $\alpha^{2}$ and $\|r_{1}\|_{\infty}^{2}$ in $z^{2}$ and 
+$\alpha^{2}$. As a consequence, we will ``anchor'' our error 
+estimates to the nominal term $r_{1}$.
+ \begin{definition}\label{kr345definition}
+    We define the following constants:
+      \[
+           k_{r5} = \frac{T}{2}(1+2M)^{2}(e^{kT}-1)  \; , \;  
+           k_{r3} = 2 k_{r1} \; , \; 
+           k_{r4} = 2 (k_{r2} + k_{r5}^{2}\alpha^{2})
+       \]
+       with $k$, $K$ and $M$ as in definition \ref{krv12definition}.
+ \end{definition}
+\begin{proposition}\label{rr1r1inequalities}
+  The following inequalities hold: 
+  \begin{equation}
+      \|r-r_{1}\|_{\infty} \leq k_{r5} \alpha^{2}
+      \label{rr1inequality}
+  \end{equation}
+  and
+   \begin{equation}
+      \|r_{1}\|_{\infty}^{2} \leq k_{r3}z^{2} + k_{r4} \alpha^{2}
+      \label{r1inequality}
+  \end{equation} 
+ \end{proposition}
+\begin{proof}
+    see appendix \ref{rr1r1inequalitiesproof}
+\end{proof}
+
+\section{Main theorem}\label{MainTheoremSection}
+\begin{definition}\label{kJdefinition}
+   We define the following constants:
+    	\begin{eqnarray*}
+	   k_{J1}  & = & 
+	  4 \sqrt{3}KMTk_{r1}+\left(\frac{3k}{2}+KM\right)Tk_{r3} 
+	   +\left(\frac{3k}{2}+(2\sqrt{3}+1)KM\right)k_{v1}
+	   \\
+	    k_{J2} & = & 2\sqrt{3}KTk_{r5}+k(1+2M)+2KTM(M+1)
+	    \\&&
+	    +\frac{3k}{2}Tk_{r2} +\left(kM+4\sqrt{3}KM\right)Tk_{r4}
+	    +\left(\frac{3k}{2}+(2\sqrt{3}+1)KM\right)k_{v2}
+	    \\
+	     k_{J0}&=&\left[e^{kT}-1 + \frac{K}{2k^{2}T}\left(e^{kT}-1\right)^{2}
+        +\frac{k}{2}\alpha\right]
+	\\
+	k_{J}& =& k_{J2}+k_{J0}
+	\\
+	k_{x} & = & \sqrt{2\left(\frac{2k_{J}k_{r1}}{\beta} +k_{r2} + (M+1)^{2}\right)}
+	\\
+	k_{u} & = & \sqrt{2\left(\frac{2k_{J}k_{v1}}{\beta} +k_{v2} + 
+	T^{2}M^{2}\right)}
+	\end{eqnarray*}
+	where:
+	
+	- $k$, $K$, $M$, $\alpha$ and $\beta$ are as in definition \ref{krv12definition}.
+	
+	- $k_{r1}$, $k_{r2}$, $k_{v1}$ and $k_{r2}$ are defined in 
+	definition \ref{krv12definition}
+	
+	- $k_{r3}$, $k_{r4}$ and 
+	$k_{r5}$ are defined in definition \ref{kr345definition}.
+\end{definition}
+Note that these constants depend only of $k$, $K$, $M$, $\alpha$, 
+$\beta$, and the horizon  $T$.
+\begin{assumption}\label{mainAssumption}
+\[
+        \alpha \leq \frac{\beta}{2k_{J1}}
+\]
+\end{assumption}
+\begin{theorem}[Main Theorem]\label{MainTheorem}
+    Considering the nominal problem in section \ref{NominalProblem}, 
+    let $H(x,u,p,t)$ its Hamiltonian, and let $J^{*}= \inf_{u}J(u)$ be 
+    its infimum cost.
+    
+    Let $u_{0}$ a solution of the averaged problem 
+    described in section \ref{aveProblem} with its trajectory $x_{0}$. Such a solution exists 
+    by assumption \ref{aveOCPsolution}.
+    
+    Let $\alpha$ be the small quantity defined in equation 
+    (\ref{alpha}) and let $\beta$ be the constant introduced in 
+    assumption \ref{convexity}.
+    
+    Let  the set of constants ($k_{J1}, k_{J}, k_{x}, k_{u})$ 
+   introduced in definition \ref{kJdefinition}.
+    
+   Then, under the set of assumptions listed in section \ref{Assumptions} 
+   and the assumption \ref{mainAssumption}, the following 
+   inequalities hold:
+   
+   - the suboptimality of the real system commanded by $u_{0}$ is limited 
+   to:
+   \begin{equation}
+       J^{*} \leq J(u_{0}) \leq J^{*} + k_{J} \alpha^{2}
+       \label{suboptimality}
+   \end{equation}
+   
+   - any trajectory $x$ of the nominal problem 
+   for a $u$ better than $u_{0}$ ($J(u) \leq J(u_{0})$), is close to 
+   $(x_{0},u_{0})$, with:
+   \begin{eqnarray}
+       \|x-x_{0}\|_{\infty} & \leq  & k_{x} \alpha
+       \label{closeTrajectory}\\
+       \|u-u_{0}\|_{2} & \leq & k_{u} \alpha
+       \label{closeControl}
+   \end{eqnarray}
+\end{theorem}
+
+
+\section{Proof of the main result}\label{proof}
+\subsection{Proof Process}
+To prove the main theorem, we proceed the following way.
+
+The section \ref{JuLowerBoundSection} is devoted to the search of a 
+lower bound of any real cost $J(u)$ of the nominal problem. That 
+lower bound contains two integral terms that do not depend on $u$, a 
+term in $z^{2}$ that is the only one depending on $u$, and a term in 
+$\alpha^{2}$, that dos not depend on $u$ either.
+
+The section \ref{Ju0UppererBoundSection} is devoted to the search of 
+an upper bound of the real cost $J(u_{0})$ of the nominal problem 
+controlled by $u_{0}$. That upper bound contains the same two integral terms 
+as in the lower bound of $J(u)$ and a term in $\alpha^{2}$.
+
+Then the section \ref{ProofSuboptimality} uses the assumption $\alpha 
+\leq \frac{\beta}{k_{J1}}$ to obtain a lower bound of $J(u)$ 
+independent of $u$, so that it is also a lower bound for $J^{*}$. 
+That lower bound is combined with the upper bound of $J(u_{0})$ 
+to bound the suboptimality $J(u_{0})-J^{*}$ as a function of 
+$\alpha^{2}$, as stated in 
+the equation (\ref{suboptimality}) of the first 
+part of the main theorem \ref{MainTheorem}.
+
+Then the section \ref{ProofSuboptimality} uses the stronger assumption $\alpha 
+\leq \frac{\beta}{2k_{J1}}$ to obtain, for any $u$ better than 
+$u_{0}$, i.e. so that $J(u) \leq J(u_{0})$, an upper bound of 
+$z^{2}$. With that bound of $z^{2}$, upper bounds for $\|x-x_{0}\|_{\infty}$ and $ 
+\|u-u_{0}\|_{2}$ are found in the equations (\ref{closeTrajectory}) and (\ref{closeControl}) of 
+the second part of the main theorem, with the help of the definitions and bounds 
+of $r$ and $v$ in section \ref{auxVariables}.
+
+\subsection{Lower bound on the real cost of the nominal problem}\label{JuLowerBoundSection}
+\subsubsection{Expansion of the real cost $J(u)$}
+We use an expansion with integral remainder to compute the variation 
+of the cost with respect to the nominal integral cost for the nominal system 
+being driven by $u_{0}$.
+\begin{proposition}\label{expJuProp}
+    The cost $J(u) = \int_{0}^{T} L(x,u,t) dt$ for any command $u \in \mathbf{L}_{[0,T]}^{2}$ 
+    expands the following way:
+    \begin{equation}
+		\begin{split}
+        J(u) = & \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+ \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt 
+	\\
+	& + \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma 
+	\sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+	d \lambda d \mu dt
+	\end{split}
+        \label{expJu}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    see appendix \ref{ProofExpJU}.
+\end{proof}
+We are going now to study carefully the various terms involved in the 
+expansion (\ref{expJu}).
+\subsubsection{Lower Bound of the third term of the expansion of 
+$J(u)$ in equation (\ref{expJu})}
+\begin{proposition}\label{J3LowerBoundProp}
+    The following inequality holds:
+	\begin{equation}
+		\begin{split}
+ 		&	\int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+		\\ & \geq 
+	\alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v] dt
+	-\frac{3k}{2}(Tk_{r3}+k_{v1}) \alpha z^{2}
+	\\
+	& -  \left[2KTk_{r5} + k(1+2M) + \frac{k}{2}(3(Tk_{r4}+k_{v2}) 
+	+4T(1+2M)^{2}) \alpha\right]\alpha^{2}
+	\end{split}
+		\label{J3LowerBound}
+	\end{equation}
+\end{proposition}
+\begin{proof}
+    See appendix \ref{J3LowerBoundProof}.
+\end{proof}
+
+\subsubsection{Lower Bound of the fourth term of the expansion of 
+$J(u)$ in equation (\ref{expJu})}
+\begin{proposition}\label{J4LowerBoundProp}
+    The following inequality holds:
+    \begin{equation}
+		\begin{split}
+    &     \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma 
+	\sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+	d \lambda d \mu dt \\ & \geq 
+	-2KM \left[TM+\sqrt{3}(2Tk_{r2}+k_{v2}+T(M^{2}+2))\alpha\right] \alpha^{2}
+         \\
+    &      + \left[\beta - 2\sqrt{3}KM(2Tk_{r1}+k_{v1})\alpha\right] z^{2}
+        \\
+	& + \alpha \int_{0}^{T} \tilde{p_{1}}\left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r+\alpha\tilde{x_{1}}  \\
+	    v  \\
+	\end{array}
+	\right] dt
+	\end{split}
+	\label{J4LowerBound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    see appendix \ref{J4LowerBoundProof}.
+\end{proof}
+
+\subsubsection{Bound in absolute value for the sum of the integral 
+terms of the right hand sides of equations (\ref{J3LowerBound}) and 
+(\ref{J4LowerBound})}
+\begin{proposition}
+    Let's define $R$ as the sum of the integral 
+terms of the right hand sides of equations (\ref{J3LowerBound}) and 
+(\ref{J4LowerBound}):
+\[
+    R = \alpha \int_{0}^{T} \tilde{p_{1}}
+    \left[f_{0x}r_{1} + f_{0u}v
+    + \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r+\alpha\tilde{x_{1}}  \\
+	    v  \\
+	\end{array}
+	\right]\right] dt
+\]
+Then the following inequality holds:
+\begin{equation}
+    |R| \leq KM[Tk_{r3} + k_{v1}]
+    + [2KTM + (2KTMk_{r5} + kTMk_{r4} + kMk_{v2})\alpha]\alpha^{2}
+    \label{RestBound}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    see appendix \ref{JuLowerBoundProof}.
+\end{proof}
+
+
+\subsubsection{Lower Bound of the real cost $J(u)$}
+We capitalize on the previous results to obtain a lower bound on $J(u)$ 
+for any control $u$.
+\begin{lemm}\label{JuLowerBoundLemma}
+   A lower bound of the cost $J(u)$ of the nominal system for any 
+   control $u$ is given by:
+   \begin{equation}
+       J(u) \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+(\beta - k_{J1}\alpha)z^{2}
+	- k_{J2}\alpha^{2}
+        \label{JuLowerBound}
+   \end{equation}
+	where $k_{J1}$ and $k_{J2}$ are defined in definition 
+	\ref{kJdefinition}.
+\end{lemm}
+\begin{proof}
+    This is a consequence of equations (\ref{J3LowerBound}), 
+    (\ref{J4LowerBound}) and (\ref{RestBound})
+\end{proof}
+
+
+\subsection{Upper bound on the cost of the nominal system controlled 
+by $u_{0}$}\label{Ju0UppererBoundSection}
+As in the previous section, we first compute an expansion with 
+integral remainder of the cost; then we study each term of the 
+expansion to obtain a global bound in section \ref{upperBoundJ0}.
+\subsubsection{Expansion of the cost $J(u_{0})$}
+\begin{definition}
+    Let $x^{0}$ be the trajectory of the nominal problem controlled 
+    by $u_{0}$. It is defined by the dynamics:
+    \begin{equation}
+    \frac{dx^{0}}{dt}=f(x^{0},u_{0},t) \; , \; x^{0}(0)=\chi_{0}
+    \label{dynamicsu0}
+\end{equation}
+For that trajectory, we set the notations:
+    \begin{eqnarray*}
+        \delta x^{0} = x^{0}-x_{0} &  & \tilde{x}^{0} = \delta x^{0} - \alpha \tilde{x_{1}}\\
+       & \rho^{0}(\lambda,\mu) = x_{0} + \lambda \mu \; \delta x^{0} &
+    \end{eqnarray*}
+    Where $(u_{0},x_{0})$ is the solution of the averaged problem and 
+    $\alpha \tilde{x_{1}}$ is $I[f,x_{0},u_{0}]$ (equation (\ref{xtilde1})).
+\end{definition}
+\begin{proposition}\label{expJu0Prop}
+    The cost $J(u_{0}) = \int_{0}^{T} L(x^{0},u_{0},t) dt$ for the 
+    optimal command $u_{0}$ of the averaged problem 
+    expands the following way:
+    \begin{align}
+        J(u_{0}) = \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+ \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt 
+	\nonumber \\
+	+ \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} 
+	\lambda H_{xx}(\rho^{0}(\lambda,\mu),u_{0},p_{0},t)(\delta x^{0})^{2}  
+	d \lambda d \mu dt
+        \label{expJu0}
+    \end{align}
+\end{proposition}
+\begin{proof}
+    It is a consequence of proposition \ref{expJuProp} with $u=u_{0}$, 
+    so that $\delta u = 0$.
+\end{proof}
+
+\subsubsection{Comparison of $x^{0}$ and $x_{0}$}
+\begin{proposition}\label{deltax0prop}
+    The following inequality hold for $\delta x^{0} = x^{0}-x_{0}$:
+    \begin{equation}
+        |\delta x^{0}| \leq \frac{\alpha}{kT} \left(e^{kT}-1\right)
+        \label{deltax0}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    As  $\delta x^{0} = x^{0}-x_{0}$, $x^{0}$ follows the dynamics 
+    (\ref{dynamicsu0}) and $x_{0}$ follows the averaged dynamics 
+    (\ref{aveOptTraj}), we have the following integral equation:
+    \begin{eqnarray*}
+         \delta x^{0}& = & \int_{0}^{t} [f(x^{0},u_{0},t) - 
+	 LP[f,u_{0}](x_{0},t)]dt \\
+          & = & \int_{0}^{t} [f(x^{0},u_{0},t) - f(x_{0},u_{0},t)]dt
+	  + \int_{0}^{t} [f(x_{0},u_{0},t) - LP[f,u_{0}](x_{0},t)]dt
+     \end{eqnarray*}
+     Thus the following inequality holds:
+\[
+             |\delta x^{0}|  \leq  
+	     \|f_{x}\|_{\infty}\left(\int_{0}^{t}|\delta x^{0}|ds\right)  + |I[f,x_{0},u_{0}](t)|
+	        \leq kT \left(\int_{0}^{t}|\delta x^{0}|ds\right) +\alpha
+\]
+Equation (\ref{deltax0}) follows from Gronwall lemma.
+\end{proof}
+
+\subsubsection{Upper Bound of the third term of the development of 
+$J(u_{0})$ (\ref{expJu0})}
+\begin{proposition}
+    The following inequality holds:
+\begin{equation}
+        \left|\int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt \right|
+        \leq \left(e^{kT}-1+\frac{k}{2}\alpha\right)\alpha^{2}
+    \label{J03bound}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    By definition of $\tilde{x}^{0}$, we have
+    \[
+        \tilde{x}^{0} = x^{0} - x_{0} - \alpha \tilde{x_{1}},
+    \]
+    so that:
+    \begin{eqnarray*}
+        \frac{d \tilde{x}^{0}}{dt} & = & f(x_{0}+\delta x^{0},u_{0},t)
+	 - LP[f,u_{0}](x_{0},t) + HP[f,u_{0}](x_{0},t)\\
+          & = & f(x_{0}+\delta x^{0},u_{0},t) - f(x_{0},u_{0},t)
+    \end{eqnarray*}
+Thus, by Taylor expansion of 
+$f(x^{0},u_{0},t)$ with integral remainder, we have:
+\[
+            \frac{d \tilde{x}^{0}}{dt} = f_{x}(x_{0},u_{0},t) \delta 
+	    x^{0}  
+               + \int_{0}^{1} \int_{0}^{1} 
+               \lambda f_{xx}((x_{0}+ \lambda \mu (\delta 
+               x^{0}),u_{0},t)(\delta x^{0})^{2} d \lambda d \mu
+\]
+     Thus, thanks to proposition \ref{deltax0prop}, we have:     
+     \begin{equation}
+             \left| \frac{d \tilde{x}^{0}}{dt}\right|
+              \leq (e^{kT}-1)\alpha +\frac{k}{2}\alpha^{2}
+         \label{dx0bound}
+     \end{equation}
+     But an integration by part, together with the fact that $ 
+     HP[H_{x},u_{0}](x_{0},p_{0},t) =-\alpha \frac{d \tilde{p_{1}}}{dt}$ 
+     and that $\tilde{x}^{0}(0)=\tilde{p_{1}}(T)=0$ leads to:
+     \begin{equation}
+         \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x}^{0} dt 
+	 = \alpha \int_{0}^{T}  \tilde{p_{1}} 
+	 \frac{d\tilde{x}^{0}}{dt}dt
+         \label{intbypart0}
+     \end{equation}
+     Including equation (\ref{dx0bound}) and the fact that 
+     $\|\tilde{p_{1}}\|_{\infty} \leq 1$ into equation 
+     (\ref{dx0bound}) proves equation (\ref{J03bound})
+ \end{proof}
+
+\subsubsection{Upper Bound of the fourth term of the development of 
+$J(u_{0})$ (\ref{expJu0})}
+\begin{proposition}
+    The following inequality holds:
+    \begin{equation}
+        \left|\int_{0}^{T} \int_{0}^{1} \int_{0}^{1} 
+	\lambda H_{xx}(\rho^{0}(\lambda,\mu),u_{0},p_{0},t)(\delta x^{0})^{2}  
+	d \lambda d \mu dt\right|
+	\leq \frac{K}{2k^{2}T}\left(e^{kT}-1\right)^{2}\alpha^{2}
+        \label{J04bound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    This is a consequence of the proposition \ref{deltax0prop}.
+\end{proof}
+
+\subsubsection{Upper Bound of $J(u_{0})$}\label{upperBoundJ0}
+Inserting equations (\ref{J03bound}) and (\ref{J04bound}) into 
+equation (\ref{expJu0} leads to:
+\begin{lemm} \label{Ju0UpperBoundLemma}
+    An upper bound of the cost $J(u_{0})$ of the nominal system 
+    controlled by $u_{0}$ is given by:
+    \begin{equation}
+     J(u_{0}) \leq \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+ k_{J0}\alpha^{2}
+        \label{Ju0UpperBound}\\
+    \end{equation}
+    where $k_{J0}$ is defined in definition 
+	\ref{kJdefinition}.
+\end{lemm}
+
+\subsection{Proof of the main theorem}
+The main theorem is proved in two steps. The first step compares the 
+costs to estimate the suboptimality of the real system controlled by 
+$u_{0}$. The second step compares the trajectories and controls 
+which outperform $u_{0}$, to estimate how close they are from the 
+trajectory and control driven by $u_{0}$.
+\subsubsection{Comparison of the real cost controlled by $u_{0}$ and the 
+infimum cost of the real system}\label{ProofSuboptimality}
+Let's now use the assumption $\alpha \leq \frac{\beta}{2k_{J1}}$ of 
+the first part of the Main Theorem \ref{MainTheorem} into the 
+equation (\ref{JuLowerBound}) of Lemma \ref{JuLowerBoundLemma}. The 
+term in $z^{2}$ is then non negative, and we get the lower bound 
+independent of $u$:
+\[
+    J(u) \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	- k_{J2}\alpha^{2}
+\]
+As that lower bound holds for any $u$, it is also a lower bound for 
+the infimum cost  $J^{*}= \inf_{u}J(u)$:
+\[
+    J^{*} \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	- k_{J2}\alpha^{2}
+\]
+so that:
+\[
+     \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	\leq J^{*} + k_{J2}\alpha^{2}
+\]
+Inserting this equation into the 
+equation (\ref{Ju0UpperBound}) of Lemma \ref{Ju0UpperBoundLemma}, 
+together with the fact that $J(u_{0}) \geq J^{*}$, by definition of 
+$J^{*}$, proves the suboptimality equation (\ref{suboptimality}) in he Main Theorem 
+\ref{MainTheorem}, since $k_{J}=k_{J0}+k_{J2}$.
+
+\subsubsection{Comparison of the controls and trajectories with and 
+without $u=u_{0}$}\label{TrajControlComp}
+Let's consider a control $u$ better than $u_{0}$, i.e. such that 
+$J(u) \leq J(u_{0})$.
+
+Let's now use in a stronger manner the assumption $\alpha \leq \frac{\beta}{2k_{J1}}$ of 
+the second part of the Main Theorem \ref{MainTheorem} into the 
+equation (\ref{JuLowerBound}) of Lemma \ref{JuLowerBoundLemma}. The 
+coefficient $z^{2}$ is then lower than $\frac{\beta}{2}$, and we get the lower bound 
+dependent of $z^{2}$, that depends on $u$:
+\[
+           J(u) \geq \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+\frac{\beta}{2}z^{2}
+	- k_{J2}\alpha^{2}
+\]
+Thus, together with the 
+equation (\ref{Ju0UpperBound}) of Lemma \ref{Ju0UpperBoundLemma}, we have the list of inequalities:
+\begin{eqnarray*}
+   \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+\frac{\beta}{2}z^{2}
+	- k_{J2}\alpha^{2}
+  & \leq & J(u) \leq J(u_{0}) \\
+  & \leq & \int_{0}^{T} L(x_{0},u_{0},t) dt
+	+ \alpha \int_{0}^{T} H_{0x} \tilde{x_{1}} dt
+	+ k_{J0}\alpha^{2}
+\end{eqnarray*}
+So that, with the definition of $k_{J}=K_{J0}+k_{J2}$, we have
+\begin{equation}
+    z^{2} \leq \frac{2k_{J}}{\beta}\alpha^{2}
+    \label{z2bound}
+\end{equation}
+On the other hand, by definition of $r$, we have:
+\[
+    x-x_{0} = r + \alpha(\tilde{x_{1}}+y_{1})
+\]
+so that, together with the equation (\ref{rinequality}):
+\[
+    \|x-x_{0}\|_{\infty}^{2} \leq 2 \left( \|r\|_{\infty}^{2} + 
+    \alpha^{2}(1+M)^{2} \right) 
+    \leq 2 \left(k_{r1}z^{2} + 
+    (k_{r2}(1+M)^{2}) \alpha^{2} \right)
+\]
+Introducing equation (\ref{z2bound}) into that equation leads to 
+equation (\ref{closeTrajectory}) of the second part
+of the Main Theorem \ref{MainTheorem}.
+
+Now let's consider the fact that, by definition of $v$:
+\[
+    u-u_{0} = v + \alpha v_{1}
+\]
+so that:
+\[
+    \|u-u_{0}\|_{2}^{2} \leq 2 \left( \|v\|_{2}^{2} + 
+    \alpha^{2}T^{2}M^{2} \right) 
+    \leq 2 \left(k_{v1}z^{2} + 
+    (k_{v2}T^{2}M)^{2} \alpha^{2} \right)
+\]
+Introducing equation (\ref{z2bound}) into that equation leads to 
+equation (\ref{closeControl}) of the second part 
+of the Main Theorem \ref{MainTheorem}.
+
+\section{Conclusion}\label{conclusionsec}
+We have shown that averaging on consecutive intervals is a flexible 
+and efficient 
+way to approximate signals while getting rid of rapidly varying 
+features. We have extended this method to ordinary 
+differential equations, control systems and optimal control problems. 
+This provides a very flexible framework for the approximation of 
+optimal control problems with rapidly varying features.
+
+Indeed, if $\alpha$ is a measure of the averaging error on the 
+dynamics, we have shown that the level of suboptimality due to the 
+use of the solution of the averaged problem into the original control 
+system is bound by some $k\alpha^{2}$, where $k$ depends on very 
+general bounds on the dynamics and on the convexity of the system.
+
+
+This makes it possible to use a coarser time mesh in the numerical computation 
+of the solution of the optimal control problem, as explained in 
+section \ref{numericalSection}.
+
+However, this does not decrease the number of optimizations of the 
+Hamiltonian. This stresses, if 
+needed, the requirement for fast minization routines in this kind of 
+optimal control problem solving.
+
+As a final note, we can observe that the control here is not 
+constrained. However, using an interior penalty approach as in 
+\cite{maamria} should be a reasonable method to generalize this 
+article's result to the constrained input case.
+
+
+\appendix
+\section{Proof of Proposition \ref{IboundProp} about the upper 
+bound of $I[g,x_{0}](t)$}\label{proofIboundProp}
+$I[g,x_{0}](t)$ is defined by equation (\ref{IdynODE}) and $x_{0}$ is 
+the solution of the averaged ODE (\ref{aveODE}). We are going to 
+bound $I[g,x_{0}]$.
+
+Let's fix $t$ and let $K$ be so that $t \in [t_{K},t_{K+1})$. Then we 
+have:
+\begin{equation}
+    I[g,x_{0}](t) = \sum_{k+0}^{K-1}I_{k}[g,x_{0}](t_{k+1}) + 
+    I_{K}[g,x_{0}](t)
+    \label{decompI}
+\end{equation}
+where $I_{j}[g,x_{0}](\tau)$ is defined for $\tau \in [t_{j},t_{i+1})$ as:
+\[
+        I_{j}[g,x_{0}](\tau) =
+           \int_{t_{j}}^{\tau}
+              \left[
+         g(x_{0}(s),s)
+         - \frac{1}{t_{j+1}-t_{j}}
+         \int_{t_{j}}^{t_{j+1}}g(x_{0}(s),\sigma)d \sigma
+         \right] ds
+\]
+We can expand the terms $I_{k}[g,x_{0}](t_{k+1})$ and 
+$I_{K}g,x_{0}(t)$ by 
+subtracting and adding the values at $t_{k}$.
+\begin{eqnarray*}
+    I_{k}[g,x_{0}](t_{k+1}) & = &
+    \int_{t_{k}}^{t_{k+1}}  \left[ g(x_{0}(t_{k},s) 
+    - \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}} 
+    g(x_{0}(t_{k}), \sigma ) d \sigma \right] ds 
+      \\ & &
+    +\int_{t_{k}}^{t_{k+1}} [g(x_{0}(s),s) -  g(x_{0}(t_{k}),s)] ds 
+     \\ & &
+    + \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}} \int_{t_{k}}^{t_{k+1}}
+    [g(x_{0}(s),\sigma) 
+    - g(x_{0}(t_{k}),\sigma)] d \sigma ds
+\end{eqnarray*}
+The first term is equal to $0$. 
+
+The terms integrated once and twice 
+in the second and third terms are both lower or equal to
+$\lambda_{g}\|x_{0}(s)-x_{0}(t_{k}\|$ because $g$ is Lipschitz in 
+$x$, with Lipschitz constant $\lambda_{g}$.
+
+Moreover, because  $x_{0}$ is 
+the solution of the averaged ODE (\ref{aveODE}), we have: 
+\[
+  \|x_{0}(s)-x_{0}(t_{k}\| \le \|f\|_{\infty}(s-t_{k})  
+\]
+Thus, we have:
+\[
+    |I_{k}[g,x_{0}](t_{k+1})| \le 2 \lambda_{g} \|f\|_{\infty}
+    \int_{t_{k}}^{t_{k+1}} (s-t_{k}) ds
+\]
+That is:
+\begin{equation}
+        |I_{k}[g,x_{0}](t_{k+1})| \le 2 \lambda_{g} \|f\|_{\infty}
+	\left(\frac{T}{N}\right)^{2}
+    \label{Iktk}
+\end{equation}
+Let's now expand $I_{K}[g,x_{0}](t)$ in an analog way starting from 
+$t_{K}$:
+\begin{eqnarray*}
+    I_{K}[g,x_{0}](t) & = &
+    \int_{t_{K}}^{t}  \left[ g(x_{0}(t_{K},s) 
+    - \frac{1}{t_{K+1}-t_{K}} \int_{t_{K}}^{t_{K+1}} 
+    g(x_{0}(t_{K}), \sigma ) d \sigma \right] ds 
+      \\ & &
+    +\int_{t_{K}}^{t} [g(x_{0}(s),s) -  g(x_{0}(t_{K}),s)] ds 
+     \\ & &
+    + \frac{1}{t_{K+1}-t_{K}} \int_{t_{K}}^{t} \int_{t_{K}}^{t_{K+1}}
+    [g(x_{0}(s),\sigma) 
+    - g(x_{0}(t_{K}),\sigma)] d \sigma ds
+\end{eqnarray*}
+The first term is not $0$ here, but it is lower or equal to $2 
+\|g\|_{\infty}\frac{T}{N}$, and the other terms are bounded as the 
+ones of $I_{k}[g,x_{0}](t_{k+1})$.
+
+Thus we have:
+\begin{equation}
+        |I_{K}[g,x_{0}](t)| \le \|g\|_{\infty}\frac{T}{N} 
+	+ 2 \lambda_{g} \|f\|_{\infty}\left(\frac{T}{N}\right)^{2}
+    \label{IKt}
+\end{equation}
+Finally, because $K+1 \le N$, the inequations (\ref{Iktk}) and (\ref{IKt}) yield to the 
+proposition \ref{IboundProp}.
+
+
+\section{Proof of the stationarity condition of the averaged 
+problem}\label{proofStationarity}
+\subsection{Averaged two boundaries problem}
+Let $u_{0}$ be the optimal control of the averaged problem 
+(\ref{averagedyn}) and let $x_{0}$ be the corresponding trajectory.
+$x_{0}$ is defined by the ODE with initial condition 
+(\ref{aveOptTraj}).
+Let $p_{0}$ be the costate of the optimal trajectory, defined by the 
+ODE with final condition (\ref{aveCostate}), with $H$ the hamiltonian 
+(\ref{Hamiltonian}).
+
+The system constituted of the of equations (\ref{aveOptTraj}) and 
+(\ref{aveCostate}) is a two boundaries problem. It is defined as the 
+two boundaries problem corresponding to the averaged optimal control 
+problem.
+
+\subsection{First variation in the direction of $\delta u$}
+    Let $\delta u \in \mathbf{L}_{[0,T]}^2$ a scalar square integrable 
+    function on $[0,T]$.
+    
+    Let $\epsilon > 0$ and let $u_{\epsilon} = u_{0} + \epsilon \delta u$ 
+    the variation of $u_{0}$ in the direction of $\delta u$.
+    
+    Since $J_{0}(u_{0})=\min_{u}J_{0}(u)$, the following stationarity condition 
+    holds:
+    \begin{equation}
+        \forall \; \delta u \in \mathbf{L}_{[0,T]}^2, 
+	\left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0} = 0 
+        \label{J0min}
+    \end{equation}
+    
+    Let $x_{\epsilon}$ be the trajectory corresponding to $u_{\epsilon}$, 
+    defined by the dynamics equation \ref{averagedyn} with 
+    $v=u_{\epsilon}$:
+    \begin{equation}
+        \frac{dx_{\epsilon}}{dt}=LP[f,u_{\epsilon}](x_{\epsilon},t)\; , \;
+        x_{\epsilon}(0)=\xi_{0}
+        \label{aveVarTraj}
+    \end{equation}
+    
+    Let $\delta x$ be the variation trajectory corresponding to the 
+    direction $\delta u$ given by 
+    $\delta x = \left(\frac{dx_{\epsilon}}{d \epsilon}\right)_{\epsilon =0}$.
+    
+\begin{lemm} \label{deltax}
+    $\delta x$ respects the following dynamics function:
+    \begin{equation}
+	\frac{d(\delta x)}{dt} = 
+	LP\left[ \frac{\partial f}{\partial x}, u_{0}\right](x_{0},t) \delta x
+        +LP\left[ \frac{\partial f}{\partial u} \delta u, u_{0}\right](x_{0},t) 
+	\label{VarDyn}
+    \end{equation}
+\end{lemm}
+\begin{proof}
+\[
+            \frac{d(\delta x)}{dt} = \frac{d}{dt}\left(\frac{dx_{\epsilon}}{d \epsilon}\right)_{\epsilon =0}
+              = \left(\frac{d}{d \epsilon}\frac{dx_{\epsilon}}{dt}\right)_{\epsilon =0}\\
+              = \left(\frac{d}{d \epsilon}LP[f,u_{0}+\epsilon \delta u](x_{\epsilon},t)\right)_{\epsilon =0}
+\]
+    Let $k$ be so that $\left[t_{k},t_{k+1}\right))$. Then:
+    \begin{eqnarray*}
+        \frac{d(\delta x)}{dt} & = & 
+	\left(\frac{d}{d \epsilon}\left(\frac{1}{t_{k+1}-t_{k}} 
+	+\int_{t_{k}}^{t_{k+1}}f(x_{\epsilon}(t),u_{0}(s)+\epsilon \delta u(s),s)ds\right)\right)
+	_{\epsilon =0}\\
+         & = & \frac{1}{t_{k+1}-t_{k}} 
+	+ \int_{t_{k}}^{t_{k+1}}\frac{d}{d \epsilon}
+	\left(f(x_{\epsilon}(t),u_{0}(s)+\epsilon \delta u(s),s)\right)_{\epsilon =0}ds \\
+         & = & \frac{1}{t_{k+1}-t_{k}} \int_{t_{k}}^{t_{k+1}} \left(
+	\frac{\partial f}{\partial x}(x_{0(t),u_{0}(s),s}\delta x(t)
+	+\frac{\partial f}{\partial u}(x_{0(t),u_{0}(s),s}\delta u(s)
+	\right) ds \\
+        & = & LP\left[ \frac{\partial f}{\partial x}, 
+	 u_{0}\right](x_{0},t) \delta x 
+	   + LP\left[ \frac{\partial f}{\partial u} \delta u, u_{0}\right](x_{0},t) 
+    \end{eqnarray*}
+\end{proof}
+
+
+\subsection{Proof of the stationarity result}
+Let's make use of Equation (\ref{J0min}) in developing 
+$\left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0}$
+for a given $\delta u$.
+\begin{lemm}
+    The derivative at $0$ of $J_{0}(u_{\epsilon})$ in $\epsilon$ is 
+    related to the hamiltonian by the following equation:
+    \begin{equation}
+        \left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0} 
+	  = \int_{0}^{T} LP\left[ \frac{\partial H}{\partial u} \delta 
+	   u, u_{0}\right](x_{0},p_{0},t) dt
+        \label{J0hamiltonian}
+    \end{equation}
+\end{lemm}
+\begin{proof}
+    Let's use the equation (\ref{averagecost}) and then commute the 
+    differentiation and integration:
+\[
+            \left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0} 
+        = \left( \frac{d}{d \epsilon}\left[ \int_{0}^{T} 
+        LP[L,u_{\epsilon}](x_{\epsilon},t)dt \right] \right)_{\epsilon=0}
+            =  \int_{0}^{T} \left(\frac{d}{d \epsilon}\left[  
+        LP[L,u_{\epsilon}](x_{\epsilon},t)\right]\right)_{\epsilon=0}dt
+\]
+    For any $k \in [0,N-1]$ and for any $t \in [t_{k},t_{k+1})$, 
+    we have the definition (\ref{average}) of $LP$:
+    \[
+      LP[L,u_{\epsilon}](x_{\epsilon},t)
+    = \frac{1}{t_{k+1}-t_{k}}
+    \int_{t_{k}}^{t_{k+1}}L(x_{\epsilon}(t),u_{\epsilon}(s),s)ds
+    \]
+    Thus if we commute again the integration and the differentiation:
+ \[
+            \left(\frac{d}{d \epsilon}\left[  
+         LP[L,u_{\epsilon}](x_{\epsilon},t)\right]\right)_{\epsilon=0}
+               = \frac{1}{t_{k+1}-t_{k}} 
+                \int_{t_{k}}^{t_{k+1}} 
+              \left(\frac{dL(x_{\epsilon}(t),u_{\epsilon}(s),s)}{d  \epsilon}\right)_{\epsilon=0} ds
+ \]
+      But by definition of $x_{\epsilon}$, $u_{\epsilon}$, $\delta x$ and $\delta u$, we have:
+\[
+            \left(\frac{dL(x_{\epsilon}(t),u_{\epsilon}(s),s)}{d \epsilon}\right)_{\epsilon=0} 
+            =  \frac{\partial L}{\partial x}(x_{0}(t),u_{0}(s),s) \delta x(t) 
+          + \frac{\partial L}{\partial u}(x_{0}(t),u_{0}(s),s) \delta u(s)
+\]	  
+     Thus by averaging on $[t_{k},t_{k+1}]$, the result is ($LP$ is 
+     linear):
+\[
+        \left(\frac{d}{d \epsilon}\left[
+        LP[L,u_{0}](x_{\epsilon},t)\right]\right)_{\epsilon=0}  
+             =  LP\left[ \frac{\partial L}{\partial x},u_{0}\right](x_{0}(t),t) \delta x(t)  
+               + LP\left[ \frac{\partial L}{\partial u} \delta u,u_{0}\right](x_{0}(t),t)  
+\]
+      But because of the dynamics (\ref{aveCostate}) of the averaged 
+     costate $p_{0}$, we have, with the definition 
+     (\ref{Hamiltonian}) of the Hamiltonian:
+     \[
+         LP\left[ \frac{\partial L}{\partial x},u_{0}\right](x_{0}(t),t)
+	 = -\frac{dp_{0}}{dt} - p_{0} LP\left[ \frac{\partial f}{\partial x},u_{0}\right](x_{0}(t),t)
+     \]
+     Thus integrating $\left(\frac{d}{d \epsilon}\left[  
+	LP[L,u_{0}](x_{\epsilon},t)\right]\right)_{\epsilon=0}$ 
+     between $0$ and $T$, we obtain:
+ \begin{equation}
+           \left(\frac{dJ_{0}(u_{\epsilon})}{d \epsilon}\right)_{\epsilon=0}  =  
+           \int_{0}^{T} -\frac{dp_{0}}{dt} \delta x 
+            - \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial x},u_{0}\right](x_{0}(t),t)
+           \delta x(t) dt 
+            + \int_{0}^{T} 
+            LP\left[ \frac{\partial L}{\partial u} \delta u,u_{0}\right](x_{0}(t),t) dt
+            \label{interm1}  
+ \end{equation}
+      Let's make an integration by part for the first term of that 
+     equation:
+     \[
+       \int_{0}^{T} -\frac{dp_{0}}{dt} \delta x = -\left[p_{0} \delta x\right]_{0}^{T} 
+       + \int_{0}^{T} \frac{d(\delta x)}{dt}  p_{0}  
+     \]
+     The variation of $p_{0} \delta x$ between $0$ and $T$ is null 
+     because $\delta x(0) = 0$ and $p_{0}(T) =0$.
+     Thus, with the dynamics of $\delta x$ given by the Lemma 
+     \ref{deltax}, the following holds:
+\[
+               \int_{0}^{T} -\frac{dp_{0}}{dt} \delta x  = 
+         \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial x}, u_{0}\right](x_{0},t) \delta x(t) dt 
+         + \int_{0}^{T} p_{0} LP\left[ \frac{\partial f}{\partial u} \delta u, u_{0}\right](x_{0},t) dt 
+\]
+      Let's insert this equation in the first term of equation 
+     (\ref{interm1}).It results in:
+ \[
+          \left( \frac{dJ_{0}(u_{\epsilon})}{d \epsilon} \right)_{\epsilon=0} =
+             \int_{0}^{T} \left[ LP\left[ \frac{\partial L}{\partial u} 
+         \delta u,u_{0}\right](x_{0},t) 
+          + p_{0} LP\left[ \frac{\partial f}{\partial u} \delta u, u_{0}\right](x_{0},t) \right] dt
+ \]
+       This proves the equation (\ref{J0hamiltonian}) by definition of 
+      the Hamiltonian.
+\end{proof}
+Let's now make use of equation (\ref{J0hamiltonian}). Let's first fix 
+$t$ and let $k$ be so that $t \in [T_{k},t_{k+1})$. Then we have:
+\[
+         LP \left[ \frac{\partial H}{\partial u} \delta u,u_{0} \right](x_{0},p_{0},t)  
+          = \frac{1}{t_{k+1}-t_{k}} 
+          \int_{t_{k}}^{t_{k+1}}\frac{\partial H}{\partial u}(x_{0}(t),u_{0}(s),p_{0}(t),t) \delta u(s) ds
+\]
+Let's specialize $\delta u$ as a ``needle variation'':
+\[
+        \delta u = \frac{t_{k+1}-t_{k}}{\eta} \mathbf{1}_{[t,t+\eta]} \delta v
+\]
+with $\eta > 0$ so that $t+\eta < t_{k+1}$ and $\delta v \in 
+\mathbf{L}_{[0,T]}^2$.
+
+Then we have:
+\[
+         LP \left[ \frac{\partial H}{\partial u} \delta u,u_{0} \right](x_{0},p_{0},t)  
+          = \frac{1}{\eta}  
+          \int_{t}^{t+\eta} \frac{\partial H}{\partial 
+	  u}(x_{0}(t),u_{0}(s),p_{0}(t),t) \delta v(s) ds 
+          \begin{array}
+          {c}
+              a.e.  \\
+               \longrightarrow  \\
+              \eta \rightarrow 0   
+          \end{array}
+            \frac{\partial H}{\partial u}(x_{0}(t),u_{0}(t),p_{0}(t),t) \delta v(t)
+\]
+More precisely, the limit is the value of the function at $t$ 
+everywhere the function is continue, that is for any $t$ possibly 
+except for a countable number of ``jumps''. As any countable set is 
+negligible, the limit holds almost everywhere.
+
+Thus, because of the equations (\ref{J0min}) and 
+(\ref{J0hamiltonian}), we have:
+\[
+   \int_{0}^{T} \frac{\partial H}{\partial u}(x_{0}(t),u_{0}(t),p_{0}(t),t) \delta v(t)  =0
+\]
+and this is true for any $\delta v \in \mathbf{L}_{[0,T]}^2$.
+This proves the stationnarity result:
+\[
+ \frac{\partial H}{\partial u}(x_{0}(t),u_{0}(t),p_{0}(t),t)  = 0 \; a.e.
+\]
+\paragraph{Remark} To prove this result, we have used the fact that 
+the control is unconstrained. The extension of the main result to the 
+constrained case can be considered using the same penalty approach as 
+in \cite{maamria}. In this approach, the constrained problem is 
+approximated by a sequence of unconstrained problems, where the 
+stationarity condition holds.
+
+\section{Formal expansions in $\alpha$}\label{FormalExp}
+We formally expand the state, costate and control variables with 
+respect to $\alpha$. This step leads to the {\em definitions} of the various 
+terms which are used throughout the article to finally yield the 
+bounds stated in the main theorem.
+\subsection{Expansion of the state $x$}
+The state variable $x$ is the solution of the original dynamics 
+equation (\ref{dynamics}) driven by the control $u$. Let us define a 
+formal expansion of $x$ and $u$ with regards to $\alpha$:
+\begin{equation}
+        x = x_{0} + \alpha x_{1} 
+    \label{statedev}
+\end{equation}
+\begin{equation}
+        u = u_{0} + \alpha u_{1}
+    \label{controldev}
+\end{equation}
+Note that the redundant definitions of $x_{0}$ and $u_{0}$ are consistent, as will 
+be seen later.
+
+We now separate the expansion terms $x_{0}$ and $x_{1}$ of the state 
+into low ($LP$) and high 
+($HP$) frequencies components:
+\begin{equation}
+        x_{0} = \bar{x_{0}} +\tilde{x_{0}} \; , \;
+        x_{1} = \bar{x_{1}} +\tilde{x_{1}}
+    \label{statedev1}
+\end{equation}
+Because of the equations (\ref{statedev}) and (\ref{statedev1}), and 
+because  the derivative of the high frequency signal $\tilde{x_{1}}$ 
+is in $\frac{1}{\alpha}$ \footnote{The integral of $HP$ is in
+$\alpha$, so we consider that the derivative of $HP$ is formally in 
+$\frac{1}{\alpha}$} , the derivative of $x$ has the following 
+expansion in $\alpha$:
+\begin{equation}
+    \frac{dx}{dt} = \left[ \frac{d \bar{x_{0}}}{dt}
+    + \frac{d \tilde{x_{0}}}{dt} 
+    + \alpha \frac{d \tilde{x_{1}}}{dt} \right]
+   + \alpha \frac{d \bar{x_{1}}}{dt}
+    \label{derivdev}
+\end{equation}
+But, because $x$ is the solution of the original dynamics 
+equation (\ref{dynamics}), using the formal expansions in $\alpha$ of $x$ 
+and $u$, and thanks to assumption 
+\ref{boundedDeriv}, we have another expansion of $\frac{dx}{dt}$ at 
+the first order in $\alpha$:
+\begin{equation}
+    \frac{dx}{dt} = f(x_{0},u_{0},t) 
+    + \alpha (f_{u}(x_{0},u_{0},t)u_{1} + f_{x}(x_{0},u_{0},t)x_{1})
+    \label{derivdev1}
+\end{equation}
+Consequently, identifying the zero order terms in  equations 
+(\ref{derivdev}) and (\ref{derivdev1}), we obtain:
+\[
+  \frac{d \bar{x_{0}}}{dt}
+    + \frac{d \tilde{x_{0}}}{dt} 
+    + \alpha \frac{d \tilde{x_{1}}}{dt} = f(x_{0},u_{0},t)
+\]
+But by definition of $\bar{x_{0}}$ as the low frequency part of 
+$x_{0}$, we have:
+\[
+   \frac{d \bar{x_{0}}}{dt} = LP[f,u_{0}](x_{0},t)  
+\]
+Consequently, by definition of $HP$, we have:
+\[
+  \frac{d \tilde{x_{0}}}{dt} 
+    + \alpha \frac{d \tilde{x_{1}}}{dt} = HP[f,u_{0}](x_{0},t)  
+\]
+with initial value $0$. Integration the previous equation yields
+\[
+    \tilde{x_{0}} + \alpha \tilde{x_{1}} = I[f,x_{0},u_{0}]
+\]
+But $I[f,\bar{x_{0}},u_{0}]$ is of order 1 in $\alpha$ and 
+$\tilde{x_{0}}$ is of order 0. Thus $\tilde{x_{0}}=0$, that gives 
+$x_{0}=\bar{x_{0}}$ the solution of the averaged problem. A 
+consequence of that is that both definitions of $x_{0}$ and $u_{0}$ 
+are consistent.
+
+Moreover, we have a definition of $\tilde{x_{1}}$ consistent with 
+definition \ref{xpTilde1}:
+\begin{equation*}
+    \alpha \tilde{x_{1}} =  I[f,x_{0},u_{0}]
+\end{equation*}
+so that so that the derivative of $\tilde{x_{1}}$ is 
+$-\frac{1}{\alpha}HP[f_{x},u_{0}](x_{0},p_{0},t)$, that is in $\frac{1}{\alpha}$.
+
+
+
+\subsection{Expansion of the costate $p$}\label{costateExpProof}
+The costate variable $p$ is the solution of the costate dynamics 
+equation with ending condition (\ref{Costate}). We expand it at the 
+first order with respect to $\alpha$:
+\begin{equation}
+        p = p_{0} + \alpha p_{1} 
+    \label{costatedev}
+\end{equation}
+We then separate the expansion terms $p_{0}$ and $p_{1}$ into low ($LP$) and high 
+($HP$) frequencies components:
+\begin{equation}
+        p_{0} = \bar{p_{0}} +\tilde{p_{0}} \; , \;
+        p_{1} = \bar{p_{1}} +\tilde{p_{1}}
+    \label{costatedev1}
+\end{equation}
+Because of the equations (\ref{costatedev}) and (\ref{costatedev1}), and 
+because  the derivative of the high frequency signal $\tilde{p_{1}}$ 
+is in $\frac{1}{\alpha}$, the derivative of $p$ has the following 
+expansion in $\alpha$:
+\begin{equation}
+    \frac{dp}{dt} = \left[ \frac{d \bar{p_{0}}}{dt}
+    + \frac{d \tilde{p_{0}}}{dt} 
+    + \alpha \frac{d \tilde{p_{1}}}{dt} \right]
+   + \alpha \frac{d \bar{p_{1}}}{dt}
+    \label{coderivdev}
+\end{equation}
+On the other hand,  $p$ is the solution of the costate dynamics 
+equation with ending condition (\ref{Costate}). Moreover, we have 
+defined the developments in $\alpha$ of $x$, $p$ and $u$. 
+
+Thus we have another development of $\frac{dp}{dt}$ at the first order in $\alpha$:
+\begin{equation}
+    \frac{dp}{dt} = -H_{x}(x_{0},u_{0},p_{0},t) 
+    + \alpha (-H_{xu}(x_{0},u_{0},p_{0},t)u_{1} 
+    -H_{xx}(x_{0},u_{0},p_{0},t)x_{1} -f_{x}(x_{0},u_{0},t)p_{1})
+    \label{coderivdev1}
+\end{equation}
+Consequently, identifying the zero order terms in  equations 
+(\ref{coderivdev}) and (\ref{coderivdev1}), we have:
+\[
+      \frac{d \bar{p_{0}}}{dt}
+        + \frac{d \tilde{p_{0}}}{dt} 
+        + \alpha \frac{d \tilde{p_{1}}}{dt} = -H_{x}(x_{0},u_{0},p_{0},t) 
+\]
+But by definition of $\bar{p_{0}}$ as the low frequency part of 
+$p_{0}$, we have:
+\[
+   \frac{d \bar{p_{0}}}{dt} = -LP[H_{x},u_{0}](x_{0},p_{0},t)  
+\]
+Consequently, by definition of $HP$, we have:
+\[
+  \frac{d \tilde{p_{0}}}{dt} 
+    + \alpha \frac{d \tilde{p_{1}}}{dt} = -HP[H_{x},u_{0}](x_{0},p_{0},t)  
+\]
+with final value $0$. Integration of the previous equation yields
+\[
+    \tilde{p_{0}} + \alpha \tilde{p_{1}} = I^{T}[H_{x},(x_{0},p_{0}),u_{0}]
+\]
+But $I[-H_{x},x_{0},p_{0},u_{0}]$ is of order 1 in $\alpha$ as 
+$\tilde{p_{0}}$ is of order 0. Thus $\tilde{p_{0}}=0$, that gives 
+$p_{0}=\bar{p_{0}}$, the solution of the averaged costate equation.
+A consequence of that is that both definitions of $p_{0}$ are consistent.
+
+Moreover, we have a definition of $\tilde{p_{1}}$ consistent with 
+definition \ref{xpTilde1}:
+\begin{equation*}
+    \alpha \tilde{p_{1}} =  I^{T}[H_{x},(x_{0},p_{0}),u_{0}]
+    \label{ptilde1}
+\end{equation*}
+so that the derivative of $\tilde{p_{1}}$ is 
+$-\frac{1}{\alpha}HP[H_{x},u_{0}](x_{0},p_{0},t)$, that is in $\frac{1}{\alpha}$.
+
+\section{Proof of non negativity of $H_{\sigma 
+\sigma}$}\label{HsigmasigmaProof}
+   We make a proof by contradiction.
+    
+    Let's suppose that (\ref{positive1}) is not true. Then there 
+    exists a negative 
+    eigenvalue $- \gamma$ of $H_{\sigma \sigma}(x,u,p_{0},t)$, that is there 
+    exists an eigenvector $ \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]$ so that:
+    \[
+        H_{\sigma \sigma}(x,u,p_{0},t) \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]
+    = - \gamma  \left[
+    \begin{array}
+    {c}
+        
+        y  \\
+        
+        v  \\
+        
+         
+    \end{array}
+    \right]
+    \]
+    This implies that the two following equations hold:
+    \begin{eqnarray}
+        H_{xx}(x,u,p_{0},t)y + H_{xu}(x,u,p_{0},t)v & = & - \gamma y
+        \label{gammay}\\
+        H_{ux}(x,u,p_{0},t)y + H_{uu}(x,u,p_{0},t)v & = & - \gamma v
+        \label{gammav}
+    \end{eqnarray}
+    But $(\gamma Id + H_{uu)} \ge ( \gamma + \beta ) Id > 0 $, so that it 
+    is invertible and the equation (\ref{gammav}) can be solved in 
+    $v$, giving:
+    \begin{equation}
+        v = (\gamma Id + H_{uu}(x,u,p_{0},t))^{-1} H_{ux}y
+        \label{vsolved}
+    \end{equation}
+    Then, replacing $v$ by its value in the equation (\ref{gammay}), we have:
+    \begin{equation}
+        (H_{xx}(x,u,p_{0},t) - H_{xu}(x,u,p_{0},t)(\gamma Id + H_{uu}(x,u,p_{0},t))^{-1} H_{ux}(x,u,p_{0},t)) y = -\gamma y
+        \label{gammay1}
+    \end{equation}
+    But as $\gamma > 0$, we have the succession of inequalities:  
+\[
+        (\gamma Id + H_{uu}(x,u,p_{0},t)) \ge H_{uu}(x,u,p_{0},t) 
+\]
+	then
+\[
+        (\gamma Id + H_{uu}(x,u,p_{0},t))^{-1} \le H_{uu}^{-1}(x,u,p_{0},t) 
+\]
+	and then
+\begin{align*}
+          (H_{xx}(x,u,p_{0},t) - H_{xu}(x,u,p_{0},t)(\gamma Id + 
+	  H_{uu}(x,u,p_{0},t))^{-1} H_{0ux}(x,u,p_{0},t)) \\
+          \ge \left[(H_{xx}- H_{xu} H_{uu}^{-1} H_{ux})\right](x,u,p_{0},t) \ge 0
+\end{align*}
+    Thus the equation (\ref{gammay1}) can not hold, because $-\gamma < 
+    0$ can not be an eigenvalue.
+	
+The Proposition \ref{Hsigmasigma} is thus proved by contradiction.
+
+\section{Proof of the inequalities on $r$, $v$, $r-r_{1}$ and $r_{1}$}
+\subsection{Proof of proposition 
+\ref{vrinequalities}}\label{vrinequalitiesproof}
+Proposition \ref{vrinequalities} is important since it bounds $r$ and 
+$v$ with respect to $z$ and $\alpha$. To obtain a bound on $r$ and 
+$v$ which only depends on $\alpha$, it will be enough to provide a bound of 
+$z$ involving $\alpha$ only.
+\subsubsection{Upper bound for $r$}
+\begin{proposition}
+    The dynamics of $r$ is the following:
+    \begin{equation}
+    		 \label{rdynsmics}
+		\begin{split}
+       \frac{dr}{dt}  & =  f(r+x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), v + u_{0} + \alpha v_{1}, t)
+                    - f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), u_{0} + \alpha v_{1}, t) 
+       \\
+         &   + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+		   \lambda f_{\sigma \sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+		       v + u_{0} + \alpha v_{1},t)
+		       \left[
+		       \begin{array}
+		       {c}
+		           \tilde{x_{1}} + y_{1}  \\
+		           v_{1} 
+		       \end{array}
+		       \right]^{2} d \lambda d \mu
+		\end{split}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    By definition of $r$ and $v$, we have:
+    \begin{eqnarray*}
+        r=x-x_{0}-\alpha(\tilde{x_{1}}+y_{1}), & so \; that: & x=r+x_{0}+\alpha(\tilde{x_{1}}+y_{1})
+	\\
+        v=u-u_{0}-v_{1}, & so \; that: & u=v+u_{0}+v_{1}
+    \end{eqnarray*}
+    Moreover:
+    \begin{equation}
+		 \label{rdynsmics0}
+		\begin{split}
+        \frac{dr}{dt}  =  & \frac{dx}{dt} - \frac{dx_{0}}{dt} 
+	- \alpha\frac{d\tilde{x_{1}}}{dt} - \alpha \frac{dy_{1}}{dt}
+       \\
+          = &
+	 f(r+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+v_{1},t)-LP[f,u_{0}](x_{0},t)
+       \\
+          & -HP[f,u_{0}](x_{0},t) - \alpha [f_{0x}(y1+\tilde{x_{1}}) + f_{0u}v_{1}]
+       \\
+           =  &
+	 f(r+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+v_{1},t)-f(x_{0},u_{0},t)
+       \\
+         & - \alpha [f_{0x}(y1+\tilde{x_{1}}) + f_{0u}v_{1}]
+	\end{split}
+     \end{equation}
+But a Taylor expansion of $f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), 
+u_{0} + \alpha v_{1}, t)$ is so:
+\begin{equation}
+	\label{Taylor}
+	\begin{split}
+   & f(x_{0} ( \tilde{x_{1}} + y_{1}), u_{0} + \alpha v_{1}, t) 
+   = f(x_{0},u_{0},t) + \alpha [f_{0x}(y1+\tilde{x_{1}}) + f_{0u}v_{1}]
+   \\
+   & + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+		   \lambda f_{\sigma \sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+		       v + u_{0} + \alpha v_{1},t)
+		       \left[
+		       \begin{array}
+		       {c}
+		           \tilde{x_{1}} + y_{1}  \\
+		           v_{1}  
+		       \end{array}
+		       \right]^{2} d \lambda d \mu
+			   \end{split}
+\end{equation}
+Introducing equation (\ref{Taylor}) in equation (\ref{rdynsmics0}) 
+proves equation (\ref{rdynsmics}).
+\end{proof}
+\begin{proposition}
+    The following inequality holds:
+    \begin{equation}
+        \|r\|_{\infty} \leq ke^{k\left(1+\frac{K}{\beta}\right)}
+	     \left[\sqrt{T}\|Z(\lambda,\mu)\|_{2}
+	     +T\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2} \alpha\right)\alpha \right]
+        \label{rinftybound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    Equation (\ref{fsigmasigma}) about the upper bound of $f_{\sigma 
+    \sigma}$ leads to:
+    \begin{eqnarray*}
+       \left|f_{\sigma \sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+		       v + u_{0} + \alpha v_{1},t)
+		       \left[
+		       \begin{array}
+		       {c}
+		           
+		           \tilde{x_{1}} + y_{1}  \\
+		           
+		           v_{1}  \\
+		        
+		       \end{array}
+		       \right]^{2}\right| 
+		       & \leq & k(|\tilde{x_{1}} + y_{1}|+|v_{1}|)^{2}
+		       \\
+		       & \leq & k(|\tilde{x_{1}}| + |y_{1}|+|v_{1}|)^{2} 
+        \end{eqnarray*}
+	Hence:
+ \begin{equation}
+                    \left|f_{\sigma \sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+                    v + u_{0} + \alpha v_{1},t)
+                    \left[
+                    \begin{array}
+                    {c}
+                        
+                        \tilde{x_{1}} + y_{1}  \\
+                        
+                        v_{1}  \\
+                     
+                    \end{array}
+                    \right]^{2}\right| \leq k (1+2M)^{2}
+             \label{fsigmasigma1}
+ \end{equation}     
+    Moreover, the function f is Lipschitz in $x$ and $u$ with 
+    Lipschitz constant the bound of the derivatives $k$, so that:
+   \begin{equation}
+        |f(r+x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), v + u_{0} + \alpha v_{1}, t)
+                           - f(x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), u_{0} + \alpha v_{1}, t)|
+			   \leq k(|r|+|v|)
+       \label{Lipschitz}
+   \end{equation}
+   The equations (\ref{fsigmasigma1}) and (\ref{Lipschitz}) in the 
+   equation (\ref{rdynsmics}) give, together with the fact that 
+   $r(0)=0$ the following inequality:
+   \begin{equation}
+       |r(t)| \leq \int_{0}^{t} (|r(s)|+|v(s)|)ds + 
+       \frac{kT}{2}(2M+1)^{2} \alpha^{2}
+       \label{rbound0}
+   \end{equation}
+   But by definition of $Z[\lambda,\mu]$, we have:
+   
+\begin{equation}
+         v =  Z[\lambda,\mu] 
+         -[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha 
+         \tilde{x_{1}}) 
+    \label{vexpression}
+\end{equation}
+   so that:
+   \[
+     |v(s)|  \leq |Z[\lambda,\mu](s)| + 
+     \|H_{uu}^{-1}\|_{\infty}\|H_{ux}\|_{\infty}(|r(s)| + \alpha 
+     |\tilde{x_{1}}(s)|)
+   \]
+   But the assumption \ref{convexity} proves that $H_{uu}$ is 
+   invertible and that $H_{uu}^{-1}$ is bounded by $\frac{1}{\beta}$, 
+   so that:
+   \begin{equation}
+       |v(s)|  \leq |Z[\lambda,\mu](s)| + \frac{K}{\beta}(|r(s)| + \alpha)
+       \label{vbound0}
+   \end{equation}
+   Including equation(\ref{vbound0}) in equation (\ref{rbound0}) 
+   leads to:
+   \begin{equation}
+       |r(t)| \leq k \left(1+\frac{K}{\beta}\right)\int_{0}^{t} (|r(s)|)ds + 
+      \frac{kKT}{\beta}\alpha + \frac{kT}{2}(2M+1)^{2} \alpha^{2} +
+      k\int_{0}^{T} |Z[\lambda,\mu](t)||dt
+       \label{rbound1}
+   \end{equation}
+   But Cauchy property leads to:
+   \begin{equation}
+       \int_{0}^{T} |Z[\lambda,\mu](t)||dt \leq \sqrt{T}\|Z(\lambda,\mu)]\|_{2}
+       \label{Cauchy}
+   \end{equation}
+   Including equation (\ref{Cauchy}) in equation (\ref{rbound1}) lead 
+   to:
+   \begin{equation}
+       |r(t)| \leq k 
+       \left(1+\frac{K}{\beta}\right)\int_{0}^{t} (|r(s)|)ds +
+       k\sqrt{T}\|Z(\lambda,\mu)\|_{2} +
+      kT\left[\frac{K}{\beta} + \frac{1}{2}(2M+1)^{2} \alpha\right]\alpha
+       \label{rbound2}
+   \end{equation}
+   Equation (\ref{rbound2}), together with Gronwall lemma, proves 
+   equation (\ref{rinftybound}).
+\end{proof}
+\paragraph{Proof of Equation (\ref{rinequality})}
+
+Let's take the square of equation (\ref{rinftybound}):
+\[
+    \|r\|_{\infty}^{2} \leq 2k^{2}e^{2k\left(1+\frac{K}{\beta}\right)}
+	     \left[T\|Z(\lambda,\mu)\|_{2}^{2}
+	     +T^{2}\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2} 
+	     \alpha\right)^{2} \alpha^{2} \right]
+\]
+Let's now multiply by $\lambda$ and integrate relatively to $\lambda$ 
+and $\mu$ between $0$ and $1$:
+\[
+    \frac{1}{2}\|r\|_{\infty}^{2} \leq 2k^{2}e^{2k\left(1+\frac{K}{\beta}\right)}
+	     \left[Tz^{2} + \frac{1}{2}T^{2}\left(\frac{K}{\beta}+\frac{1}{2}((1+2M)^{2} 
+	     \alpha\right)^{2} \alpha^{2} \right]
+\]
+
+Multiplying by 2 that equation proves Equation (\ref{rinequality}).
+
+\subsubsection{Upper bound for $v$}
+Let's apply the triangular inequality for the $\mathbf{L}_{2}$ norm 
+to the expression of $v$ (\ref{vexpression}):
+\[
+   \|v\|_{2} \leq  \|Z[\lambda,\mu]\|_{2} 
+         +\|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r 
+         +\alpha\tilde{x_{1}})\|_{2}  
+\]
+But:
+\[
+    \|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r 
+         +\alpha\tilde{x_{1}}\|_{2} \leq \sqrt{T} \|[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r 
+         +\alpha\tilde{x_{1}})\|_{\infty} \leq 
+	 \frac{K \sqrt{T}}{\beta}(\|r\|_{\infty} + \alpha 
+	 \|\tilde{x_{1}}\|_{\infty})
+\]
+Thus, taking the squares:
+\[
+   \|v\|_{2}^{2} \leq 3\left[ \|Z[\lambda,\mu]\|_{2}
+    + \frac{K^{2}T}{\beta^{2}}(\|r\|_{\infty}^{2} + \alpha^{2} 
+    \|\tilde{x_{1}}\|_{\infty}^{2})\right] 
+\]
+Let's multiply by $\lambda$ and integrate relatively to $\lambda$ 
+and $\mu$ between $0$ and $1$:
+\[
+    \frac{1}{2}\|v\|_{2}^{2} \leq 3\left[ z^{2}
+    + \frac{K^{2}T}{2\beta^{2}}(\|r\|_{\infty}^{2} + \alpha^{2}\right] 
+    \leq 3\left[\left(1 + \frac{K^{2}Tk_{r1}}{2\beta^{2}} \right)z^{2}
+    + \frac{K^{2}T}{2\beta^{2}}(1+k_{r2})\alpha^{2}\right]
+\]
+Multiplying by 2 that equation proves Equation (\ref{vinequality}).
+
+\subsection{Proof of proposition 
+\ref{rr1r1inequalities}}\label{rr1r1inequalitiesproof}
+
+We now turn our attention to the variable $r$, which can be 
+approximated by the variable $r_{1}$, up to an error which is bounded 
+by a term that depends only on $z$ and $\alpha$.
+
+The variable $r$ follows the dynamic (\ref{rdynsmics}) with $r(0)=0$, and $r_{1}$ 
+follows the dynamic (\ref{r1dynamics}).
+
+Thus $r-r_{1}$ follows the dynamics:
+ \begin{eqnarray*}
+       \frac{d(r-r_{1})}{dt}  & = & f(r+x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), v + u_{0} + \alpha v_{1}, t)
+                    - f(r_{1}+x_{0}+ \alpha ( \tilde{x_{1}} + y_{1}), v + u_{0} + \alpha v_{1}, t) 
+        \\
+         &  & + \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+		   \lambda f_{\sigma \sigma}(x_{0}+\lambda\mu\alpha(\tilde{x_{1}+y_{1}},
+		       v + u_{0} + \alpha v_{1},t)
+		       \left[
+		       \begin{array}
+		       {c}
+		           
+		           \tilde{x_{1}} + y_{1}  \\
+		           
+		           v_{1}  \\
+		        
+		       \end{array}
+		       \right]^{2} d \lambda d \mu
+    \end{eqnarray*}
+    Thus, in a similar way than for the upper bound of $r$, the 
+    following inequality holds:
+    \[
+               |r(t)-r_{1}(t)| \leq k\int_{0}^{t} |r(s)-r_{1}(s)|ds + 
+       \frac{kT}{2}(2M+1)^{2} \alpha^{2}
+    \]
+    The equation (\ref{rr1inequality}) follows from Gronwall lemma.
+    
+    The equation (\ref{r1inequality}) is then the consequence of 
+    equations (\ref{rinequality}) and (\ref{rr1inequality}), together 
+    with:
+    \[
+      \|r_{1}\|_{\infty}^{2} \leq  2 (\|r\|_{\infty}^{2} + 
+      \|r-r_{1}\|_{\infty}^{2})
+    \]
+    
+\section{Proof of the expansion of the real cost (proposition \ref{expJuProp})}\label{ProofExpJU}
+\begin{proposition}\label{expLprop}
+    $L(x,u,t)$ expands the following way:
+    \begin{equation}
+        L(x,u,t) = L(x_{0},u_{0},t) + L_{x}(x_{0},u_{0},t) \delta x  
+	           + L_{u}(x_{0},u_{0},t) \delta u
+		   + \int_{0}^{1} \int_{0}^{1} 
+		   \lambda L_{\sigma \sigma}(\rho(\lambda,\mu),t)(\delta \sigma)^{2} d \lambda d \mu
+        \label{expL}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    It is a Taylor expansion of $L(x,u,t)$ with integral remainder.
+\end{proof}
+\begin{proposition}\label{expdxtildeprop}
+    The dynamics $\frac{d \tilde{x}}{dt}$ of $\tilde{x}$ expands the 
+    following way:
+    
+ \begin{equation}
+        \frac{d \tilde{x}}{dt} = f_{x}(x_{0},u_{0},t) \delta x  + f_{u}(x_{0},u_{0},t) \delta u
+		   + \int_{0}^{1} \int_{0}^{1} 
+		   \lambda f_{\sigma \sigma}(\rho(\lambda,\mu),t)(\delta \sigma)^{2} d \lambda d \mu
+        \label{expdxtilde}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    By definition of $\tilde{x}$, we have
+    \[
+        \tilde{x} = x - x_{0} - \alpha \tilde{x_{1}},
+    \]
+    so that:
+    \begin{eqnarray*}
+        \frac{d \tilde{x}}{dt} & = & f(x_{0}+\delta x,u_{0} + \delta u,t)
+	 - LP[f,u_{0}](x_{0},t) + HP[f,u_{0}](x_{0},t)\\
+          & = & f(x_{0}+\delta x,u_{0} + \delta u,t) - f(x_{0},u_{0},t)
+    \end{eqnarray*}
+The equation (\ref{expdxtilde}) follows by Taylor expansion of 
+$f(x,u,t)$ with integral remainder.
+\end{proof}
+\begin{proposition}\label{expL1prop}
+    $L(x,u,t))$ rewrites the following way:
+\begin{equation}
+        L(x,u,t) = L(x_{0},u_{0},t) + H_{0x} (\tilde{x} +\alpha \tilde{x_{1}}) 
+	           - p_{0} \frac{d \tilde{x}}{dt} 
+		   + \int_{0}^{1} \int_{0}^{1} 
+		   \lambda H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2} d \lambda d \mu
+        \label{expL1}
+    \end{equation}  
+\end{proposition}
+\begin{proof}
+    We have the following identities:
+    \[
+        \delta x = \tilde{x} + \alpha \tilde{x_{1}}
+    \]
+    and:
+    \[
+      	L_{x}(x_{0},u_{0},t)= H_{0x} - p_{0} f_{x}(x_{0},u_{0},t) 
+    \]
+    Moreover, because of the stationary condition of the averaged 
+    problem, we have:
+    \[
+      	L_{u}(x_{0},u_{0},t) =  - p_{0} f_{u}(x_{0},u_{0},t) 
+    \]
+    Finally we change the integral remainder of the expansion of 
+    $L(x,u,t)$ in equation (\ref{expL}) with:
+    \[
+        L_{\sigma \sigma}(\rho(\lambda,\mu),t) 
+	= H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)  
+	  - p_{0} f_{\sigma \sigma}(\rho(\lambda,\mu),t)
+    \]
+    Thus equation (\ref{expL}) leads to:
+    \begin{align*}
+        L(x,u,t) = L(x_{0},u_{0},t + H_{0x} (\tilde{x} +\alpha \tilde{x_{1}}) 
+	           - p_{0} \left[f_{x}(x_{0},u_{0},t) + 
+		   f_{u}(x_{0},u_{0},t)
+		   \right. \\ \left.
+		   + \int_{0}^{1} \int_{0}^{1} 
+		   \lambda f_{\sigma \sigma}(\rho(\lambda,\mu),t)](\delta \sigma)^{2} d \lambda d \mu\right]
+		   + \int_{0}^{1} \int_{0}^{1} 
+		   \lambda H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2} d \lambda d \mu
+        \label{expL1}
+    \end{align*}
+Inserting equation (\ref{expdxtilde}) in this equation proves 
+proposition \ref{expL1prop}.
+\end{proof}
+\begin{proposition}
+    The following equality holds:
+\begin{equation}
+            \int_{0}^{T} -p_{0} \frac{d\tilde{x}}{dt}dt = - 
+	    \int_{0}^{T} LP[H_{x},u_{0}](x_{0},t) \tilde{x}dt
+    \label{partintp0}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    Let's make an integration by part:
+    \[
+        \int_{0}^{T} -p_{0} \frac{d\tilde{x}}{dt} dt
+         = - [p_{0}\tilde{x}]_{0}^{T} +  \int_{0}^{T} 
+	 \frac{dp_{0}}{dt} \tilde{x} dt
+    \]
+    This leads to the equation (\ref{partintp0}) because $\tilde{x}(0)=0$, 
+    $p_{0}(T)=0$ and:
+    \[
+        \frac{dp_{0}}{dt} =  - LP[H_{x},u_{0}](x_{0},t)
+    \]
+\end{proof}
+Now inserting the equation (\ref{partintp0}) in the equation 
+(\ref{expL1}) integrated between $0$ and $T$ leads to equation 
+(\ref{expJu}), which ends the proof of proposition \ref{expJuProp}.
+
+\paragraph{Remark} The remaining appendix sections are devoted to 
+the obtention of a lower bound on $J(u)$. This is achieved by 
+obtaining a lower bound on each term of the expansion (\ref{expJu}) 
+of $J(u)$. Only the complicated terms require an extensive study; 
+this study is 
+detailed in sections \ref{J3LowerBoundProof}, 
+\ref{J4LowerBoundProof},  \ref{JuLowerBoundProof} and finally 
+\ref{RestBoundProof}.
+
+\section{Proof of the lower bound of the third term (Proposition 
+\ref{J3LowerBoundProp})}\label{J3LowerBoundProof}
+\begin{proposition}
+    The following inequality holds:
+\begin{equation}
+            \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt   
+            \geq -(2KTk_{r5}+k(1+2M))\alpha^{2}  +   
+        \alpha \int_{0}^{T} \tilde{p_{1}} \frac{dr_{1}}{dt} dt
+            \label{J3LowerBound0}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    By definition of $r$, we have:
+    \[
+        \tilde{x} = r + \alpha y_{1} = (r-r_{1}) + (r_{1} + \alpha y_{1})
+    \]
+    So that
+    \[
+        \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+	= \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) (r-r_{1}) dt
+	+ \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) (r_{1} + \alpha y_{1}) dt
+    \]
+    But because of equation (\ref{rr1inequality}), we have
+    \[
+       \left|\int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) (r-r_{1}) dt\right|
+       \leq T\|HP[H_{x},u_{0}]\|_{\infty}k_{r5}\alpha^{2} \leq 
+       2KTk_{r5}\alpha^{2}
+    \]
+    Moreover, by definition of $\alpha \tilde{p_{1}}$, we have:
+    \[
+       HP[H_{x},u_{0}](x_{0},p_{0},t) = -\alpha \frac{d\tilde{p_{1}}}{dt}(t) 
+    \]
+    So that the following inequality holds:
+    \[
+        \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+	\geq -2KTk_{r5}\alpha^{2} - \alpha \int_{0}^{T}  
+	\frac{d\tilde{p_{1}}}{dt}(\tilde{x_{1}}+ \alpha y_{1}) dt
+    \]
+    If we make an integration by part and use the fact that 
+    $\tilde{p_{1}}(T)=\tilde{x_{1}}(0)=y_{1}(0)=0$, we get:
+    \[
+        \int_{0}^{T} HP[H_{x},u_{0}](x_{0},p_{0},t) \tilde{x} dt
+	\geq -2KTk_{r5}\alpha^{2} +
+	\alpha \int_{0}^{T}  
+	\tilde{p_{1}}\left(\frac{d\tilde{x_{1}}}{dt} + \alpha\frac{dy_{1}}{dt}\right) dt
+    \]
+    $y_{1}$ follows the dynamics (\ref{optauxstate}) and 
+    $\|\tilde{p_{1}}\|_{\infty} \leq 1$, so that:
+    \[
+        \left|\alpha^{2} \int_{0}^{T}  \tilde{p_{1}}\frac{dy_{1}}{dt} dt\right|
+        \leq  k\alpha^{2} (\|y_{1}+\tilde{x_{1}}\|_{\infty}  +\|v_{1}\|_{\infty}
+	\leq k(2M+1) \alpha^{2}
+    \]
+    So that the inequality (\ref{J3LowerBound0}) is proved.
+\end{proof}
+\begin{proposition}
+    The dynamics of $r_{1}$ expands the following way:
+    \begin{equation}
+	\label{r1dynamicsexp}
+	\begin{split}
+        \frac{dr_{1}}{dt}  = & [f_{0x}r_{1} + f_{0u}v]
+         \\
+	& + \int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} + \alpha(\tilde{x_{1}}+y_{1})),
+	u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+	\left[\begin{array}
+	{c}
+	    r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+	     v + \alpha v_{1}
+	\end{array}\right]^{2} d \lambda d \mu
+	 \\
+	&- \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+	u_{0} + \lambda \mu \alpha v_{1},t)
+	\left[\begin{array}
+	{c}
+	   \tilde{x_{1}}+y_{1}  \\
+	     \alpha v_{1}
+	\end{array}\right]^{2} d \lambda d \mu
+	\end{split}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    The dynamics of $r_{1}$ (equation (\ref{r1dynamics})) is the difference 
+    between the quantities    $f(r_{1}+x_{0}+\alpha(x_{1}+y_{1}),v+u_{0}+\alpha v_{1},t)$ and
+    $f(x_{0}+\alpha(x_{1}+y_{1}),u_{0}+\alpha v_{1},t)$.
+    
+    Let's make the Taylor expansions of these quantities at 
+    $(x_{0},u_{0})$:
+\begin{eqnarray*}
+    f(r_{1}+x_{0} & + & \alpha(x_{1}+y_{1}),v+u_{0}+\alpha v_{1},t) \\
+    &=&f(x_{0},u_{0},t)\\
+     && + f_{0x} (r_{1} + \alpha(x_{1}+y_{1})) + f_{0u}(v+\alpha v_{1})
+    \\
+     && +  \int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} + \alpha(\tilde{x_{1}}+y_{1})),
+	u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+	\left[\begin{array}
+	{c}
+	    r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+	     v + \alpha v_{1}\\
+	\end{array}\right]^{2} d \lambda d \mu
+\end{eqnarray*}
+and
+\begin{eqnarray*}
+    f(x_{0} & + & \alpha(x_{1}+y_{1}), u_{0}  + \alpha v_{1},t) \\
+    &=&f(x_{0},u_{0},t)\\
+     && +  \alpha [f_{0x}(x_{1}+y_{1})) + f_{0u}v_{1}]
+    \\
+     && +  \alpha^{2} \int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+	u_{0} + \lambda \mu \alpha v_{1},t)
+	\left[\begin{array}
+	{c}
+	    \tilde{x_{1}}+y_{1}  \\
+	      v_{1} \\
+	\end{array}\right]^{2} d \lambda d \mu 
+\end{eqnarray*}
+The simplifications between the two expansions while we take their 
+differences gives the dynamics of $r_{1}$ (\ref{r1dynamicsexp}).
+\end{proof}
+The consequence of that dynamics expansion is that:
+\begin{equation}
+    \label{Expansion2}
+	\begin{split}
+    & \alpha \int_{0}^{T}  \tilde{p_{1}} \frac{dr_{1}}{dt}dt  
+    =\alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v] dt 
+    \\ 
+	&
+     + \alpha  \int_{0}^{T}  \tilde{p_{1}}
+     \left[\int_{0}^{1} \int_{0}^{1} 
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} + \alpha(\tilde{x_{1}}+y_{1})),
+	u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+	\left[\begin{array}
+	{c}
+	    r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+	     v + \alpha v_{1}
+	\end{array}\right]^{2} d \lambda d \mu\right]dt 
+    \\ &
+     - \alpha^{3} \int_{0}^{T} \tilde{p_{1}}
+     \left[ \int_{0}^{1} \int_{0}^{1} 
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+	u_{0} + \lambda \mu \alpha v_{1},t)
+	\left[\begin{array}
+	{c}
+	    \tilde{x_{1}}+y_{1}  \\
+	    v_{1} 
+	\end{array}\right]^{2} d \lambda d \mu \right]dt 
+	\end{split}
+\end{equation}
+\begin{proposition}
+    Let's define the terms:
+    \[
+        R_{1} = \alpha \int_{0}^{T}  \tilde{p_{1}}
+     \left[\int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu (r_{1} + \alpha(\tilde{x_{1}}+y_{1})),
+	u_{0} + \lambda \mu (v + \alpha v_{1}),t)
+	\left[\begin{array}
+	{c}
+	    r_{1} + \alpha(\tilde{x_{1}}+y_{1})  \\
+	     v + \alpha v_{1}\\
+	\end{array}\right]^{2} d \lambda d \mu\right]dt 
+    \]
+    and 
+    \[
+        R_{2} = \alpha^{3} \int_{0}^{T} \tilde{p_{1}}
+     \left[ \int_{0}^{1} \int_{0}^{1}
+	\lambda f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+	u_{0} + \lambda \mu \alpha v_{1},t)
+	\left[\begin{array}
+	{c}
+	    \tilde{x_{1}}+y_{1}  \\
+	     v_{1} \\
+	\end{array}\right]^{2} d \lambda d \mu \right]dt 
+    \]
+    Then the following inequalities hold:
+    \begin{equation}
+        |R_{1}| \leq \frac{3k}{2}[(k_{r3}T + k_{v1}] \alpha z^{2}  
+	+[(k_{r4}T + k_{v2} + T(1+2M)^{2}] \alpha^{3}
+        \label{R1bound}
+    \end{equation}
+    and
+    \begin{equation}
+        |R_{2}| \leq \frac{kT}{2}(1+2M)^{2} \alpha^{3}
+        \label{R2bound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    Equation (\ref{fsigmasigma}) about the upper bound of $f_{\sigma 
+    \sigma}$ leads to:
+   \begin{eqnarray*}
+    &&  \left|f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+	u_{0} + \lambda \mu \alpha v_{1},t)
+	\left[\begin{array}
+	{c}
+	    r_{1} + \alpha(\tilde{x_{1}}+y_{1}  \\
+	     v + \alpha v_{1} \\
+	\end{array}\right]^{2}\right|\\
+	&\leq & 3k[|r_{1}+\alpha(\tilde{x_{1}}+y_{1})| + |v+\alpha v_{1}|]^{2} \\
+	&\leq & 3k[|r_{1}| + |v|+\alpha(|\tilde{x_{1}}+y_{1}| + |v_{1}|)]^{2} \\
+	&\leq & 3k[r_{1}^{2} + v^{2}+\alpha(|\tilde{x_{1}}+y_{1}| + |v_{1}|)^{2}]
+    \end{eqnarray*}
+    Thus, together with the fact that $\tilde{p_{1}} \leq 1$, we have:
+    \begin{eqnarray*}
+       |R_{1}|& \leq &\frac{3k \alpha}{2}[\|r_{1}\|_{2}^{2} + \|v\|_{2}^{2}+ \alpha^{2}T(2M+1)^{2}]
+      \\ |R_{1}| & \leq &\frac{3k \alpha}{2}[\|r_{1}\|_{\infty}^{2} + \|v\|_{2}^{2}+ \alpha^{2}T(2M+1)^{2}]      
+   \end{eqnarray*}
+   Equations (\ref{r1inequality}) and (\ref{vinequality}) then lead 
+   to equation (\ref{R1bound}). 
+   
+   Equation (\ref{fsigmasigma}) about the upper bound of $f_{\sigma 
+   \sigma}$ leads also to: 
+ 
+\[
+          \left|
+                 f_{\sigma \sigma}(x_{0} + \lambda \mu\alpha(\tilde{x_{1}}+y_{1}),
+             u_{0} + \lambda \mu \alpha v_{1},t)
+             \left[\begin{array}
+             {c}
+                 r_{1} + \alpha(\tilde{x_{1}}+y_{1}  \\
+                  v + \alpha v_{1} \\
+             \end{array}\right]^{2}\right|
+         \leq k(|\tilde{x_{1}}+y_{1}| + |v_{1}|)^{2} \leq k(1+2M)^{2}
+\]
+ That proves equation (\ref{R2bound}) by triple integration and 
+ multiplication by $\alpha^{3}$.
+ \end{proof}
+The equations (\ref{R1bound}) and (\ref{R2bound}) included in 
+equation (\ref{R2bound}) (\ref{Expansion2}) lead to:
+\begin{eqnarray*}
+    \alpha \int_{0}^{T}  \tilde{p_{1}} \frac{dr_{1}}{dt}dt  
+   & = &\alpha \int_{0}^{T} \tilde{p_{1}}[f_{0x}r_{1} + f_{0u}v] dt \\
+   && -\frac{3k}{2}(k_{r2}T + k_{v1})Ma z^{2}
+   - \frac{k}{2}[3(k_{r4}T+k_{v2}) +4T(1+2M)^{2}]\alpha^{3}
+\end{eqnarray*}
+Introducing that equation into equation (\ref{J3LowerBound0}) leads 
+to equation (\ref{J3LowerBound}) and thus the proposition 
+\ref{J3LowerBoundProp}.
+
+\section{Proof of the lower bound of the fourth term (Proposition 
+\ref{J4LowerBoundProp})}\label{J4LowerBoundProof}
+\begin{proposition}\label{J4LowerBound0Prop}
+    The following inequality holds:
+\begin{equation}
+	\label{J4LowerBound0}
+	\begin{split}
+            &\int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma 
+        \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+        d \lambda d \mu dt  \\ 
+		&\geq  
+        -2KTM^{2} \alpha^{2} + \beta z^{2} 
+	\\
+        &+ 2\alpha \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda \left[y_{1},v_{1}\right]
+	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] d \lambda d \mu dt
+  		\end{split}
+\end{equation}
+\end{proposition}
+\begin{proof}
+    Let's use the fact that:
+    \[
+        \delta \sigma =
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]
+	+\alpha
+	\left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]
+    \]
+    to expand $H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}$:
+    \begin{equation}
+       \label{expJ4}
+	   \begin{split}
+        H_{\sigma 
+        \sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2} & = 
+	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right]^{2}\\ &
+	+\alpha^{2}
+	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+		\left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  
+        \end{array}
+        \right]^{2}
+        \\
+           & + 2 \alpha [y_{1},v_{1}]
+	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v 
+        \end{array}
+        \right] 
+		\end{split}
+     \end{equation}
+    The second term is easily upper bounded in absolute value 
+    (equation (\ref{HsigmasigmaEq}) about the upper bound of 
+    $H_{\sigma\sigma}$):
+    \[
+        \left|H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+		\left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]^{2}\right|
+	\leq K(|y_{1}|+|v_{1}|)^{2}
+	\leq 4KM^{2}
+    \]
+    so that:
+    \begin{equation}
+        \left| \int_{0}^{T} \int_{0}^{1} \int_{0}^{1}
+	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+		\left[
+        \begin{array}
+        {c}
+            y_{1}  \\
+            v_{1}  \\
+        \end{array}
+        \right]^{2}\right|
+	d \lambda d \mu dt
+	\leq 2KTM^{2}        
+        \label{J42bound}
+    \end{equation}
+    To upper bound the first term, let's expand it in its components:
+    \begin{equation}
+       \label{expJ41}
+	   \begin{split}
+        	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right]^{2}
+	&=H_{xx}(\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}\\
+	&+2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)v
+	\\
+	&+H_{uu}(\rho(\lambda,\mu),p_{0},t)v^{2}
+	\end{split}
+     \end{equation}
+    Now let's use the definition of 
+    $Z[\lambda,\mu](t) = v +[H_{uu}^{-1}H_{ux}](\rho(\lambda,\mu),p_{0},t)(r+\alpha \tilde{x_{1}}$ 
+    to expand the terms in $v$ and $v^{2}$:
+    \begin{equation}
+		      \label{expv}
+		\begin{split}
+        2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)v & = 
+	2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]
+         \\  &  
+	- 2[H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+	\end{split}
+    \end{equation}
+    and
+    \begin{equation}
+		\label{expv2}
+		\begin{split}
+       H_{uu}(\rho(\lambda,\mu),p_{0},t)v^{2}  & =  
+       H_{uu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]^{2}
+        \\
+          & + [H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+        \\
+	& - 2(r+\alpha\tilde{x_{1}})H_{xu}(\rho(\lambda,\mu),p_{0},t)Z[\lambda,\mu]
+	\end{split}
+    \end{equation}
+    Introducing equations (\ref{expv}) and (\ref{expv2}) in equation 
+    (\ref{expJ41}) leads to:
+    \begin{eqnarray*}
+        	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} & = & 
+	[H_{xx}-H_{ux}H_{uu}^{-1}H_{xu}](\rho(\lambda,\mu),p_{0},t)(r+\alpha\tilde{x_{1}})^{2}
+        \\
+         &  & +H_{uu}Z[\lambda,\mu]^{2}
+    \end{eqnarray*}
+    Because of assumption \ref{convexity} on the convexity, this 
+    proves that:
+    \[
+      	H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} \geq \beta Z[\lambda,\mu]^{2}
+    \]
+    so that:
+    \begin{equation}
+	\int_{0}^{T} \int_{0}^{1} \int_{0}^{1}
+        H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0},t)
+	\left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]^{2} d \lambda d \mu dt
+	\geq \beta z^{2}
+        \label{J41bound}
+    \end{equation}
+    Including equations (\ref{J41bound}) and (\ref{J42bound}) into 
+    equation (\ref{expJ4}) leads to equation (\ref{J4LowerBound0}).
+\end{proof}
+\begin{proposition}\label{J41boundProp}
+    Let's denote:
+    \[
+        J_{41} = 2\alpha \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda \left[y_{1},v_{1}\right]
+	[H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)-H_{\sigma \sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] d \lambda d \mu dt
+    \]
+    Then the following bound holds:
+    \begin{equation}
+        |J_{41}| \leq 4 
+            \sqrt{3}KM\alpha\left[\left((Tk_{r1}+\frac{1}{2}k_{v1}\right)z^{2}
+            +\left(Tk_{r2}+\frac{1}{2}k_{v2}+\frac{T}{2}(M^{2}+2)\right)\alpha^{2}\right] 
+        \label{J41bound2}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    Let's expand $\left[y_{1},v_{1}\right]
+	[H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma \sigma}(w_{0},t)]
+            \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right]$ 
+	into its coordinates:
+	\begin{equation}
+		\begin{split}
+	    & \left[y_{1},v_{1}\right]
+	[H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma \sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  
+        \end{array}
+        \right] \\ & =  
+	y_{1}[H_{xx}(\rho(\lambda,\mu),p_{0}t)-H_{xx}(w_{0},t)](r+\alpha\tilde{x_{1}})
+           \\
+             & + y_{1}[H_{xu}(\rho(\lambda,\mu),p_{0}t)-H_{xu}(w_{0},t)]v
+           \label{J41exp}\\
+             & + v_{1}[H_{ux}(\rho(\lambda,\mu),p_{0}t)-H_{ux}(w_{0},t)](r+\alpha\tilde{x_{1}})
+           \\
+             & + 
+	    v_{1}[H_{uu}(\rho(\lambda,\mu),p_{0}t)-H_{uu}(w_{0},t)]v
+		   \end{split}
+       \end{equation}
+       But the second derivatives of $H(x,u,p_{0},t)$ are Lipschitz in 
+       $(x,u)$ of 
+       Lipschitz constant $K$ because the third derivatives of 
+       $H(x,u,p_{0},t)$ are bounded by $K$.
+       Thus with the definition of $\rho(\lambda,\mu)$ and $w_{0}$, 
+       equation (\ref{J41exp}) leads to:
+       \begin{align*}
+           \left|\left[y_{1},v_{1}\right]
+	   \right. & \left.
+	[H_{\sigma \sigma}(\rho(\lambda,\mu),p_{0}t)H_{\sigma \sigma}(w_{0},t)]
+        \left[
+        \begin{array}
+        {c}
+            r+\alpha\tilde{x_{1}}  \\
+            v  \\
+        \end{array}
+        \right] \right|  \\
+	&\leq 
+	\lambda\mu K \sqrt{(r+\alpha\tilde{x_{1}})^{2} + \alpha^{2}v_{1}^{2}}
+	(|y_{1}||r+\alpha\tilde{x_{1}}| + |y_{1}||v| + 
+	|v||r+\alpha\tilde{x_{1}}|+|v_{1}||v|&
+           \\
+            & \leq   K \sqrt{(r+\alpha)^{2} + 
+	    \alpha^{2}M^{2}}(2M(|r|+\alpha) + 2M|v|)
+          \\
+            & \leq  2MK \sqrt{2r^{2}+2\alpha^{2} + 
+	    M^{2}\alpha^{2}}\sqrt{3(r^{2}+v^{2}+\alpha^{2})}&
+           \\
+            & \leq  2MK \sqrt{3} \; (2r^{2}+v^{2}+(M^{2}+2)\alpha^{2})
+        \end{align*}
+	Thus, with a triple integration after multiplication by 
+	$\lambda$, we get:
+	\[
+	    |J_{41}| \leq 4 
+            \sqrt{3}KM\alpha\left[T\|r\|_{\infty}^{2} + 
+	    \frac{T}{2}\|v\|_{2}^{2}+((M^{2}+2)\alpha^{2}\right] 
+	\]
+	Then, using equations (\ref{rinequality}) and  
+	(\ref{vinequality}) lead to equation  (\ref{J41bound}).
+\end{proof}
+Applying propositions \ref{J4LowerBound0Prop} and \ref{J41boundProp} 
+lead to:
+    \begin{eqnarray*}
+        &&\int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda H_{\sigma 
+	\sigma}(\rho(\lambda,\mu),p_{0},t)(\delta \sigma)^{2}  
+	d \lambda d \mu dt \\ && \geq  
+	-2KM \left[TM+\sqrt{3}(2Tk_{r2}+k_{v2}+T(M^{2}+2))\alpha\right] \alpha^{2}
+        \\
+         &  & + \left[\beta - 2\sqrt{3}KM(2Tk_{r1}+k_{v1})\alpha\right] z^{2}
+        \\
+	&&+ 2 \alpha \int_{0}^{T} \int_{0}^{1} \int_{0}^{1} \lambda \left[y_{1},v_{1}\right]
+	H_{\sigma \sigma}(w_{0},t)
+	\left[
+	\begin{array}
+	{c}
+	    r+\alpha\tilde{x_{1}}  \\
+	    v  \\
+	\end{array}
+	\right] d \lambda d \mu dt
+    \end{eqnarray*}
+That proves proposition \ref{J4LowerBoundProp} because
+$H_{0 \sigma \sigma}=H_{\sigma \sigma}(w_{0},t)$
+does not depend on $\lambda$ and $\mu$.
+
+\section{Proof of Bound in absolute value for the sum of the integral 
+terms of the right hand sides of equations (\ref{J3LowerBound}) and 
+(\ref{J4LowerBound})}\label{JuLowerBoundProof}
+Thanks to the fact that 
+$r+\alpha\tilde{x_{1}}= r_{1}+((r-r_{1})+\alpha\tilde{x_{1}})$,
+ we have $R=R_{3}+R_{4}$, where $R_{3}$ and $R_{4}$ are defined as:
+    \[
+        R_{3}=\alpha \int_{0}^{T} \tilde{p_{1}}\left[f_{0x}r_{1} + f_{0u}v
+	 + \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	 \left[
+	\begin{array}
+	{c}
+	    r_{1}  \\
+	    v  \\
+	\end{array}
+	\right]\right] dt
+    \]
+and
+    \[
+        R_{4}=\alpha \int_{0}^{T} \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r_{1}+\alpha\tilde{x_{1}}  \\
+	    0  \\
+	\end{array}
+	\right] dt
+    \]
+
+
+\begin{proposition}
+    The following inequality holds:
+    \begin{equation}
+        |R_{3}| \leq kM\left((Tk_{r3}+k_{v1})\alpha z^{2}
+	+(Tk_{r4}+k_{v2}) \alpha^{3}\right)
+        \label{R3bound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    Let's develop $\left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	 \left[
+	\begin{array}
+	{c}
+	    r_{1}  \\
+	    v  \\
+	\end{array}
+	\right]$ into coordinates:
+	\[
+	    \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	 \left[
+	\begin{array}
+	{c}
+	    r_{1}  \\
+	    v  \\
+	\end{array}
+	\right]
+	=H_{0xx}y_{1}r_{1} + H_{0ux}y_{1}v + H_{0xu}v_{1}r_{1} + 
+	H_{0uu}v_{1}v
+	\]
+	so that:
+	\begin{align*}
+	    \tilde{p_{1}}&\left[f_{0x}r_{1} + f_{0u}v
+	 + \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	 \left[
+	\begin{array}
+	{c}
+	    r_{1}  \\
+	    v  \\
+	\end{array}
+	\right]\right]\\
+	& =(f_{0x}\tilde{p_{1}}+H_{0xx}y_{1} + H_{0xu}v_{1}) r_{1}
+	+ (f_{0u}\tilde{p_{1}}+H_{0ux}y_{1} + H_{0uu}v_{1}) v
+	\end{align*}
+	
+Now let's use the costate dynamics (\ref{auxcostate}) of the 
+auxiliary problem, together with its stationarity condition 
+(\ref{auxstationarity}). Then we get:
+\[
+   \tilde{p_{1}}\left[f_{0x}r_{1} + f_{0u}v
+	 + \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	 \left[
+	\begin{array}
+	{c}
+	    r_{1}  \\
+	    v  \\
+	\end{array}
+	\right]\right]
+	= -\frac{dq_{1}}{dt}r_{1} - q_{1}\left[f_{0x}r_{1} + f_{0u}v\right]
+\]
+An integration by parts, together with the fact that 
+$r_{1}(0)=q_{1}(T)=0$ leads to:
+\[
+    R_{3}= \alpha \int_{0}^{T} q_{1}\left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1} + f_{0u}v\right]\right)
+\]
+But $r_{1}$ follows the dynamics (\ref{r1dynamics}), so that a Taylor 
+expansion of 
+$f(r_{1}+x_{0}+\alpha(\tilde{x_{1}}+y_{1}),v+u_{0}+\alpha v_{1},t)$ 
+at $(x_{0}+\alpha(\tilde{x_{1}}+y_{1}),u_{0}+\alpha v_{1})$ leads to:
+\[
+  \left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1} + f_{0u}v\right]\right)
+  = \int_{0}^{1} \int_{0}^{1} \lambda
+  f_{\sigma\sigma}(x_{0}+\alpha(\tilde{x_{1}}+y_{1}) + \lambda\mu r_{1},
+  u_{0}+\alpha v_{1} + \lambda\mu v,t)
+  \left[
+  \begin{array}
+  {c}
+       r_{1} \\
+       v  \\
+      
+  \end{array}
+  \right]^{2} d\lambda d\mu
+\]
+so that, thanks to equation (\ref{fsigmasigma}) about the bound of 
+$f_{\sigma\sigma}$:
+\[
+    \left|q_{1}\left(\frac{dr_{1}}{dt}-\left[f_{0x}r_{1} + f_{0u}v\right]\right)\right|
+    \leq \frac{1}{2}kM(|r_{1}|+|v|)^{2} \leq kM(r_{1}^{2}+v^{2})
+\]
+An integration on $[0,T]$ and a multiplication by $\alpha$ leads to
+\[
+   |R_{3}| \leq kM(T\|r_{1}\|_{\infty}^{2} + \|v\|_{2}^{2})
+\]
+That equation, together with the bounds on $r_{1}$ (\ref{r1inequality}) and $v$ 
+(\ref{vinequality}) lead to equation (\ref{R3bound}).
+\end{proof}
+
+\begin{proposition}
+    The following inequality holds:
+    \begin{equation}
+        |R_{4}| \leq 2KTM(1+k_{r5}\alpha) \alpha^{2}
+        \label{R4bound}
+    \end{equation}
+\end{proposition}
+\begin{proof}
+    Let's develop $\left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r_{1}+\alpha\tilde{x_{1}}  \\
+	    0  \\
+	\end{array}
+	\right]$ into coordinates:
+	\[
+	    \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r_{1}+\alpha\tilde{x_{1}}  \\
+	    0  \\
+	\end{array}
+	\right] 
+	=\left(H_{0xx}y_{1}+H_{0uu}v_{1}\right)((r-r_{1}) + \alpha \tilde{x_{1}})
+	\]
+	Thus, thanks to the bound on $r-r_{1}$ (\ref{rr1inequality}), 
+	its absolute value can be bounded:
+	\[
+	    \left|
+	    \left[y_{1},v_{1}\right]
+	H_{0 \sigma \sigma}
+	\left[
+	\begin{array}
+	{c}
+	    r_{1}+\alpha\tilde{x_{1}}  \\
+	    0  \\
+	\end{array}
+	\right]\right|
+	\leq 2KM(\|r-r_{1}\|_{\infty}+\alpha)
+	\leq 2KM(k_{r5}\alpha^{2}+\alpha)
+	\leq 2KM(1+k_{r5}\alpha)\alpha
+	\]
+	An integration between $0$ and $T$ and a multiplication by 
+	$\alpha$ lead to equation (\ref{R4bound}).
+\end{proof}
+
+\section{Proof of equation (\ref{RestBound})}\label{RestBoundProof}
+This is a consequence of equations (\ref{R3bound}) and 
+(\ref{R4bound}), together with the fact that $R=R_{3}+R_{4}$.
+
+
+
+\bibliographystyle{plain}
+\bibliography{Sandrine}
+
+\end{document}

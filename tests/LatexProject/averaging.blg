@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2022)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: averaging.aux
+The style file: plain.bst
+Database file #1: Sandrine.bib
+Warning--can't use both author and editor fields in bensPert
+You've used 33 entries,
+            2118 wiz_defined-function locations,
+            708 strings with 9518 characters,
+and the built_in function-call counts, 10463 in all, are:
+= -- 1029
+> -- 408
+< -- 4
++ -- 163
+- -- 128
+* -- 677
+:= -- 1719
+add.period$ -- 100
+call.type$ -- 33
+change.case$ -- 157
+chr.to.int$ -- 0
+cite$ -- 34
+duplicate$ -- 429
+empty$ -- 897
+format.name$ -- 128
+if$ -- 2238
+int.to.chr$ -- 0
+int.to.str$ -- 33
+missing$ -- 42
+newline$ -- 168
+num.names$ -- 66
+pop$ -- 178
+preamble$ -- 1
+purify$ -- 130
+quote$ -- 0
+skip$ -- 297
+stack$ -- 0
+substring$ -- 714
+swap$ -- 82
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 112
+warning$ -- 1
+while$ -- 98
+width$ -- 35
+write$ -- 358
+(There was 1 warning)
