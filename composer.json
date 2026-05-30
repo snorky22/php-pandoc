@@ -1,5 +1,6 @@
 {
     "name": "pandoc-php/pandoc",
+    "version": "3.1.0",
     "description": "A native PHP 8.4 port of the Pandoc document converter.",
     "keywords": ["pandoc", "converter", "docx", "xlsx", "excel", "pptx", "powerpoint", "latex", "html", "markdown", "jupyter", "ast"],
     "homepage": "https://github.com/pandoc-php/pandoc",

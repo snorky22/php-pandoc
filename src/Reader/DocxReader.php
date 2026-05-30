@@ -3,6 +3,7 @@
 namespace Pandoc\Reader;
 
 use Pandoc\AST\Attr;
+use Pandoc\AST\CodeBlock;
 use Pandoc\AST\Emph;
 use Pandoc\AST\Header;
 use Pandoc\AST\Meta;
@@ -55,23 +56,28 @@ class DocxReader implements ReaderInterface
 
         $currentListItems = [];
         $currentNumId = 0;
+        $codeLines = [];
+        $codeStyleId = '';
 
         foreach ($docx->body->parts as $part) {
-            $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId));
+            $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId, $codeLines, $codeStyleId));
         }
 
         foreach ($docx->headers as $header) {
             foreach ($header->parts as $part) {
-                $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId));
+                $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId, $codeLines, $codeStyleId));
             }
         }
 
         foreach ($docx->footers as $footer) {
             foreach ($footer->parts as $part) {
-                $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId));
+                $blocks = array_merge($blocks, $this->convertPart($part, $currentListItems, $currentNumId, $codeLines, $codeStyleId));
             }
         }
 
+        if (!empty($codeLines)) {
+            $blocks[] = $this->flushCodeBlock($codeLines);
+        }
         if (!empty($currentListItems)) {
             $blocks[] = $this->flushList($currentListItems, $currentNumId);
         }
@@ -79,18 +85,38 @@ class DocxReader implements ReaderInterface
         return new Pandoc(new Meta(), $blocks, $this->mediaBag);
     }
 
-    private function convertPart($part, &$currentListItems, &$currentNumId): array
+    private function convertPart($part, &$currentListItems, &$currentNumId, &$codeLines, &$codeStyleId): array
     {
         $blocks = [];
         if ($part instanceof DocxParagraph) {
-            if ($part->numId > 0) {
+            if ($this->isCodeStyle($part->style)) {
+                if (!empty($currentListItems)) {
+                    $blocks[] = $this->flushList($currentListItems, $currentNumId);
+                    $currentListItems = [];
+                    $currentNumId = 0;
+                }
+                if ($codeStyleId === '') {
+                    $codeStyleId = $part->style;
+                }
+                $codeLines[] = $this->paragraphText($part);
+            } elseif ($part->numId > 0) {
+                if (!empty($codeLines)) {
+                    $blocks[] = $this->flushCodeBlock($codeLines);
+                    $codeLines = [];
+                    $codeStyleId = '';
+                }
                 if ($part->numId !== $currentNumId && !empty($currentListItems)) {
                     $blocks[] = $this->flushList($currentListItems, $currentNumId);
                     $currentListItems = [];
                 }
                 $currentNumId = $part->numId;
-                $currentListItems[] = [$this->convertParagraph($part)]; // Simplified: each para is an item
+                $currentListItems[] = [$this->convertParagraph($part)];
             } else {
+                if (!empty($codeLines)) {
+                    $blocks[] = $this->flushCodeBlock($codeLines);
+                    $codeLines = [];
+                    $codeStyleId = '';
+                }
                 if (!empty($currentListItems)) {
                     $blocks[] = $this->flushList($currentListItems, $currentNumId);
                     $currentListItems = [];
@@ -99,6 +125,11 @@ class DocxReader implements ReaderInterface
                 $blocks[] = $this->convertParagraph($part);
             }
         } elseif ($part instanceof DocxTable) {
+            if (!empty($codeLines)) {
+                $blocks[] = $this->flushCodeBlock($codeLines);
+                $codeLines = [];
+                $codeStyleId = '';
+            }
             if (!empty($currentListItems)) {
                 $blocks[] = $this->flushList($currentListItems, $currentNumId);
                 $currentListItems = [];
@@ -107,6 +138,29 @@ class DocxReader implements ReaderInterface
             $blocks[] = $this->convertTable($part);
         }
         return $blocks;
+    }
+
+    private function isCodeStyle(string $styleId): bool
+    {
+        if ($styleId === '') return false;
+        $resolved = strtolower(trim($this->resolveStyle($styleId)));
+        $rawId = strtolower(trim($styleId));
+        $codeNames = [
+            'code', 'verbatim', 'pre', 'preformatted', 'preformatted text',
+            'preformattedtext', 'source code', 'sourcecode',
+            'code block', 'codeblock', 'html preformatted', 'plain text',
+        ];
+        return in_array($resolved, $codeNames, true) || in_array($rawId, $codeNames, true);
+    }
+
+    private function paragraphText(DocxParagraph $p): string
+    {
+        return implode('', array_map(fn(DocxRun $r) => $r->text, $p->runs));
+    }
+
+    private function flushCodeBlock(array $lines): CodeBlock
+    {
+        return new CodeBlock(new Attr(), implode("\n", $lines));
     }
 
     private function flushList(array $items, int $numId): \Pandoc\AST\Block
