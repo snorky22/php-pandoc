@@ -146,7 +146,9 @@ EOF;
 
     protected function writeCodeBlock(CodeBlock $cb): string
     {
-        return "\\begin{verbatim}\n" . $cb->text . "\n\\end{verbatim}";
+        $lang = $cb->attr->classes[0] ?? '';
+        $opt = $lang !== '' ? '[' . strtoupper($lang) . ']' : '';
+        return "\\begin{verbatim}$opt\n" . $cb->text . "\n\\end{verbatim}";
     }
 
     protected function writeBlocks(array $blocks): string

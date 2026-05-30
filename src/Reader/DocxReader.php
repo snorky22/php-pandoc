@@ -160,7 +160,23 @@ class DocxReader implements ReaderInterface
 
     private function flushCodeBlock(array $lines): CodeBlock
     {
-        return new CodeBlock(new Attr(), implode("\n", $lines));
+        $text = implode("\n", $lines);
+        $lang = $this->detectLanguage($text);
+        $attr = $lang !== '' ? new Attr('', [$lang], []) : new Attr();
+        return new CodeBlock($attr, $text);
+    }
+
+    private function detectLanguage(string $code): string
+    {
+        $t = ltrim($code);
+        if (str_starts_with($t, '<?php')) return 'php';
+        if (preg_match('/^<!DOCTYPE\s+html/i', $t)) return 'html';
+        if (preg_match('/^<html/i', $t)) return 'html';
+        if (preg_match('/^<[a-z][a-z0-9]*/i', $t) && str_contains($code, '</')) return 'html';
+        if (preg_match('/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s/i', $t)) return 'sql';
+        if (str_starts_with($t, '#!/bin/bash') || str_starts_with($t, '#!/bin/sh')) return 'bash';
+        if (preg_match('/^[\[{]/', $t) && json_validate($t)) return 'json';
+        return '';
     }
 
     private function flushList(array $items, int $numId): \Pandoc\AST\Block
