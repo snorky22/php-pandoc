@@ -278,8 +278,12 @@ class Parser
         $ilvl = (int)$xpath->evaluate('string(w:pPr/w:numPr/w:ilvl/@w:val)', $node);
 
         $runs = [];
-        foreach ($xpath->query('w:r', $node) as $runNode) {
-            $runs[] = $this->parseRun($runNode, $xpath);
+        foreach ($node->childNodes as $child) {
+            if ($child->nodeName === 'w:r') {
+                $runs[] = $this->parseRun($child, $xpath);
+            } elseif ($child->nodeName === 'w:br') {
+                $runs[] = new Run("\n", false, false, false, false);
+            }
         }
         return new Paragraph($style, $runs, $numId, $ilvl);
     }
