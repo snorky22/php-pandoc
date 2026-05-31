@@ -18,6 +18,7 @@ use Pandoc\AST\Target;
 use Pandoc\Reader\Xlsx\Parser;
 use Pandoc\Reader\Xlsx\XlsxChart;
 use Pandoc\Reader\Xlsx\XlsxChartSeries;
+use Pandoc\Reader\Xlsx\XlsxLocale;
 use Pandoc\Reader\Xlsx\XlsxSheet;
 use Pandoc\Reader\Xlsx\XlsxCell;
 
@@ -37,10 +38,13 @@ class XlsxReader implements ReaderInterface
     {
         $this->initMediaBag();
         $doc = $this->parser->parse($filePath);
+        $locale = $doc->locale;
         $blocks = [];
+        $sheetNames = [];
 
         foreach ($doc->sheets as $sheet) {
             $blocks[] = new Header(2, new Attr("sheet-{$sheet->id}", [], []), [new Str($sheet->name)]);
+            $sheetNames[] = $sheet->name;
 
             $table = $this->sheetToTable($sheet);
             if ($table !== null) {
@@ -55,17 +59,38 @@ class XlsxReader implements ReaderInterface
                 ]);
             }
 
-            // Charts → JSON + CSV in MediaBag, marker in LaTeX
+            // Sheet → locale-aware CSV in MediaBag
+            $sheetCsv = $this->sheetToCsv($sheet, $locale);
+            if ($sheetCsv !== '') {
+                $safeName = preg_replace('/[^A-Za-z0-9_-]/', '_', $sheet->name);
+                $this->mediaBag->insert("sheet-{$safeName}.csv", 'text/csv', $sheetCsv);
+            }
+
+            // Charts → JSON + locale-aware CSV in MediaBag, marker in LaTeX
             foreach ($sheet->charts as $chart) {
                 $json = $this->chartToJson($chart);
-                $csv  = $this->chartToCsv($chart);
+                $csv  = $this->chartToCsv($chart, $locale);
                 $this->mediaBag->insert("{$chart->id}.json", 'application/json', $json);
                 $this->mediaBag->insert("{$chart->id}.csv", 'text/csv', $csv);
                 $blocks[] = new RawBlock('latex', "% [pandoc-chart: {$chart->id}.json]");
             }
         }
 
+        $this->mediaBag->insert('metadata.json', 'application/json', $this->buildMetadata($locale, $sheetNames));
+
         return new Pandoc(new Meta(), $blocks, $this->mediaBag);
+    }
+
+    private function buildMetadata(XlsxLocale $locale, array $sheetNames): string
+    {
+        return json_encode([
+            'language'          => $locale->language,
+            'decimalSeparator'  => $locale->decimalSep,
+            'thousandsSeparator'=> $locale->thousandsSep,
+            'columnDelimiter'   => $locale->columnDelim,
+            'quoteCharacter'    => $locale->quoteChar,
+            'sheets'            => $sheetNames,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     private function sheetToTable(XlsxSheet $sheet): ?\Pandoc\AST\Table
@@ -199,6 +224,86 @@ class XlsxReader implements ReaderInterface
         return true;
     }
 
+    private function sheetToCsv(XlsxSheet $sheet, XlsxLocale $locale): string
+    {
+        if (empty($sheet->cells)) {
+            return '';
+        }
+
+        $minCol = PHP_INT_MAX; $maxCol = PHP_INT_MIN;
+        $minRow = PHP_INT_MAX; $maxRow = PHP_INT_MIN;
+
+        foreach ($sheet->cells as $cell) {
+            $minCol = min($minCol, $cell->col); $maxCol = max($maxCol, $cell->col);
+            $minRow = min($minRow, $cell->row); $maxRow = max($maxRow, $cell->row);
+        }
+
+        // Build full text grid
+        $grid = [];
+        for ($row = $minRow; $row <= $maxRow; $row++) {
+            $rowData = [];
+            for ($col = $minCol; $col <= $maxCol; $col++) {
+                $cell = $sheet->cells["$col,$row"] ?? null;
+                $rowData[] = $cell !== null ? $this->cellToText($cell, $locale) : '';
+            }
+            $grid[] = $rowData;
+        }
+
+        // Strip trailing empty rows
+        while (!empty($grid) && $this->isEmptyTextRow(end($grid))) {
+            array_pop($grid);
+        }
+
+        if (empty($grid)) {
+            return '';
+        }
+
+        // Strip trailing empty columns (check across all rows)
+        $colCount = count($grid[0]);
+        while ($colCount > 0) {
+            $allEmpty = true;
+            foreach ($grid as $row) {
+                if (($row[$colCount - 1] ?? '') !== '') {
+                    $allEmpty = false;
+                    break;
+                }
+            }
+            if (!$allEmpty) {
+                break;
+            }
+            $colCount--;
+            $grid = array_map(fn(array $r) => array_slice($r, 0, $colCount), $grid);
+        }
+
+        if ($colCount === 0) {
+            return '';
+        }
+
+        $rows = array_map(fn(array $r) => $this->csvRow($r, $locale), $grid);
+        return implode("\n", $rows) . "\n";
+    }
+
+    private function isEmptyTextRow(array $row): bool
+    {
+        foreach ($row as $cell) {
+            if ($cell !== '') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function cellToText(XlsxCell $cell, XlsxLocale $locale): string
+    {
+        if ($cell->type !== 'number' || $cell->number === null) {
+            return $cell->text;
+        }
+        $text = fmod($cell->number, 1.0) === 0.0
+            ? number_format($cell->number, 0, '.', '')
+            : str_replace('.', $locale->decimalSep, (string)$cell->number);
+        return $text;
+    }
+
     private function chartToJson(XlsxChart $chart): string
     {
         $data = [
@@ -223,7 +328,7 @@ class XlsxReader implements ReaderInterface
         return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
-    private function chartToCsv(XlsxChart $chart): string
+    private function chartToCsv(XlsxChart $chart, XlsxLocale $locale): string
     {
         if (empty($chart->series)) {
             return '';
@@ -233,27 +338,33 @@ class XlsxReader implements ReaderInterface
         $seriesLabels = array_map(fn(XlsxChartSeries $s) => $s->label, $chart->series);
 
         $rows = [];
-        // Header row
-        $rows[] = $this->csvRow(array_merge(['Category'], $seriesLabels));
+        $rows[] = $this->csvRow(array_merge(['Category'], $seriesLabels), $locale);
 
-        // Data rows
         foreach ($categories as $i => $cat) {
             $row = [$cat];
             foreach ($chart->series as $series) {
                 $val = $series->values[$i] ?? null;
-                $row[] = $val !== null ? (string)$val : '';
+                if ($val !== null) {
+                    $row[] = fmod($val, 1.0) === 0.0
+                        ? number_format($val, 0, '.', '')
+                        : str_replace('.', $locale->decimalSep, (string)$val);
+                } else {
+                    $row[] = '';
+                }
             }
-            $rows[] = $this->csvRow($row);
+            $rows[] = $this->csvRow($row, $locale);
         }
 
         return implode("\n", $rows) . "\n";
     }
 
-    private function csvRow(array $fields): string
+    private function csvRow(array $fields, XlsxLocale $locale): string
     {
-        return implode(',', array_map(function (string $f): string {
-            if (str_contains($f, ',') || str_contains($f, '"') || str_contains($f, "\n")) {
-                return '"' . str_replace('"', '""', $f) . '"';
+        $delim = $locale->columnDelim;
+        $quote = $locale->quoteChar;
+        return implode($delim, array_map(function (string $f) use ($delim, $quote): string {
+            if (str_contains($f, $delim) || str_contains($f, $quote) || str_contains($f, "\n")) {
+                return $quote . str_replace($quote, $quote . $quote, $f) . $quote;
             }
             return $f;
         }, $fields));

@@ -156,7 +156,39 @@ A comment marker is emitted in the LaTeX at the chart's position:
 
 Data is read from the OOXML cache embedded in the chart XML — no cell-range resolution required.
 
-### 10. Not Yet Supported
+### 10. Per-Sheet CSV Export and Locale Detection
+
+Each worksheet is exported as a locale-aware CSV file and added to the `MediaBag` alongside any images and charts.
+
+**File naming**: `sheet-{SafeName}.csv` — the sheet name is sanitised (non-alphanumeric characters replaced with `_`).
+
+**Locale detection**: The reader parses `docProps/core.xml` for a `<dc:language>` tag (Dublin Core). The primary language subtag drives separator selection:
+
+| Language group | Decimal | Thousands | Column delimiter |
+|----------------|:-------:|:---------:|:----------------:|
+| `en`, `ja`, `zh`, `pt-BR`, `es-MX`, … | `.` | `,` | `,` |
+| `fr`, `de`, `it`, `es`, `nl`, `pl`, `ru`, `sv`, … | `,` | `.` | `;` |
+
+If no language tag is present, `en-US` conventions are used as the default.
+
+**Trailing-blank trimming**: Trailing all-empty rows and trailing all-empty columns are stripped from the CSV output before writing.
+
+**`metadata.json`**: A single JSON file is always included in the `MediaBag` summarising the document locale and sheet list:
+
+```json
+{
+    "language": "fr-FR",
+    "decimalSeparator": ",",
+    "thousandsSeparator": ".",
+    "columnDelimiter": ";",
+    "quoteCharacter": "\"",
+    "sheets": ["Feuille1", "Feuille2"]
+}
+```
+
+Chart CSVs also use the detected locale separators for consistency.
+
+### 11. Not Yet Supported
 - Cell background/foreground colors.
 - Merged cells (span > 1 row or column).
 - Inline string cells (`t="inlineStr"`).

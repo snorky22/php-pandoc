@@ -32,11 +32,27 @@ class Parser
                 $sheetPath = 'xl/' . $target;
                 $sheets[] = $this->parseSheet($zip, $id, $name, $sheetPath, $sharedStrings, $fonts, $cellXfs);
             }
+
+            $locale = $this->parseLocale($zip);
         } finally {
             $zip->close();
         }
 
-        return new XlsxDocument($sheets);
+        return new XlsxDocument($sheets, $locale);
+    }
+
+    private function parseLocale(ZipArchive $zip): XlsxLocale
+    {
+        $xpath = $this->loadXml($zip, 'docProps/core.xml');
+        if ($xpath !== null) {
+            foreach ($xpath->query('//*[local-name()="language"]') as $node) {
+                $lang = trim($node->textContent);
+                if ($lang !== '') {
+                    return XlsxLocale::fromLanguage($lang);
+                }
+            }
+        }
+        return XlsxLocale::fromLanguage('en-US');
     }
 
     private function loadXml(ZipArchive $zip, string $path): ?DOMXPath
@@ -462,7 +478,10 @@ class Parser
 readonly class XlsxDocument
 {
     /** @param XlsxSheet[] $sheets */
-    public function __construct(public array $sheets) {}
+    public function __construct(
+        public array $sheets,
+        public XlsxLocale $locale,
+    ) {}
 }
 
 readonly class XlsxSheet
@@ -526,4 +545,46 @@ readonly class XlsxCell
         public bool $bold,
         public bool $italic
     ) {}
+}
+
+readonly class XlsxLocale
+{
+    // Languages that use comma as decimal separator (period as thousands)
+    private const COMMA_DECIMAL_LANGS = [
+        'af','az','be','bg','bs','ca','cs','da','de','el','es','et','eu',
+        'fi','fr','gl','hr','hu','hy','is','it','ka','kk','ky','lb','lt',
+        'lv','mk','mn','nb','nl','nn','no','pl','pt','ro','ru','sk','sl',
+        'sq','sr','sv','tr','uk','uz',
+    ];
+
+    // Region-specific exceptions that revert to period decimal
+    private const PERIOD_DECIMAL_EXCEPTIONS = [
+        'es-mx','es-419','es-us','es-pr','es-do','es-gt','es-hn',
+        'es-ni','es-pa','es-sv','pt-br','ms-sg',
+    ];
+
+    public function __construct(
+        public string $language,
+        public string $decimalSep,
+        public string $thousandsSep,
+        public string $columnDelim,
+        public string $quoteChar,
+    ) {}
+
+    public static function fromLanguage(string $language): self
+    {
+        $tag = strtolower(str_replace('_', '-', $language));
+        $primary = explode('-', $tag)[0];
+
+        $usesComma = in_array($primary, self::COMMA_DECIMAL_LANGS, true)
+            && !in_array($tag, self::PERIOD_DECIMAL_EXCEPTIONS, true);
+
+        return new self(
+            language: str_replace('_', '-', $language),
+            decimalSep: $usesComma ? ',' : '.',
+            thousandsSep: $usesComma ? '.' : ',',
+            columnDelim: $usesComma ? ';' : ',',
+            quoteChar: '"',
+        );
+    }
 }

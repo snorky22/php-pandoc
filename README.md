@@ -8,7 +8,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **AST-Centric Architecture**: Mirrors Pandoc's Abstract Syntax Tree for robust conversions.
 - **Modular Reader System**: Factory pattern and `ReaderInterface` for easy format expansion.
 - **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors.
-- **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, and chart extraction (JSON metadata + CSV data for Chart.js).
+- **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, chart extraction (JSON metadata + CSV data for Chart.js), per-sheet CSV export with locale-aware separators, and a `metadata.json` summary of document locale.
 - **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images, embedded videos (`\begin{video}...\end{video}`), and audio (`\begin{audio}...\end{audio}`) extracted to MediaBag.
 - **LaTeX Generation**: Standalone documents or body fragments.
 - **Automatic ZIP Bundling**: When a document contains images or chart data, output is a `.zip` with the `.tex` and all media files in the same directory. Plain `.tex` otherwise.
@@ -122,6 +122,36 @@ A comment marker is inserted in the LaTeX at the chart's position:
 ```
 Your app reads the marker → loads the JSON → finds `dataFile` → loads the CSV → renders with Chart.js.
 
+**Per-sheet CSV export**: Each worksheet is also exported as a standalone CSV file (e.g. `sheet-Sales.csv`) added to the MediaBag. Trailing empty rows and columns are stripped automatically.
+
+**Locale detection**: The reader inspects `docProps/core.xml` for a `<dc:language>` tag and selects separators accordingly:
+
+| Language group | Decimal sep. | Thousands sep. | Column delim. |
+|----------------|:---:|:---:|:---:|
+| `en`, `ja`, `zh`, `pt-BR`, … | `.` | `,` | `,` |
+| `fr`, `de`, `it`, `es`, `nl`, `pl`, `ru`, … | `,` | `.` | `;` |
+
+When no language tag is present the file falls back to `en-US` conventions.
+
+**`metadata.json`**: Always added to the MediaBag alongside the CSVs:
+
+```json
+{
+    "language": "fr-FR",
+    "decimalSeparator": ",",
+    "thousandsSeparator": ".",
+    "columnDelimiter": ";",
+    "quoteCharacter": "\"",
+    "sheets": ["Sheet1", "Sheet2"]
+}
+```
+
+**Utility script**: `export_xlsx_media.php` converts any `.xlsx` file to a ZIP containing its CSVs and `metadata.json`:
+
+```bash
+php export_xlsx_media.php spreadsheet.xlsx output.zip
+```
+
 ### Converting a PowerPoint Presentation to LaTeX
 
 ```php
@@ -231,7 +261,7 @@ The project includes a web-based demonstration tool in `web/`.
 See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. Highlights:
 
 - **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers.
-- **Excel**: Multi-sheet tables, cell formatting, embedded images, Chart.js-ready chart extraction.
+- **Excel**: Multi-sheet tables, cell formatting, embedded images, Chart.js-ready chart extraction, per-sheet CSV export with locale-aware separators.
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.
 - **Jupyter**: Markdown cells, code blocks, output images.
