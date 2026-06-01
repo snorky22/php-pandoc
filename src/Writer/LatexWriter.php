@@ -187,16 +187,17 @@ EOF;
         foreach ($span->attr->attributes as $attr) {
             if ($attr[0] === 'color') {
                 $color = $attr[1];
+                $content = $this->writeInlines($span->content);
                 if (str_starts_with($color, '#')) {
                     $hex = substr($color, 1);
                     if (strlen($hex) === 3) {
                         $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
                     }
                     if (strlen($hex) === 6) {
-                        return $this->writeColoredInlines(strtoupper($hex), 'HTML', $span->content);
+                        return "\\textcolor[HTML]{" . strtoupper($hex) . "}{" . $content . "}";
                     }
                 }
-                return $this->writeColoredInlines($color, null, $span->content);
+                return "\\textcolor{" . $color . "}{" . $content . "}";
             }
             if ($attr[0] === 'background-color') {
                 $color = $attr[1];

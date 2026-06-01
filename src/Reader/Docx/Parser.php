@@ -394,4 +394,15 @@ readonly class Run {
         public int $footnoteId = 0,
         public int $endnoteId = 0
     ) {}
+
+    /** Return a copy of this run with additional text appended (drawingId/footnoteId/endnoteId reset to defaults). */
+    public function withText(string $extra): self
+    {
+        return new self(
+            $this->text . $extra,
+            $this->isBold, $this->isItalic,
+            $this->isUnderline, $this->isStrikeout,
+            $this->vertAlign, $this->color, $this->backgroundColor
+        );
+    }
 }

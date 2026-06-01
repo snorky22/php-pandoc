@@ -275,13 +275,14 @@ class DocxReader implements ReaderInterface
     private function convertParagraph(DocxParagraph $p): \Pandoc\AST\Block
     {
         $inlines = [];
-        foreach ($p->runs as $run) {
+        foreach ($this->mergeRuns($p->runs) as $run) {
             if ($run instanceof DocxHyperlink) {
                 $inlines = array_merge($inlines, $this->convertHyperlink($run));
             } else {
                 $inlines = array_merge($inlines, $this->convertRun($run));
             }
         }
+        $inlines = $this->mergeSpans($inlines);
 
         // Check if this paragraph is just a sequence of underscores (horizontal rule)
         // Only if it has content and all content are Str nodes consisting of underscores, or Spaces
@@ -395,6 +396,129 @@ class DocxReader implements ReaderInterface
         };
     }
 
+    /**
+     * Properties that define run identity for merge purposes.
+     * Add a property here (e.g. 'fontSize') to have it included in the comparison.
+     */
+    private const STYLE_PROPS = [
+        'isBold', 'isItalic', 'isUnderline', 'isStrikeout',
+        'vertAlign', 'color', 'backgroundColor',
+    ];
+
+    /**
+     * Properties that must be absent (empty string) for a whitespace-only run
+     * to be treated as neutral and absorbed into the pending run.
+     */
+    private const NEUTRAL_EXEMPT_PROPS = ['color', 'backgroundColor'];
+
+    private function runSig(DocxRun $run): array
+    {
+        return array_map(fn(string $p) => $run->$p, self::STYLE_PROPS);
+    }
+
+    private function mergeRuns(array $runs): array
+    {
+        $result  = [];
+        $pending = null;
+
+        foreach ($runs as $run) {
+            $canMerge = $run instanceof DocxRun
+                && $run->drawingId  === ''
+                && $run->footnoteId === 0
+                && $run->endnoteId  === 0
+                && $run->text       !== "\n";
+
+            if (!$canMerge) {
+                if ($pending !== null) { $result[] = $pending; $pending = null; }
+                $result[] = $run;
+                continue;
+            }
+
+            if ($pending === null) {
+                $pending = $run;
+                continue;
+            }
+
+            $sameStyle = $this->runSig($pending) === $this->runSig($run);
+
+            // A whitespace-only run with no explicit colour/background is "neutral":
+            // absorb it into the pending run. Word often omits explicit bold/italic
+            // on spaces between styled words, so only colour props are checked.
+            $isNeutralSpace = !$sameStyle
+                && trim($run->text) === ''
+                && !array_filter(self::NEUTRAL_EXEMPT_PROPS, fn(string $p) => $run->$p !== '');
+
+            if ($sameStyle || $isNeutralSpace) {
+                $pending = $pending->withText($run->text);
+            } else {
+                $result[] = $pending;
+                $pending  = $run;
+            }
+        }
+
+        if ($pending !== null) {
+            $result[] = $pending;
+        }
+
+        return $result;
+    }
+
+    private function mergeSpans(array $inlines): array
+    {
+        $result = [];
+        $count  = count($inlines);
+        $i = 0;
+
+        while ($i < $count) {
+            $cur = $inlines[$i];
+
+            if (!($cur instanceof Span)) {
+                $result[] = $cur;
+                $i++;
+                continue;
+            }
+
+            $sig = $this->spanSig($cur);
+            if ($sig === null) {
+                $result[] = $cur;
+                $i++;
+                continue;
+            }
+
+            // Absorb following (same-sig-Span | Space same-sig-Span)+ sequences
+            $content = $cur->content;
+            $j = $i + 1;
+            while ($j < $count) {
+                if ($inlines[$j] instanceof Span && $this->spanSig($inlines[$j]) === $sig) {
+                    $content = array_merge($content, $inlines[$j]->content);
+                    $j++;
+                } elseif ($inlines[$j] instanceof Space
+                          && $j + 1 < $count
+                          && $inlines[$j + 1] instanceof Span
+                          && $this->spanSig($inlines[$j + 1]) === $sig) {
+                    $content[] = new Space();
+                    $content   = array_merge($content, $inlines[$j + 1]->content);
+                    $j += 2;
+                } else {
+                    break;
+                }
+            }
+
+            $result[] = new Span($cur->attr, $content);
+            $i = $j;
+        }
+
+        return $result;
+    }
+
+    private function spanSig(Span $span): ?string
+    {
+        if ($span->attr->identifier !== '' || $span->attr->classes !== []) {
+            return null;
+        }
+        return json_encode($span->attr->attributes);
+    }
+
     private function convertBodyToInlines(DocxBody $body): array
     {
         $inlines = [];
@@ -402,7 +526,7 @@ class DocxReader implements ReaderInterface
             if (!$part instanceof DocxParagraph) {
                 continue;
             }
-            foreach ($part->runs as $run) {
+            foreach ($this->mergeRuns($part->runs) as $run) {
                 if ($run instanceof DocxHyperlink) {
                     $inlines = array_merge($inlines, $this->convertHyperlink($run));
                 } else {
@@ -410,7 +534,7 @@ class DocxReader implements ReaderInterface
                 }
             }
         }
-        return $inlines;
+        return $this->mergeSpans($inlines);
     }
 
     private function convertRun(DocxRun $run): array
@@ -469,7 +593,7 @@ class DocxReader implements ReaderInterface
         if ($run->vertAlign === 'subscript') {
             $inlines = [new Subscript($inlines)];
         }
-        if ($run->color && $run->color !== 'auto') {
+        if ($run->color && $run->color !== 'auto' && strtolower($run->color) !== '000000') {
             $inlines = [new Span(new Attr('', [], [['color', '#' . $run->color]]), $inlines)];
         }
         if ($run->backgroundColor && $run->backgroundColor !== 'none') {
