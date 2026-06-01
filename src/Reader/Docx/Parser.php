@@ -76,6 +76,8 @@ class Parser
 
         // Low-level IR extraction
         $this->currentRels = $relationships['word/document.xml'] ?? [];
+        $footnotes = $this->parseNotes($zip, 'word/footnotes.xml');
+        $endnotes  = $this->parseNotes($zip, 'word/endnotes.xml');
         $body = $this->parseBody($xpath);
 
         $headers = [];
@@ -92,7 +94,7 @@ class Parser
 
         $zip->close();
 
-        return new Document($body, $numbering, $styles, $relationships, $this->media, $headers, $footers);
+        return new Document($body, $numbering, $styles, $relationships, $this->media, $headers, $footers, $footnotes, $endnotes);
     }
 
     private function parsePart(ZipArchive $zip, string $partPath): Body
@@ -108,6 +110,30 @@ class Parser
         }
         $root = str_contains($partPath, 'header') ? '/w:hdr/*' : '/w:ftr/*';
         return $this->parseBody($xpath, $root);
+    }
+
+    private function parseNotes(ZipArchive $zip, string $filename): array
+    {
+        $xmlContent = $zip->getFromName($filename);
+        if (!$xmlContent) {
+            return [];
+        }
+        try {
+            $xpath = $this->setupXPath($xmlContent);
+        } catch (\Exception $e) {
+            return [];
+        }
+
+        $tag = str_contains($filename, 'endnote') ? 'w:endnote' : 'w:footnote';
+        $notes = [];
+        foreach ($xpath->query("//{$tag}") as $noteNode) {
+            $id = (int)$xpath->evaluate('string(@w:id)', $noteNode);
+            if ($id <= 0) {
+                continue;
+            }
+            $notes[$id] = $this->parseBodyFragment($noteNode, $xpath);
+        }
+        return $notes;
     }
 
     private function parseRelationships(ZipArchive $zip, string $partPath = 'word/document.xml'): array
@@ -283,9 +309,31 @@ class Parser
                 $runs[] = $this->parseRun($child, $xpath);
             } elseif ($child->nodeName === 'w:br') {
                 $runs[] = new Run("\n", false, false, false, false);
+            } elseif ($child->nodeName === 'w:hyperlink') {
+                $runs[] = $this->parseHyperlink($child, $xpath);
             }
         }
         return new Paragraph($style, $runs, $numId, $ilvl);
+    }
+
+    private function parseHyperlink(\DOMNode $node, DOMXPath $xpath): Hyperlink
+    {
+        $rId = $xpath->evaluate('string(@r:id)', $node);
+        $anchor = $xpath->evaluate('string(@w:anchor)', $node);
+
+        $url = '';
+        if ($rId && isset($this->currentRels[$rId])) {
+            $url = $this->currentRels[$rId]['target'];
+        }
+
+        $runs = [];
+        foreach ($node->childNodes as $child) {
+            if ($child->nodeName === 'w:r') {
+                $runs[] = $this->parseRun($child, $xpath);
+            }
+        }
+
+        return new Hyperlink($url, $anchor, $runs);
     }
 
     private function parseRun(\DOMNode $node, DOMXPath $xpath): Run
@@ -318,11 +366,15 @@ class Parser
             }
         }
 
-        return new Run($text, $isBold, $isItalic, $isUnderline, $isStrikeout, $vertAlign, $color, $backgroundColor, $drawingId);
+        $footnoteId = (int)$xpath->evaluate('string(w:footnoteReference/@w:id)', $node);
+        $endnoteId  = (int)$xpath->evaluate('string(w:endnoteReference/@w:id)', $node);
+
+        return new Run($text, $isBold, $isItalic, $isUnderline, $isStrikeout, $vertAlign, $color, $backgroundColor, $drawingId, $footnoteId, $endnoteId);
     }
 }
 
-readonly class Document { public function __construct(public Body $body, public array $numbering = [], public array $styles = [], public array $relationships = [], public array $media = [], public array $headers = [], public array $footers = []) {} }
+readonly class Hyperlink { public function __construct(public string $url, public string $anchor, public array $runs) {} }
+readonly class Document { public function __construct(public Body $body, public array $numbering = [], public array $styles = [], public array $relationships = [], public array $media = [], public array $headers = [], public array $footers = [], public array $footnotes = [], public array $endnotes = []) {} }
 readonly class Body { public function __construct(public array $parts) {} }
 readonly class Paragraph { public function __construct(public string $style, public array $runs, public int $numId = 0, public int $ilvl = 0) {} }
 readonly class Table { public function __construct(public array $rows) {} }
@@ -338,6 +390,19 @@ readonly class Run {
         public string $vertAlign = '',
         public string $color = '',
         public string $backgroundColor = '',
-        public string $drawingId = ''
+        public string $drawingId = '',
+        public int $footnoteId = 0,
+        public int $endnoteId = 0
     ) {}
+
+    /** Return a copy of this run with additional text appended (drawingId/footnoteId/endnoteId reset to defaults). */
+    public function withText(string $extra): self
+    {
+        return new self(
+            $this->text . $extra,
+            $this->isBold, $this->isItalic,
+            $this->isUnderline, $this->isStrikeout,
+            $this->vertAlign, $this->color, $this->backgroundColor
+        );
+    }
 }

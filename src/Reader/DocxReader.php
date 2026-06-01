@@ -19,8 +19,10 @@ use Pandoc\AST\Superscript;
 use Pandoc\AST\Underline;
 use Pandoc\AST\MediaBag;
 use Pandoc\AST\Image;
+use Pandoc\AST\Link;
 use Pandoc\AST\Target;
 use Pandoc\Reader\Docx\Parser;
+use Pandoc\Reader\Docx\Hyperlink as DocxHyperlink;
 use Pandoc\Reader\Docx\Paragraph as DocxParagraph;
 use Pandoc\Reader\Docx\Table as DocxTable;
 use Pandoc\Reader\Docx\Row as DocxRow;
@@ -34,6 +36,8 @@ class DocxReader implements ReaderInterface
 
     private Parser $parser;
     private array $styleMap = [];
+    private array $footnotes = [];
+    private array $endnotes = [];
 
     public function __construct()
     {
@@ -46,6 +50,8 @@ class DocxReader implements ReaderInterface
         $this->initMediaBag(); // Reset for each read
         $docx = $this->parser->parse($filePath);
         $this->styleMap = $docx->styles;
+        $this->footnotes = $docx->footnotes;
+        $this->endnotes  = $docx->endnotes;
 
         foreach ($docx->media as $id => $media) {
             // We use the filename as the key in MediaBag
@@ -89,6 +95,9 @@ class DocxReader implements ReaderInterface
     {
         $blocks = [];
         if ($part instanceof DocxParagraph) {
+            if ($this->isTocStyle($part->style)) {
+                return [];
+            }
             if ($this->isCodeStyle($part->style)) {
                 if (!empty($currentListItems)) {
                     $blocks[] = $this->flushList($currentListItems, $currentNumId);
@@ -140,6 +149,15 @@ class DocxReader implements ReaderInterface
         return $blocks;
     }
 
+    private function isTocStyle(string $styleId): bool
+    {
+        if ($styleId === '') return false;
+        $name = strtolower(trim($this->styleMap[$styleId]['name'] ?? $styleId));
+        $rawId = strtolower(trim($styleId));
+        return (bool) preg_match('/^toc[\s\d]*$|^toc\s*heading/', $name)
+            || (bool) preg_match('/^toc[\s\d]*$|^toc\s*heading/', $rawId);
+    }
+
     private function isCodeStyle(string $styleId): bool
     {
         if ($styleId === '') return false;
@@ -155,7 +173,17 @@ class DocxReader implements ReaderInterface
 
     private function paragraphText(DocxParagraph $p): string
     {
-        return implode('', array_map(fn(DocxRun $r) => $r->text, $p->runs));
+        $text = '';
+        foreach ($p->runs as $run) {
+            if ($run instanceof DocxHyperlink) {
+                foreach ($run->runs as $r) {
+                    $text .= $r->text;
+                }
+            } else {
+                $text .= $run->text;
+            }
+        }
+        return $text;
     }
 
     private function flushCodeBlock(array $lines): CodeBlock
@@ -247,9 +275,14 @@ class DocxReader implements ReaderInterface
     private function convertParagraph(DocxParagraph $p): \Pandoc\AST\Block
     {
         $inlines = [];
-        foreach ($p->runs as $run) {
-            $inlines = array_merge($inlines, $this->convertRun($run));
+        foreach ($this->mergeRuns($p->runs) as $run) {
+            if ($run instanceof DocxHyperlink) {
+                $inlines = array_merge($inlines, $this->convertHyperlink($run));
+            } else {
+                $inlines = array_merge($inlines, $this->convertRun($run));
+            }
         }
+        $inlines = $this->mergeSpans($inlines);
 
         // Check if this paragraph is just a sequence of underscores (horizontal rule)
         // Only if it has content and all content are Str nodes consisting of underscores, or Spaces
@@ -307,8 +340,217 @@ class DocxReader implements ReaderInterface
         return $name ?: $styleId;
     }
 
+    private function convertHyperlink(DocxHyperlink $hyperlink): array
+    {
+        $inlines = [];
+        foreach ($hyperlink->runs as $run) {
+            $inlines = array_merge($inlines, $this->convertRun($run));
+        }
+        $inlines = $this->stripColorSpans($inlines);
+
+        if ($hyperlink->anchor !== '') {
+            return [new Link(new Attr('', ['internal'], []), $inlines, new Target('#' . $hyperlink->anchor))];
+        }
+
+        $url = $hyperlink->url;
+        if ($url === '') {
+            return $inlines;
+        }
+
+        $displayText = implode('', array_map([$this, 'inlineText'], $inlines));
+        $isUnnamed = ($displayText === $url);
+        return [new Link(new Attr('', $isUnnamed ? ['url'] : [], []), $inlines, new Target($url))];
+    }
+
+    private function stripColorSpans(array $inlines): array
+    {
+        $result = [];
+        foreach ($inlines as $inline) {
+            if ($inline instanceof Span && $inline->attr->identifier === '' && $inline->attr->classes === []) {
+                $isColorOnly = true;
+                foreach ($inline->attr->attributes as $attr) {
+                    if ($attr[0] !== 'color' && $attr[0] !== 'background-color') {
+                        $isColorOnly = false;
+                        break;
+                    }
+                }
+                if ($isColorOnly) {
+                    $result = array_merge($result, $this->stripColorSpans($inline->content));
+                    continue;
+                }
+            }
+            $result[] = $inline;
+        }
+        return $result;
+    }
+
+    private function inlineText(\Pandoc\AST\Inline $i): string
+    {
+        return match(true) {
+            $i instanceof Str => $i->text,
+            $i instanceof Space => ' ',
+            $i instanceof Strong, $i instanceof Emph, $i instanceof Underline,
+            $i instanceof Strikeout, $i instanceof Superscript, $i instanceof Subscript,
+            $i instanceof Span => implode('', array_map([$this, 'inlineText'], $i->content)),
+            default => '',
+        };
+    }
+
+    /**
+     * Properties that define run identity for merge purposes.
+     * Add a property here (e.g. 'fontSize') to have it included in the comparison.
+     */
+    private const STYLE_PROPS = [
+        'isBold', 'isItalic', 'isUnderline', 'isStrikeout',
+        'vertAlign', 'color', 'backgroundColor',
+    ];
+
+    /**
+     * Properties that must be absent (empty string) for a whitespace-only run
+     * to be treated as neutral and absorbed into the pending run.
+     */
+    private const NEUTRAL_EXEMPT_PROPS = ['color', 'backgroundColor'];
+
+    private function runSig(DocxRun $run): array
+    {
+        return array_map(fn(string $p) => $run->$p, self::STYLE_PROPS);
+    }
+
+    private function mergeRuns(array $runs): array
+    {
+        $result  = [];
+        $pending = null;
+
+        foreach ($runs as $run) {
+            $canMerge = $run instanceof DocxRun
+                && $run->drawingId  === ''
+                && $run->footnoteId === 0
+                && $run->endnoteId  === 0
+                && $run->text       !== "\n";
+
+            if (!$canMerge) {
+                if ($pending !== null) { $result[] = $pending; $pending = null; }
+                $result[] = $run;
+                continue;
+            }
+
+            if ($pending === null) {
+                $pending = $run;
+                continue;
+            }
+
+            $sameStyle = $this->runSig($pending) === $this->runSig($run);
+
+            // A whitespace-only run with no explicit colour/background is "neutral":
+            // absorb it into the pending run. Word often omits explicit bold/italic
+            // on spaces between styled words, so only colour props are checked.
+            $isNeutralSpace = !$sameStyle
+                && trim($run->text) === ''
+                && !array_filter(self::NEUTRAL_EXEMPT_PROPS, fn(string $p) => $run->$p !== '');
+
+            if ($sameStyle || $isNeutralSpace) {
+                $pending = $pending->withText($run->text);
+            } else {
+                $result[] = $pending;
+                $pending  = $run;
+            }
+        }
+
+        if ($pending !== null) {
+            $result[] = $pending;
+        }
+
+        return $result;
+    }
+
+    private function mergeSpans(array $inlines): array
+    {
+        $result = [];
+        $count  = count($inlines);
+        $i = 0;
+
+        while ($i < $count) {
+            $cur = $inlines[$i];
+
+            if (!($cur instanceof Span)) {
+                $result[] = $cur;
+                $i++;
+                continue;
+            }
+
+            $sig = $this->spanSig($cur);
+            if ($sig === null) {
+                $result[] = $cur;
+                $i++;
+                continue;
+            }
+
+            // Absorb following (same-sig-Span | Space same-sig-Span)+ sequences
+            $content = $cur->content;
+            $j = $i + 1;
+            while ($j < $count) {
+                if ($inlines[$j] instanceof Span && $this->spanSig($inlines[$j]) === $sig) {
+                    $content = array_merge($content, $inlines[$j]->content);
+                    $j++;
+                } elseif ($inlines[$j] instanceof Space
+                          && $j + 1 < $count
+                          && $inlines[$j + 1] instanceof Span
+                          && $this->spanSig($inlines[$j + 1]) === $sig) {
+                    $content[] = new Space();
+                    $content   = array_merge($content, $inlines[$j + 1]->content);
+                    $j += 2;
+                } else {
+                    break;
+                }
+            }
+
+            $result[] = new Span($cur->attr, $content);
+            $i = $j;
+        }
+
+        return $result;
+    }
+
+    private function spanSig(Span $span): ?string
+    {
+        if ($span->attr->identifier !== '' || $span->attr->classes !== []) {
+            return null;
+        }
+        return json_encode($span->attr->attributes);
+    }
+
+    private function convertBodyToInlines(DocxBody $body): array
+    {
+        $inlines = [];
+        foreach ($body->parts as $part) {
+            if (!$part instanceof DocxParagraph) {
+                continue;
+            }
+            foreach ($this->mergeRuns($part->runs) as $run) {
+                if ($run instanceof DocxHyperlink) {
+                    $inlines = array_merge($inlines, $this->convertHyperlink($run));
+                } else {
+                    $inlines = array_merge($inlines, $this->convertRun($run));
+                }
+            }
+        }
+        return $this->mergeSpans($inlines);
+    }
+
     private function convertRun(DocxRun $run): array
     {
+        if ($run->footnoteId > 0) {
+            $body = $this->footnotes[$run->footnoteId] ?? null;
+            if ($body) {
+                return [new \Pandoc\AST\Note($this->convertBodyToInlines($body))];
+            }
+        }
+        if ($run->endnoteId > 0) {
+            $body = $this->endnotes[$run->endnoteId] ?? null;
+            if ($body) {
+                return [new \Pandoc\AST\Note($this->convertBodyToInlines($body))];
+            }
+        }
         if ($run->drawingId) {
             $media = $this->parser->media[$run->drawingId] ?? null;
             if ($media) {
@@ -351,7 +593,7 @@ class DocxReader implements ReaderInterface
         if ($run->vertAlign === 'subscript') {
             $inlines = [new Subscript($inlines)];
         }
-        if ($run->color && $run->color !== 'auto') {
+        if ($run->color && $run->color !== 'auto' && strtolower($run->color) !== '000000') {
             $inlines = [new Span(new Attr('', [], [['color', '#' . $run->color]]), $inlines)];
         }
         if ($run->backgroundColor && $run->backgroundColor !== 'none') {

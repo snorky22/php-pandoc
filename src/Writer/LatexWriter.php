@@ -21,6 +21,7 @@ use Pandoc\AST\Superscript;
 use Pandoc\AST\Underline;
 use Pandoc\AST\Link;
 use Pandoc\AST\Image;
+use Pandoc\AST\Note;
 use Pandoc\AST\Code;
 use Pandoc\AST\CodeBlock;
 use Pandoc\AST\BlockQuote;
@@ -173,6 +174,7 @@ EOF;
             $i instanceof Superscript => '\\textsuperscript{' . $this->writeInlines($i->content) . '}',
             $i instanceof Subscript => '\\textsubscript{' . $this->writeInlines($i->content) . '}',
             $i instanceof Link => $this->writeLink($i),
+            $i instanceof Note => '\\footnote{' . $this->writeInlines($i->content) . '}',
             $i instanceof Image => $this->writeImage($i),
             $i instanceof Code => '\\texttt{' . $this->escapeLatex($i->text) . '}',
             $i instanceof Span => $this->writeSpan($i),
@@ -185,16 +187,17 @@ EOF;
         foreach ($span->attr->attributes as $attr) {
             if ($attr[0] === 'color') {
                 $color = $attr[1];
+                $content = $this->writeInlines($span->content);
                 if (str_starts_with($color, '#')) {
                     $hex = substr($color, 1);
                     if (strlen($hex) === 3) {
                         $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
                     }
                     if (strlen($hex) === 6) {
-                        return $this->writeColoredInlines(strtoupper($hex), 'HTML', $span->content);
+                        return "\\textcolor[HTML]{" . strtoupper($hex) . "}{" . $content . "}";
                     }
                 }
-                return $this->writeColoredInlines($color, null, $span->content);
+                return "\\textcolor{" . $color . "}{" . $content . "}";
             }
             if ($attr[0] === 'background-color') {
                 $color = $attr[1];
@@ -219,6 +222,19 @@ EOF;
         return implode('', array_map(fn($i) => $this->writeColoredInline($color, $model, $i), $inlines));
     }
 
+    protected function writeColoredLink(string $color, ?string $model, Link $link): string
+    {
+        $url = $link->target->url;
+        $coloredContent = $this->writeColoredInlines($color, $model, $link->content);
+        if (in_array('internal', $link->attr->classes)) {
+            return "\\hyperref[" . ltrim($url, '#') . "]{" . $coloredContent . "}";
+        }
+        if (in_array('url', $link->attr->classes)) {
+            return "\\url{" . $url . "}";
+        }
+        return "\\href{" . $url . "}{" . $coloredContent . "}";
+    }
+
     protected function writeColoredInline(string $color, ?string $model, Inline $i): string
     {
         $cmd = $model ? "\\textcolor[{$model}]{{$color}}" : "\\textcolor{{$color}}";
@@ -232,7 +248,7 @@ EOF;
             $i instanceof Superscript => '\\textsuperscript{' . $this->writeColoredInlines($color, $model, $i->content) . '}',
             $i instanceof Subscript   => '\\textsubscript{'   . $this->writeColoredInlines($color, $model, $i->content) . '}',
             $i instanceof Code       => '\\texttt{' . $cmd . '{' . $this->escapeLatex($i->text) . '}}',
-            $i instanceof Link       => '\\href{' . $this->escapeLatex($i->target->url) . '}{' . $this->writeColoredInlines($color, $model, $i->content) . '}',
+            $i instanceof Link       => $this->writeColoredLink($color, $model, $i),
             default                  => $cmd . '{' . $this->writeInline($i) . '}',
         };
     }
@@ -240,7 +256,16 @@ EOF;
     protected function writeLink(Link $link): string
     {
         $url = $link->target->url;
-        return "\\href{" . $this->escapeLatex($url) . "}{" . $this->writeInlines($link->content) . "}";
+        $text = $this->writeInlines($link->content);
+
+        if (in_array('internal', $link->attr->classes)) {
+            $anchor = ltrim($url, '#');
+            return "\\hyperref[{$anchor}]{" . $text . "}";
+        }
+        if (in_array('url', $link->attr->classes)) {
+            return "\\url{" . $url . "}";
+        }
+        return "\\href{" . $url . "}{" . $text . "}";
     }
 
     protected function writeImage(Image $img): string
