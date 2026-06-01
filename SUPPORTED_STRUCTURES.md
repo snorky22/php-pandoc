@@ -23,46 +23,61 @@ The reader detects direct formatting and character styles applied to text runs (
 *   **Strikeout**: Supports both single (`w:strike`) and double strikeout (`w:dstrike`).
 *   **Superscript**: Detected via `w:vertAlign[@w:val='superscript']`.
 *   **Subscript**: Detected via `w:vertAlign[@w:val='subscript']`.
-*   **Text Color**: Detected via `w:color`. Rendered in LaTeX using the `xcolor` package and `\textcolor`.
-*   **Background Color**: Detected via `w:shd` (shading) and `w:highlight`. Rendered in LaTeX using the `xcolor` package and `\colorbox`.
-*   **Automatic Space Handling**: Correctly identifies and preserves spaces between formatting changes.
+*   **Text Color**: Detected via `w:color`. Rendered in LaTeX using the `xcolor` package and `\textcolor[HTML]{RRGGBB}{…}`. Pure black (`000000`) is suppressed — it is the default text color in LaTeX and its presence in DOCX files is usually spurious.
+*   **Background Color**: Detected via `w:shd` (shading) and `w:highlight`. Rendered using `\colorbox`.
+*   **Run Merging**: Consecutive `w:r` runs that share identical styling (bold, italic, underline, strikeout, vertical alignment, color, background color) are merged into a single AST inline before LaTeX emission. Whitespace-only runs with no explicit color or background are treated as *neutral* and absorbed into the preceding run, inheriting its style — this corrects the common Word artifact of spaces being stored as unstyled runs between styled words.
+*   **Span Merging**: After run conversion, adjacent `Span` nodes with identical attributes (e.g., same `\textcolor`) are collapsed into one, and any `Space` inline between two same-attribute spans is absorbed. This eliminates word-by-word `\textcolor{…}{word}` repetition.
+*   **Color Wrapping**: A `\textcolor` command wraps the entire styled content as one group (`\textcolor{…}{\textbf{…}}`), not each word individually.
 
-### 3. Lists
+### 3. Hyperlinks
+*   **External links**: `w:hyperlink` elements with an `r:id` relationship pointing to an external URL are converted to:
+    *   `\url{…}` — when the visible text is identical to the URL (unnamed link).
+    *   `\href{url}{text}` — when the visible text differs from the URL.
+*   **Internal anchors**: `w:hyperlink` elements carrying a `w:anchor` attribute (cross-references within the same document) are converted to `\hyperref[anchor]{text}`.
+*   **Color stripping**: Hyperlink text is stripped of any explicit color or background-color formatting before conversion, since link styling is typically handled by the consuming application rather than hardcoded in the LaTeX source.
+
+### 4. Footnotes and Endnotes
+*   **Footnotes**: `w:footnoteReference` markers in runs are detected. The corresponding footnote body is read from `word/footnotes.xml` and inlined as `\footnote{…}` at the reference point.
+*   **Endnotes**: `w:endnoteReference` markers are handled identically, with content read from `word/endnotes.xml`. Both are emitted as `\footnote{…}` (no semantic distinction between foot- and endnotes in the LaTeX output).
+*   **Footnote content**: Full inline markup (bold, italic, color, hyperlinks, etc.) within footnote bodies is preserved.
+
+### 5. Lists
 The converter implements a list state machine to group sequential paragraphs into unified list blocks:
 *   **Bullet Lists**: Grouped into `BulletList` nodes.
 *   **Ordered Lists**: Grouped into `OrderedList` nodes with associated `ListAttributes`.
 *   **Nesting**: Supports basic detection of indentation levels (`w:ilvl`).
 *   **Heuristic Detection**: Uses `numId` transitions to identify separate list instances.
 
-### 4. Tables
+### 6. Tables
 Comprehensive table support mirroring Pandoc's complex table model:
 *   **Structure**: Detects rows (`w:tr`) and cells (`w:tc`).
 *   **Headers**: Automatically treats the first row of a table as a header row.
 *   **Cell Content**: Supports full block-level parsing within cells (e.g., paragraphs or lists inside tables).
 *   **Table Bodies**: Groups rows into `TableBody` structures.
 
-### 5. Styles & Inheritance
+### 7. Styles & Inheritance
 *   **Style Map**: Parses `word/styles.xml` to build a map of available styles.
 *   **Style Resolution**: Implements a recursive `basedOn` resolver to handle Word's style inheritance hierarchy (e.g., a "Custom Header" based on "Heading 1" will be correctly identified as a Header).
+*   **TOC Filtering**: Paragraphs whose style name matches the `toc *` pattern (e.g., `toc 1` through `toc 9`, including custom style IDs like `TM1`) are silently dropped, preventing auto-generated Tables of Contents from cluttering the LaTeX output.
 
-### 6. Images and Media
+### 8. Images and Media
 *   **Extraction**: Automatically extracts images from the DOCX ZIP archive, including those in headers and footers.
 *   **Mapping**: Uses relationship mapping (`_rels/*.xml.rels`) for each part to correctly link internal relationship IDs to media files, even when IDs collide across parts.
 *   **Organization**: Media files are stored in the `MediaBag` using their base filename.
 *   **LaTeX Output**: Images are referenced using `\includegraphics{filename}` (no directory prefix) and wrapped in a custom `\pandocbounded` macro that handles scaling to prevent page overflow.
 
-### 7. Currently Simplified or In Progress
-*   **Math (MathML/OMML)**: Detection of `m:oMath` blocks is defined in the low-level parser; conversion to `Math` AST nodes is being aligned with `texmath` logic.
+### 9. Currently Simplified or In Progress
+*   **Math (MathML/OMML)**: Office Math (OMML) elements inside `w:r` runs are not yet converted; the surrounding text of the paragraph is output but math symbols are omitted.
 *   **Quotations**: Paragraphs with `Quote` or `Intense Quote` styles are mapped to `BlockQuote` blocks.
 *   **Code Blocks**: Paragraphs with `Source Code` or `Verbatim` styles are converted to `CodeBlock` nodes.
 
-### 8. Robustness Improvements
+### 10. Robustness Improvements
 *   **Error Handling**: The Docx parser gracefully handles missing or malformed optional parts (like `styles.xml` or `numbering.xml`).
 *   **XML Parsing**: Uses standardized `DOMXPath` setup with namespace registration and error suppression for resilient parsing of varied Word XML outputs.
 *   **Resource Management**: Ensures file handles (like `ZipArchive`) are properly closed even when parsing errors occur.
 
-### 9. Technical Implementation Note
-All detected structures are mapped to immutable PHP 8.4 `readonly` classes defined in the `Pandoc\AST` namespace, ensuring that the intermediate representation is strictly compatible with Pandoc's universal document model.
+### 11. Technical Implementation Note
+All detected structures are mapped to immutable PHP 8.4 `readonly` classes defined in the `Pandoc\AST` namespace, ensuring that the intermediate representation is strictly compatible with Pandoc's universal document model. The run-merge pipeline is table-driven: `STYLE_PROPS` lists the properties that define run identity, and `NEUTRAL_EXEMPT_PROPS` lists the properties that must be absent for a whitespace run to be treated as neutral. Adding a new formatting property (e.g., `fontSize`) to the merge logic requires only a one-line addition to `STYLE_PROPS`.
 
 ## Excel (XLSX) Support
 

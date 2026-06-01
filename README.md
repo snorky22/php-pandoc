@@ -7,7 +7,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **Native PHP 8.4**: Uses `readonly` classes, Enums, and property hooks.
 - **AST-Centric Architecture**: Mirrors Pandoc's Abstract Syntax Tree for robust conversions.
 - **Modular Reader System**: Factory pattern and `ReaderInterface` for easy format expansion.
-- **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors.
+- **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors, hyperlinks (external `\href`/`\url`, internal `\hyperref`), footnotes and endnotes (`\footnote`), automatic run-merging (consecutive runs with identical styling are collapsed into one command), and black-color suppression (spurious `\textcolor[HTML]{000000}` commands are dropped).
 - **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, chart extraction (JSON metadata + CSV data for Chart.js), per-sheet CSV export with locale-aware separators, and a `metadata.json` summary of document locale.
 - **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images, embedded videos (`\begin{video}...\end{video}`), and audio (`\begin{audio}...\end{audio}`) extracted to MediaBag.
 - **LaTeX Generation**: Standalone documents or body fragments.
@@ -260,7 +260,7 @@ The project includes a web-based demonstration tool in `web/`.
 
 See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. Highlights:
 
-- **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers.
+- **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers, hyperlinks, footnotes/endnotes, automatic run-merging.
 - **Excel**: Multi-sheet tables, cell formatting, embedded images, Chart.js-ready chart extraction, per-sheet CSV export with locale-aware separators.
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.
