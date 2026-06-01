@@ -19,8 +19,10 @@ use Pandoc\AST\Superscript;
 use Pandoc\AST\Underline;
 use Pandoc\AST\MediaBag;
 use Pandoc\AST\Image;
+use Pandoc\AST\Link;
 use Pandoc\AST\Target;
 use Pandoc\Reader\Docx\Parser;
+use Pandoc\Reader\Docx\Hyperlink as DocxHyperlink;
 use Pandoc\Reader\Docx\Paragraph as DocxParagraph;
 use Pandoc\Reader\Docx\Table as DocxTable;
 use Pandoc\Reader\Docx\Row as DocxRow;
@@ -34,6 +36,8 @@ class DocxReader implements ReaderInterface
 
     private Parser $parser;
     private array $styleMap = [];
+    private array $footnotes = [];
+    private array $endnotes = [];
 
     public function __construct()
     {
@@ -46,6 +50,8 @@ class DocxReader implements ReaderInterface
         $this->initMediaBag(); // Reset for each read
         $docx = $this->parser->parse($filePath);
         $this->styleMap = $docx->styles;
+        $this->footnotes = $docx->footnotes;
+        $this->endnotes  = $docx->endnotes;
 
         foreach ($docx->media as $id => $media) {
             // We use the filename as the key in MediaBag
@@ -89,6 +95,9 @@ class DocxReader implements ReaderInterface
     {
         $blocks = [];
         if ($part instanceof DocxParagraph) {
+            if ($this->isTocStyle($part->style)) {
+                return [];
+            }
             if ($this->isCodeStyle($part->style)) {
                 if (!empty($currentListItems)) {
                     $blocks[] = $this->flushList($currentListItems, $currentNumId);
@@ -140,6 +149,15 @@ class DocxReader implements ReaderInterface
         return $blocks;
     }
 
+    private function isTocStyle(string $styleId): bool
+    {
+        if ($styleId === '') return false;
+        $name = strtolower(trim($this->styleMap[$styleId]['name'] ?? $styleId));
+        $rawId = strtolower(trim($styleId));
+        return (bool) preg_match('/^toc[\s\d]*$|^toc\s*heading/', $name)
+            || (bool) preg_match('/^toc[\s\d]*$|^toc\s*heading/', $rawId);
+    }
+
     private function isCodeStyle(string $styleId): bool
     {
         if ($styleId === '') return false;
@@ -155,7 +173,17 @@ class DocxReader implements ReaderInterface
 
     private function paragraphText(DocxParagraph $p): string
     {
-        return implode('', array_map(fn(DocxRun $r) => $r->text, $p->runs));
+        $text = '';
+        foreach ($p->runs as $run) {
+            if ($run instanceof DocxHyperlink) {
+                foreach ($run->runs as $r) {
+                    $text .= $r->text;
+                }
+            } else {
+                $text .= $run->text;
+            }
+        }
+        return $text;
     }
 
     private function flushCodeBlock(array $lines): CodeBlock
@@ -248,7 +276,11 @@ class DocxReader implements ReaderInterface
     {
         $inlines = [];
         foreach ($p->runs as $run) {
-            $inlines = array_merge($inlines, $this->convertRun($run));
+            if ($run instanceof DocxHyperlink) {
+                $inlines = array_merge($inlines, $this->convertHyperlink($run));
+            } else {
+                $inlines = array_merge($inlines, $this->convertRun($run));
+            }
         }
 
         // Check if this paragraph is just a sequence of underscores (horizontal rule)
@@ -307,8 +339,94 @@ class DocxReader implements ReaderInterface
         return $name ?: $styleId;
     }
 
+    private function convertHyperlink(DocxHyperlink $hyperlink): array
+    {
+        $inlines = [];
+        foreach ($hyperlink->runs as $run) {
+            $inlines = array_merge($inlines, $this->convertRun($run));
+        }
+        $inlines = $this->stripColorSpans($inlines);
+
+        if ($hyperlink->anchor !== '') {
+            return [new Link(new Attr('', ['internal'], []), $inlines, new Target('#' . $hyperlink->anchor))];
+        }
+
+        $url = $hyperlink->url;
+        if ($url === '') {
+            return $inlines;
+        }
+
+        $displayText = implode('', array_map([$this, 'inlineText'], $inlines));
+        $isUnnamed = ($displayText === $url);
+        return [new Link(new Attr('', $isUnnamed ? ['url'] : [], []), $inlines, new Target($url))];
+    }
+
+    private function stripColorSpans(array $inlines): array
+    {
+        $result = [];
+        foreach ($inlines as $inline) {
+            if ($inline instanceof Span && $inline->attr->identifier === '' && $inline->attr->classes === []) {
+                $isColorOnly = true;
+                foreach ($inline->attr->attributes as $attr) {
+                    if ($attr[0] !== 'color' && $attr[0] !== 'background-color') {
+                        $isColorOnly = false;
+                        break;
+                    }
+                }
+                if ($isColorOnly) {
+                    $result = array_merge($result, $this->stripColorSpans($inline->content));
+                    continue;
+                }
+            }
+            $result[] = $inline;
+        }
+        return $result;
+    }
+
+    private function inlineText(\Pandoc\AST\Inline $i): string
+    {
+        return match(true) {
+            $i instanceof Str => $i->text,
+            $i instanceof Space => ' ',
+            $i instanceof Strong, $i instanceof Emph, $i instanceof Underline,
+            $i instanceof Strikeout, $i instanceof Superscript, $i instanceof Subscript,
+            $i instanceof Span => implode('', array_map([$this, 'inlineText'], $i->content)),
+            default => '',
+        };
+    }
+
+    private function convertBodyToInlines(DocxBody $body): array
+    {
+        $inlines = [];
+        foreach ($body->parts as $part) {
+            if (!$part instanceof DocxParagraph) {
+                continue;
+            }
+            foreach ($part->runs as $run) {
+                if ($run instanceof DocxHyperlink) {
+                    $inlines = array_merge($inlines, $this->convertHyperlink($run));
+                } else {
+                    $inlines = array_merge($inlines, $this->convertRun($run));
+                }
+            }
+        }
+        return $inlines;
+    }
+
     private function convertRun(DocxRun $run): array
     {
+        if ($run->footnoteId > 0) {
+            $body = $this->footnotes[$run->footnoteId] ?? null;
+            if ($body) {
+                return [new \Pandoc\AST\Note($this->convertBodyToInlines($body))];
+            }
+        }
+        if ($run->endnoteId > 0) {
+            $body = $this->endnotes[$run->endnoteId] ?? null;
+            if ($body) {
+                return [new \Pandoc\AST\Note($this->convertBodyToInlines($body))];
+            }
+        }
         if ($run->drawingId) {
             $media = $this->parser->media[$run->drawingId] ?? null;
             if ($media) {
