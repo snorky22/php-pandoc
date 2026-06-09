@@ -44,7 +44,6 @@ class XlsxReader implements ReaderInterface
 
         foreach ($doc->sheets as $sheet) {
             $blocks[] = new Header(2, new Attr("sheet-{$sheet->id}", [], []), [new Str($sheet->name)]);
-            $sheetNames[] = $sheet->name;
 
             $table = $this->sheetToTable($sheet);
             if ($table !== null) {
@@ -61,10 +60,11 @@ class XlsxReader implements ReaderInterface
 
             // Sheet → locale-aware CSV in MediaBag
             $sheetCsv = $this->sheetToCsv($sheet, $locale);
+            $csvName = "{$sheet->name}.csv";
             if ($sheetCsv !== '') {
-                $safeName = preg_replace('/[^A-Za-z0-9_-]/', '_', $sheet->name);
-                $this->mediaBag->insert("sheet-{$safeName}.csv", 'text/csv', $sheetCsv);
+                $this->mediaBag->insert($csvName, 'text/csv', $sheetCsv);
             }
+            $sheetNames[] = ['name' => $sheet->name, 'csv' => $csvName];
 
             // Charts → JSON + locale-aware CSV in MediaBag, marker in LaTeX
             foreach ($sheet->charts as $chart) {
@@ -84,12 +84,12 @@ class XlsxReader implements ReaderInterface
     private function buildMetadata(XlsxLocale $locale, array $sheetNames): string
     {
         return json_encode([
-            'language'          => $locale->language,
-            'decimalSeparator'  => $locale->decimalSep,
-            'thousandsSeparator'=> $locale->thousandsSep,
-            'columnDelimiter'   => $locale->columnDelim,
-            'quoteCharacter'    => $locale->quoteChar,
-            'sheets'            => $sheetNames,
+            'language'           => $locale->language,
+            'decimalSeparator'   => $locale->decimalSep,
+            'thousandsSeparator' => $locale->thousandsSep,
+            'columnDelimiter'    => $locale->columnDelim,
+            'quoteCharacter'     => $locale->quoteChar,
+            'sheets'             => $sheetNames,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
