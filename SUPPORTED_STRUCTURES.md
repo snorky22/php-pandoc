@@ -243,7 +243,7 @@ These are custom environments — define them in your LaTeX preamble to control 
 ```latex
 \begin{video}
 \url{media1.mp4}
-\type{mux}
+\type{mp4}
 \end{video}
 ```
 Supported formats: `mp4`, `mov`, `webm`, `avi`, `wmv`.

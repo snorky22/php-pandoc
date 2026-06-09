@@ -96,7 +96,7 @@ class PptxReader implements ReaderInterface
             } elseif ($shape instanceof PptxVideo) {
                 $this->mediaBag->insert($shape->filename, $shape->mime, $shape->data);
                 $blocks[] = new RawBlock('latex',
-                    "\\begin{video}\n\\url{{$shape->filename}}\n\\type{mux}\n\\end{video}"
+                    "\\begin{video}\n\\url{{$shape->filename}}\n\\type{mp4}\n\\end{video}"
                 );
             } elseif ($shape instanceof PptxAudio) {
                 $this->mediaBag->insert($shape->filename, $shape->mime, $shape->data);

@@ -188,7 +188,7 @@ Embedded videos are exported as a `video` environment:
 ```latex
 \begin{video}
 \url{media1.mp4}
-\type{mux}
+\type{mp4}
 \end{video}
 ```
 
