@@ -20,6 +20,7 @@ class ReaderFactory
             'html', 'htm' => new HtmlReader(),
             'ipynb' => new IpynbReader(),
             'pptx' => new PptxReader(),
+            'bib', 'bibtex' => new BibtexReader(),
             default => throw new \Exception("Unsupported file extension: .$extension")
         };
     }
