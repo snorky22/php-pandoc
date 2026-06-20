@@ -1,6 +1,6 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb` → LaTeX) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) without requiring the system-level Pandoc binary.
 
 ## Features
 
@@ -202,6 +202,39 @@ Embedded audio is exported as an `audio` environment:
 
 All media files (images, video, audio) are included in the ZIP output alongside the `.tex`.
 
+### Converting BibTeX to LaTeX
+
+```php
+use Pandoc\Reader\BibtexReader;
+use Pandoc\Writer\LatexWriter;
+
+$reader  = new BibtexReader();
+$writer  = new LatexWriter();
+
+$content = file_get_contents('references.bib');
+$doc     = $reader->read($content);
+
+// standalone: false → bibliography block only, no \documentclass preamble
+$fragment = $writer->write($doc, standalone: false);
+file_put_contents('references.tex', $fragment);
+```
+
+The output is a self-contained `thebibliography` block:
+
+```latex
+\begin{thebibliography}{99}
+
+\bibitem{Smith2020}
+\emph{A Great Title}, John Smith, Journal of Examples, \doi{10.1000/xyz123}, 2020
+
+\end{thebibliography}
+```
+
+- HTTP/HTTPS URLs are automatically wrapped in `\url{…}`.
+- DOI tokens (beginning with `10.`) are wrapped in `\doi{…}`.
+- The `title`, `booktitle`, `journal`, `series`, and `publisher` fields are italicised with `\emph{…}`.
+- BibTeX output is always produced as a fragment (`standalone: false`); the web interface enforces this automatically.
+
 ### Converting Jupyter Notebooks to LaTeX
 
 ```php
@@ -252,7 +285,7 @@ The project includes a web-based demonstration tool in `web/`.
 
 1. Point your web server to the `php-pandoc/web/` folder.
 2. Open `index.html` in your browser.
-3. Upload a `.docx`, `.xlsx`, `.pptx`, `.html`, `.ipynb`, or `.md` file.
+3. Upload a `.docx`, `.xlsx`, `.pptx`, `.html`, `.ipynb`, `.md`, or `.bib` file.
 4. Choose Standalone or Fragment output.
 5. Download the result — a plain `.tex` if the document has no media, or a `.zip` if it does.
 
@@ -265,6 +298,7 @@ See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. 
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.
 - **Jupyter**: Markdown cells, code blocks, output images.
+- **BibTeX**: Entries rendered as a `thebibliography` environment with `\bibitem` items; URLs wrapped in `\url{…}`, DOIs in `\doi{…}`, and title/journal/booktitle/series/publisher fields italicised with `\emph{…}`.
 
 ## Development and Testing
 

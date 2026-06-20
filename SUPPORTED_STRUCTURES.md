@@ -2,7 +2,7 @@
 
 This document details the document structures that are currently detected, parsed, and handled by the native PHP 8.4 port of Pandoc. The implementation follows the modular architecture of the original Haskell source, separating low-level extraction from high-level AST conversion through a unified `ReaderInterface`.
 
-**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`)  
+**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`)  
 **Output format:** LaTeX (standalone document or body fragment)
 
 ## Microsoft Word (Docx) Support
@@ -278,13 +278,6 @@ The HTML reader uses `DOMDocument` to parse HTML and maps elements to the Pandoc
 *   **Tables**: `<table>`, `<thead>`, `<tbody>`, `<tfoot>`, `<tr>`, `<th>`, `<td>`. Heuristic detection of header rows if `<thead>` is missing.
 *   **Inlines**: `<b>`/`<strong>`, `<i>`/`<em>`, `<u>`, `<s>`/`<strike>`/`<del>`, `<sup>`, `<sub>`, `<a>`, `<img>`, `<code>`/`<kbd>`/`<samp>`/`<var>`, `<span>`, `<br>`.
 *   **Attributes**: Preservation of `id` and `class` attributes in `Attr` objects.
-The HTML reader uses `DOMDocument` to parse HTML and maps elements to the Pandoc AST:
-*   **Headers**: `<h1>` through `<h6>`.
-*   **Blocks**: `<p>`, `<blockquote>`, `<pre>`, `<hr>`, `<div>`.
-*   **Lists**: `<ul>`, `<ol>`, `<li>`.
-*   **Tables**: `<table>`, `<thead>`, `<tbody>`, `<tfoot>`, `<tr>`, `<th>`, `<td>`. Heuristic detection of header rows if `<thead>` is missing.
-*   **Inlines**: `<b>`/`<strong>`, `<i>`/`<em>`, `<u>`, `<s>`/`<strike>`/`<del>`, `<sup>`, `<sub>`, `<a>`, `<img>`, `<code>`/`<kbd>`/`<samp>`/`<var>`, `<span>`, `<br>`.
-*   **Attributes**: Preservation of `id` and `class` attributes in `Attr` objects.
 
 ## Jupyter Notebook (Ipynb) Support
 The Jupyter reader parses the notebook JSON and maps cells to the Pandoc AST, wrapping each in a `Div` with appropriate classes:
@@ -296,3 +289,42 @@ The Jupyter reader parses the notebook JSON and maps cells to the Pandoc AST, wr
     - **Output Images**: Automatically detects and extracts image outputs (plots, diagrams) from code cells, inserting them as `Image` nodes in the AST.
 *   **Metadata**: Basic cell metadata is extracted and stored in the `Div`'s `Attr` object.
 *   **Source Handling**: Correctly handles both string and array-of-strings source formats.
+
+## BibTeX (`.bib`) Support
+
+The BibTeX reader parses `.bib` files and converts all entries into a single `\begin{thebibliography}{99}…\end{thebibliography}` block, emitted as a `RawBlock('latex', …)` in the Pandoc AST. The output is always produced as a fragment (`standalone: false`).
+
+### 1. Entry Parsing
+- Entries of the form `@type{key, field = value, …}` are detected using a brace-counting algorithm that correctly handles arbitrarily nested braces.
+- The entry type (e.g. `article`, `book`, `inproceedings`) is parsed but not emitted — only the cite key and fields are used.
+- `@string`, `@preamble`, and `@comment` entries are silently skipped.
+- Comment lines beginning with `%` are stripped before parsing.
+
+### 2. Field Value Parsing
+- **Brace-delimited values** (`{…}`): brace depth is tracked to support nested braces.
+- **Quote-delimited values** (`"…"`): inner braces are tracked to avoid premature termination.
+- **Bare tokens**: numbers and macro names are read as-is.
+- **Concatenation** (`#`): multiple value parts joined with `#` are concatenated into a single string.
+- **Value cleaning**: surrounding case-protection braces (e.g. `{Word}`) are stripped and whitespace is normalised.
+
+### 3. LaTeX Output
+Each entry produces a `\bibitem{cite_key}` followed by all field values joined with `, `:
+
+```latex
+\begin{thebibliography}{99}
+
+\bibitem{Smith2020}
+\emph{A Great Title}, John Smith, \emph{Journal of Examples}, \doi{10.1000/xyz123}, 2020
+
+\end{thebibliography}
+```
+
+### 4. Special Field Rendering
+- **Italic fields**: `title`, `booktitle`, `journal`, `series`, and `publisher` values are wrapped in `\emph{…}`.
+- **URL detection**: values containing `http://` or `https://` URLs have those URLs wrapped in `\url{…}`.
+- **DOI detection**: tokens beginning with `10.` (standard DOI prefix) are wrapped in `\doi{…}`.
+
+### 5. Not Yet Supported
+- `@string` macro expansion (macro names are emitted as-is).
+- Cross-references (`crossref` field).
+- Author name formatting (first/last name reordering, "et al." truncation).
