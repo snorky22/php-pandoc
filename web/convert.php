@@ -37,7 +37,7 @@ if ($lastDot !== false) {
 try {
     $reader = ReaderFactory::createForExtension($extension);
 
-    if (in_array($extension, ['md', 'html', 'htm', 'ipynb'])) {
+    if (in_array($extension, ['md', 'html', 'htm', 'ipynb', 'bib', 'bibtex'])) {
         $content = file_get_contents($uploadedFile);
         $doc = $reader->read($content);
     } else {
@@ -50,7 +50,10 @@ try {
 
 try {
     // 2. Write
-    $standalone = ($_POST['standalone'] ?? '1') === '1';
+    // BibTeX output is always restricted to the bibliography environment (no document wrapper)
+    $standalone = in_array(strtolower($extension), ['bib', 'bibtex'])
+        ? false
+        : (($_POST['standalone'] ?? '1') === '1');
     $writer = new LatexWriter();
     $latex = $writer->write($doc, $standalone);
     $outputFilename = $baseName . '.tex';

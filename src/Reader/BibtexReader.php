@@ -32,6 +32,8 @@ class BibtexReader implements ReaderInterface
 
             $parts = [];
             foreach ($entry['fields'] as $field => $value) {
+                $value = $this->wrapUrls($value);
+                $value = $this->wrapDois($value);
                 if (in_array($field, $italicFields)) {
                     $parts[] = '\\emph{' . $value . '}';
                 } else {
@@ -222,6 +224,22 @@ class BibtexReader implements ReaderInterface
         }
 
         return implode('', $parts);
+    }
+
+    /**
+     * Wraps http/https URLs in \url{…}.
+     */
+    protected function wrapUrls(string $value): string
+    {
+        return preg_replace('/(https?:\/\/\S+)/', '\\url{$1}', $value);
+    }
+
+    /**
+     * Wraps DOI patterns (words beginning with 10.) in \doi{…}.
+     */
+    protected function wrapDois(string $value): string
+    {
+        return preg_replace('/\b(10\.\S+)/', '\\doi{$1}', $value);
     }
 
     /**
