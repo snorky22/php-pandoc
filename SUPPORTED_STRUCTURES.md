@@ -314,7 +314,7 @@ Each entry produces a `\bibitem{cite_key}` followed by all field values joined w
 \begin{thebibliography}{99}
 
 \bibitem{Smith2020}
-\emph{A Great Title}, John Smith, \emph{Journal of Examples}, \doi{10.1000/xyz123}, 2020
+\emph{A Great Title}, John Smith, \emph{Journal of Examples}, 2020
 
 \end{thebibliography}
 ```
@@ -322,7 +322,6 @@ Each entry produces a `\bibitem{cite_key}` followed by all field values joined w
 ### 4. Special Field Rendering
 - **Italic fields**: `title`, `booktitle`, `journal`, `series`, and `publisher` values are wrapped in `\emph{…}`.
 - **URL detection**: values containing `http://` or `https://` URLs have those URLs wrapped in `\url{…}`.
-- **DOI detection**: tokens beginning with `10.` (standard DOI prefix) are wrapped in `\doi{…}`.
 
 ### 5. Not Yet Supported
 - `@string` macro expansion (macro names are emitted as-is).

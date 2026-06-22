@@ -225,13 +225,12 @@ The output is a self-contained `thebibliography` block:
 \begin{thebibliography}{99}
 
 \bibitem{Smith2020}
-\emph{A Great Title}, John Smith, Journal of Examples, \doi{10.1000/xyz123}, 2020
+\emph{A Great Title}, John Smith, Journal of Examples, 2020
 
 \end{thebibliography}
 ```
 
 - HTTP/HTTPS URLs are automatically wrapped in `\url{…}`.
-- DOI tokens (beginning with `10.`) are wrapped in `\doi{…}`.
 - The `title`, `booktitle`, `journal`, `series`, and `publisher` fields are italicised with `\emph{…}`.
 - BibTeX output is always produced as a fragment (`standalone: false`); the web interface enforces this automatically.
 
@@ -298,7 +297,7 @@ See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. 
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.
 - **Jupyter**: Markdown cells, code blocks, output images.
-- **BibTeX**: Entries rendered as a `thebibliography` environment with `\bibitem` items; URLs wrapped in `\url{…}`, DOIs in `\doi{…}`, and title/journal/booktitle/series/publisher fields italicised with `\emph{…}`.
+- **BibTeX**: Entries rendered as a `thebibliography` environment with `\bibitem` items; URLs wrapped in `\url{…}`, and title/journal/booktitle/series/publisher fields italicised with `\emph{…}`.
 
 ## Development and Testing
 
