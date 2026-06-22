@@ -30,8 +30,13 @@ class BibtexReader implements ReaderInterface
             $key = $entry['key'];
             $label = $key;
 
+            $skipFields = ['keywords', 'abstract'];
+
             $parts = [];
             foreach ($entry['fields'] as $field => $value) {
+                if (in_array($field, $skipFields)) {
+                    continue;
+                }
                 $value = $this->wrapUrls($value);
                 if (in_array($field, $italicFields)) {
                     $parts[] = '\\emph{' . $value . '}';

@@ -232,6 +232,7 @@ The output is a self-contained `thebibliography` block:
 
 - HTTP/HTTPS URLs are automatically wrapped in `\url{…}`.
 - The `title`, `booktitle`, `journal`, `series`, and `publisher` fields are italicised with `\emph{…}`.
+- The `keywords` and `abstract` fields are silently omitted from the output.
 - BibTeX output is always produced as a fragment (`standalone: false`); the web interface enforces this automatically.
 
 ### Converting Jupyter Notebooks to LaTeX
@@ -297,7 +298,7 @@ See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. 
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.
 - **Jupyter**: Markdown cells, code blocks, output images.
-- **BibTeX**: Entries rendered as a `thebibliography` environment with `\bibitem` items; URLs wrapped in `\url{…}`, and title/journal/booktitle/series/publisher fields italicised with `\emph{…}`.
+- **BibTeX**: Entries rendered as a `thebibliography` environment with `\bibitem` items; URLs wrapped in `\url{…}`, title/journal/booktitle/series/publisher fields italicised with `\emph{…}`, and `keywords`/`abstract` fields omitted.
 
 ## Development and Testing
 
