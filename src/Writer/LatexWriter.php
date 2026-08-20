@@ -21,6 +21,8 @@ use Pandoc\AST\Superscript;
 use Pandoc\AST\Underline;
 use Pandoc\AST\Link;
 use Pandoc\AST\Image;
+use Pandoc\AST\Math;
+use Pandoc\AST\MathType;
 use Pandoc\AST\Note;
 use Pandoc\AST\Code;
 use Pandoc\AST\CodeBlock;
@@ -178,8 +180,16 @@ EOF;
             $i instanceof Image => $this->writeImage($i),
             $i instanceof Code => '\\texttt{' . $this->escapeLatex($i->text) . '}',
             $i instanceof Span => $this->writeSpan($i),
+            $i instanceof Math => $this->writeMath($i),
             default => ''
         };
+    }
+
+    protected function writeMath(Math $m): string
+    {
+        return $m->type === MathType::DisplayMath
+            ? '\\[' . $m->text . '\\]'
+            : '$' . $m->text . '$';
     }
 
     protected function writeSpan(Span $span): string

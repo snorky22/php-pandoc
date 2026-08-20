@@ -20,9 +20,12 @@ use Pandoc\AST\Underline;
 use Pandoc\AST\MediaBag;
 use Pandoc\AST\Image;
 use Pandoc\AST\Link;
+use Pandoc\AST\Math;
+use Pandoc\AST\MathType;
 use Pandoc\AST\Target;
 use Pandoc\Reader\Docx\Parser;
 use Pandoc\Reader\Docx\Hyperlink as DocxHyperlink;
+use Pandoc\Reader\Docx\MathRun as DocxMathRun;
 use Pandoc\Reader\Docx\Paragraph as DocxParagraph;
 use Pandoc\Reader\Docx\Table as DocxTable;
 use Pandoc\Reader\Docx\Row as DocxRow;
@@ -278,6 +281,8 @@ class DocxReader implements ReaderInterface
         foreach ($this->mergeRuns($p->runs) as $run) {
             if ($run instanceof DocxHyperlink) {
                 $inlines = array_merge($inlines, $this->convertHyperlink($run));
+            } elseif ($run instanceof DocxMathRun) {
+                $inlines[] = new Math($run->isDisplay ? MathType::DisplayMath : MathType::InlineMath, $run->latex);
             } else {
                 $inlines = array_merge($inlines, $this->convertRun($run));
             }
@@ -529,6 +534,8 @@ class DocxReader implements ReaderInterface
             foreach ($this->mergeRuns($part->runs) as $run) {
                 if ($run instanceof DocxHyperlink) {
                     $inlines = array_merge($inlines, $this->convertHyperlink($run));
+                } elseif ($run instanceof DocxMathRun) {
+                    $inlines[] = new Math($run->isDisplay ? MathType::DisplayMath : MathType::InlineMath, $run->latex);
                 } else {
                     $inlines = array_merge($inlines, $this->convertRun($run));
                 }

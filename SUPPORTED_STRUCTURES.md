@@ -66,17 +66,25 @@ Comprehensive table support mirroring Pandoc's complex table model:
 *   **Organization**: Media files are stored in the `MediaBag` using their base filename.
 *   **LaTeX Output**: Images are referenced using `\includegraphics{filename}` (no directory prefix) and wrapped in a custom `\pandocbounded` macro that handles scaling to prevent page overflow.
 
-### 9. Currently Simplified or In Progress
-*   **Math (MathML/OMML)**: Office Math (OMML) elements inside `w:r` runs are not yet converted; the surrounding text of the paragraph is output but math symbols are omitted.
+### 9. Math Equations (OMML → LaTeX)
+Office Math (OMML) equations — `m:oMath` (inline) and `m:oMathPara` (display) — are converted to native `Math` AST nodes (`InlineMath` / `DisplayMath`) by a dedicated `Pandoc\Reader\Docx\OmmlToLatex` converter, and rendered by the LaTeX writer as `$…$` / `\[…\]` (and by the HTML writer as MathJax-ready `\(…\)` / `\[…\]`).
+*   **Detection**: `m:oMath` appearing directly inside a paragraph is treated as inline math; `m:oMathPara` (a paragraph containing only an equation) is treated as display math.
+*   **Structural elements supported**: runs and text (`m:r`/`m:t`), superscript/subscript/both (`m:sSup`/`m:sSub`/`m:sSubSup`), pre-scripts (`m:sPre`), fractions (`m:f`, including the "linear" `a/b` style), radicals with an optional degree (`m:rad`), n-ary operators with limits (`m:nary` — integral, sum, product, union, intersection, etc.), delimiters with custom opening/closing/separator characters (`m:d`), functions (`m:func`/`m:fName`), limit expressions (`m:limLow`/`m:limUpp`), matrices (`m:m`), equation arrays (`m:eqArr`), over/underlines (`m:bar`), over/underbraces and arrows (`m:groupChr`), and accents (`m:acc`).
+*   **Function names**: recognized names (`sin`, `cos`, `ln`, `log`, `lim`, `max`, `min`, `gcd`, …) are emitted as their LaTeX macro (`\sin`, `\log`, …); unrecognized names fall back to `\operatorname{…}`.
+*   **Symbol mapping**: a Unicode → LaTeX table covers Greek letters, arithmetic and relational operators, set theory and logic symbols, arrows, calculus symbols (`∞`, `∇`, `∂`, `…`), and primes, so equations typed with Word's Unicode math autocorrect render as proper LaTeX commands rather than raw Unicode.
+*   **Escaping**: literal characters that are special in LaTeX (`\`, `{`, `}`, `$`, `&`, `#`, `%`, `_`, `^`, `~`) are escaped when they appear as plain text inside an equation.
+*   **Known limitation**: OMML sometimes omits explicit spaces around literal connective words (e.g. Word can store "a=0 or b=0" with no space characters around `or`); the converter faithfully transcribes the source text, so such words may appear glued to adjacent tokens (`a=0orb=0`) in the LaTeX output.
+
+### 10. Quotations and Code Blocks
 *   **Quotations**: Paragraphs with `Quote` or `Intense Quote` styles are mapped to `BlockQuote` blocks.
 *   **Code Blocks**: Paragraphs with `Source Code` or `Verbatim` styles are converted to `CodeBlock` nodes.
 
-### 10. Robustness Improvements
+### 11. Robustness Improvements
 *   **Error Handling**: The Docx parser gracefully handles missing or malformed optional parts (like `styles.xml` or `numbering.xml`).
 *   **XML Parsing**: Uses standardized `DOMXPath` setup with namespace registration and error suppression for resilient parsing of varied Word XML outputs.
 *   **Resource Management**: Ensures file handles (like `ZipArchive`) are properly closed even when parsing errors occur.
 
-### 11. Technical Implementation Note
+### 12. Technical Implementation Note
 All detected structures are mapped to immutable PHP 8.4 `readonly` classes defined in the `Pandoc\AST` namespace, ensuring that the intermediate representation is strictly compatible with Pandoc's universal document model. The run-merge pipeline is table-driven: `STYLE_PROPS` lists the properties that define run identity, and `NEUTRAL_EXEMPT_PROPS` lists the properties that must be absent for a whitespace run to be treated as neutral. Adding a new formatting property (e.g., `fontSize`) to the merge logic requires only a one-line addition to `STYLE_PROPS`.
 
 ## Excel (XLSX) Support

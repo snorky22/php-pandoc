@@ -24,6 +24,8 @@ use Pandoc\AST\Image;
 use Pandoc\AST\Span;
 use Pandoc\AST\Note;
 use Pandoc\AST\DefinitionList;
+use Pandoc\AST\Math;
+use Pandoc\AST\MathType;
 
 class HtmlWriter
 {
@@ -93,6 +95,9 @@ class HtmlWriter
             $inline instanceof Link => '<a href="' . htmlspecialchars($inline->target->url) . '"' .
                 ($inline->target->title ? ' title="' . htmlspecialchars($inline->target->title) . '"' : '') .
                 '>' . $this->writeInlines($inline->content) . '</a>',
+            $inline instanceof Math => $inline->type === MathType::DisplayMath
+                ? '\\[' . $inline->text . '\\]'
+                : '\\(' . $inline->text . '\\)',
             default => '<!-- Unsupported Inline: ' . get_class($inline) . ' -->'
         };
     }

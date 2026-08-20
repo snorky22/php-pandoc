@@ -7,7 +7,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **Native PHP 8.4**: Uses `readonly` classes, Enums, and property hooks.
 - **AST-Centric Architecture**: Mirrors Pandoc's Abstract Syntax Tree for robust conversions.
 - **Modular Reader System**: Factory pattern and `ReaderInterface` for easy format expansion.
-- **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors, hyperlinks (external `\href`/`\url`, internal `\hyperref`), footnotes and endnotes (`\footnote`), automatic run-merging (consecutive runs with identical styling are collapsed into one command), and black-color suppression (spurious `\textcolor[HTML]{000000}` commands are dropped).
+- **Deep Docx Parsing**: Paragraphs, headers, tables, lists, images, bold/italic/underline/strikeout, superscript/subscript, text and background colors, hyperlinks (external `\href`/`\url`, internal `\hyperref`), footnotes and endnotes (`\footnote`), math equations (Office Math/OMML → LaTeX, inline `$…$` and display `\[…\]`), automatic run-merging (consecutive runs with identical styling are collapsed into one command), and black-color suppression (spurious `\textcolor[HTML]{000000}` commands are dropped).
 - **Excel (XLSX)**: All sheets as booktabs tables, shared strings, bold/italic, embedded images, chart extraction (JSON metadata + CSV data for Chart.js), per-sheet CSV export with locale-aware separators, and a `metadata.json` summary of document locale.
 - **PowerPoint (PPTX)**: Each slide becomes a `slide` environment, all slides wrapped in a `slider` environment. Images, embedded videos (`\begin{video}...\end{video}`), and audio (`\begin{audio}...\end{audio}`) extracted to MediaBag.
 - **LaTeX Generation**: Standalone documents or body fragments.
@@ -39,6 +39,16 @@ $latex = $writer->write($doc, standalone: true);
 
 file_put_contents('document.tex', $latex);
 ```
+
+Word equations (Office Math/OMML, `Insert → Equation`) are converted to LaTeX automatically — no extra setup required. An inline equation becomes a `Math` AST node of type `InlineMath` (`$…$`), and a standalone equation paragraph becomes `DisplayMath` (`\[…\]`):
+
+```php
+// document.docx contains the equation: y = ∫₀ᵗ x(s) ds
+$latex = $writer->write($reader->read('document.docx'), standalone: false);
+// → "\[y=\int_{0}^{t}{x\left(s\right)ds}\]"
+```
+
+Superscripts/subscripts, fractions, radicals, n-ary operators (∫, ∑, ∏, ⋃, …), delimiters, functions (`sin`, `log`, `lim`, …), matrices, and common Greek letters/operator symbols are all supported. See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md#9-math-equations-omml--latex) for the full list and known limitations.
 
 ### Converting Markdown to a LaTeX Fragment
 
@@ -293,7 +303,7 @@ The project includes a web-based demonstration tool in `web/`.
 
 See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md) for a full feature list. Highlights:
 
-- **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers, hyperlinks, footnotes/endnotes, automatic run-merging.
+- **Word**: Headers (H1–H6, Title), bold/italic/underline/strikeout/color, lists, tables, images, headers & footers, hyperlinks, footnotes/endnotes, math equations (OMML → LaTeX), automatic run-merging.
 - **Excel**: Multi-sheet tables, cell formatting, embedded images, Chart.js-ready chart extraction, per-sheet CSV export with locale-aware separators.
 - **PowerPoint**: Slide titles, body text, bullet/ordered lists, images, tables, `slide`/`slider` LaTeX environments.
 - **HTML**: Full block and inline element support.

@@ -16,6 +16,7 @@ class Parser
         'a' => 'http://schemas.openxmlformats.org/drawingml/2006/main',
         'pic' => 'http://schemas.openxmlformats.org/drawingml/2006/picture',
         'v' => 'urn:schemas-microsoft-com:vml',
+        'm' => 'http://schemas.openxmlformats.org/officeDocument/2006/math',
     ];
 
     private array $currentRels = [];
@@ -311,9 +312,20 @@ class Parser
                 $runs[] = new Run("\n", false, false, false, false);
             } elseif ($child->nodeName === 'w:hyperlink') {
                 $runs[] = $this->parseHyperlink($child, $xpath);
+            } elseif ($child->nodeName === 'm:oMathPara') {
+                $runs[] = $this->parseMath($child, true);
+            } elseif ($child->nodeName === 'm:oMath') {
+                $runs[] = $this->parseMath($child, false);
             }
         }
         return new Paragraph($style, $runs, $numId, $ilvl);
+    }
+
+    /** Convert an m:oMath or m:oMathPara element into its LaTeX representation. */
+    private function parseMath(\DOMElement $node, bool $isDisplay): MathRun
+    {
+        $latex = trim((new OmmlToLatex())->convert($node));
+        return new MathRun($latex, $isDisplay);
     }
 
     private function parseHyperlink(\DOMNode $node, DOMXPath $xpath): Hyperlink
@@ -374,6 +386,7 @@ class Parser
 }
 
 readonly class Hyperlink { public function __construct(public string $url, public string $anchor, public array $runs) {} }
+readonly class MathRun { public function __construct(public string $latex, public bool $isDisplay) {} }
 readonly class Document { public function __construct(public Body $body, public array $numbering = [], public array $styles = [], public array $relationships = [], public array $media = [], public array $headers = [], public array $footers = [], public array $footnotes = [], public array $endnotes = []) {} }
 readonly class Body { public function __construct(public array $parts) {} }
 readonly class Paragraph { public function __construct(public string $style, public array $runs, public int $numId = 0, public int $ilvl = 0) {} }

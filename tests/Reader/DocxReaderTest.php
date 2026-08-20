@@ -14,6 +14,8 @@ use Pandoc\AST\Superscript;
 use Pandoc\AST\Subscript;
 use Pandoc\AST\Underline;
 use Pandoc\AST\Span;
+use Pandoc\AST\Math;
+use Pandoc\AST\MathType;
 
 class DocxReaderTest extends TestCase
 {
@@ -128,6 +130,33 @@ class DocxReaderTest extends TestCase
 
         $this->assertNotEmpty($bulletLists, "Bullet lists should be detected");
         $this->assertNotEmpty($orderedLists, "Ordered lists should be detected");
+    }
+
+    public function testMathEquation(): void
+    {
+        // Hello.docx lives alongside this php-pandoc project (php-pandoc/test/docx/),
+        // unlike the other fixtures above which are shared with the Haskell pandoc test suite.
+        $path = __DIR__ . '/../../test/docx/Hello.docx';
+        if (!file_exists($path)) {
+            $this->markTestSkipped("Test file Hello.docx not found");
+        }
+
+        $doc = $this->reader->read($path);
+
+        $mathNodes = [];
+        foreach ($doc->blocks as $block) {
+            if ($block instanceof Para) {
+                foreach ($block->content as $inline) {
+                    if ($inline instanceof Math) {
+                        $mathNodes[] = $inline;
+                    }
+                }
+            }
+        }
+
+        $this->assertCount(1, $mathNodes, "Hello.docx should contain exactly one equation");
+        $this->assertEquals(MathType::DisplayMath, $mathNodes[0]->type);
+        $this->assertEquals('y=\\int_{0}^{t}{x\\left(s\\right)ds}', $mathNodes[0]->text);
     }
 
     public function testTables(): void

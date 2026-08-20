@@ -14,6 +14,8 @@ use Pandoc\AST\Plain;
 use Pandoc\AST\Span;
 use Pandoc\AST\Image;
 use Pandoc\AST\Target;
+use Pandoc\AST\Math;
+use Pandoc\AST\MathType;
 use Pandoc\Writer\LatexWriter;
 
 class LatexWriterTest extends TestCase
@@ -82,6 +84,18 @@ class LatexWriterTest extends TestCase
         ]);
         $expected = "\\textcolor[HTML]{FF0000}{Red} \\textcolor{blue}{Blue} \\colorbox[HTML]{FFFF00}{Yellow BG} \\colorbox{green}{Green BG}";
         $this->assertLatex($expected, $doc);
+    }
+
+    public function testInlineMath(): void
+    {
+        $doc = new Pandoc(blocks: [new Para([new Math(MathType::InlineMath, 'x^2')])]);
+        $this->assertLatex('$x^2$', $doc);
+    }
+
+    public function testDisplayMath(): void
+    {
+        $doc = new Pandoc(blocks: [new Para([new Math(MathType::DisplayMath, 'y=mx+b')])]);
+        $this->assertLatex('\\[y=mx+b\\]', $doc);
     }
 
     public function testImage(): void
