@@ -1,7 +1,7 @@
 {
     "name": "pandoc-php/pandoc",
     "description": "A native PHP 8.4 port of the Pandoc document converter.",
-    "version": "5.0.0",
+    "version": "5.5.0",
     "keywords": ["pandoc", "converter", "docx", "xlsx", "excel", "pptx", "powerpoint", "latex", "html", "markdown", "jupyter", "bibtex", "bibliography", "ast", "csv", "locale"],
     "homepage": "https://github.com/pandoc-php/pandoc",
     "type": "library",

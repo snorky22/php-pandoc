@@ -125,6 +125,50 @@ class OmmlToLatexTest extends TestCase
         $this->assertSame('\\alpha \\leq \\beta ', $latex);
     }
 
+    public function testMathAlphanumericLatinLetterStyles(): void
+    {
+        // bold A, italic x, bold-italic a, script A, fraktur A, double-struck A, sans-serif A, monospace A
+        $chars = "\u{1D400}\u{1D465}\u{1D482}\u{1D49C}\u{1D504}\u{1D538}\u{1D5A0}\u{1D670}";
+        $latex = $this->convert("<m:oMath><m:r><m:t>{$chars}</m:t></m:r></m:oMath>");
+        $this->assertSame(
+            '\\mathbf{A} x \\boldsymbol{a} \\mathcal{A} \\mathfrak{A} \\mathbb{A} \\mathsf{A} \\mathtt{A} ',
+            $latex
+        );
+    }
+
+    public function testMathAlphanumericStyledDigits(): void
+    {
+        // bold 1, double-struck 1
+        $chars = "\u{1D7CF}\u{1D7D9}";
+        $latex = $this->convert("<m:oMath><m:r><m:t>{$chars}</m:t></m:r></m:oMath>");
+        $this->assertSame('\\mathbf{1} \\mathbb{1} ', $latex);
+    }
+
+    public function testMathAlphanumericDotlessIAndJ(): void
+    {
+        $chars = "\u{1D6A4}\u{1D6A5}";
+        $latex = $this->convert("<m:oMath><m:r><m:t>{$chars}</m:t></m:r></m:oMath>");
+        $this->assertSame('\\imath \\jmath ', $latex);
+    }
+
+    public function testLetterlikeSymbolHolesUseFontVariantMacros(): void
+    {
+        $latex = $this->convert('<m:oMath><m:r><m:t>ℝℂℕℬℭ</m:t></m:r></m:oMath>');
+        $this->assertSame('\\mathbb{R} \\mathbb{C} \\mathbb{N} \\mathcal{B} \\mathfrak{C} ', $latex);
+    }
+
+    public function testStandaloneLetterlikeSymbols(): void
+    {
+        $latex = $this->convert('<m:oMath><m:r><m:t>ℏℓ℘ℵ</m:t></m:r></m:oMath>');
+        $this->assertSame('\\hbar \\ell \\wp \\aleph ', $latex);
+    }
+
+    public function testAdditionalMathOperatorsRange(): void
+    {
+        $latex = $this->convert('<m:oMath><m:r><m:t>∧⊕⊥⊢</m:t></m:r></m:oMath>');
+        $this->assertSame('\\wedge \\oplus \\perp \\vdash ', $latex);
+    }
+
     public function testInlineOMathDirectly(): void
     {
         // OmmlToLatex::convert() also accepts a bare m:oMath (for inline equations).

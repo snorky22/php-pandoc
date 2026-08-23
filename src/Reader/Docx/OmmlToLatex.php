@@ -78,6 +78,58 @@ class OmmlToLatex
         '…' => '\\ldots', '⋯' => '\\cdots', '⋮' => '\\vdots', '⋱' => '\\ddots',
         '°' => '^\\circ',
         '′' => "'", '″' => "''", '‴' => "'''",
+        // additional relations/operators from U+2200-U+22FF
+        '∧' => '\\wedge', '∨' => '\\vee', '≅' => '\\cong', '≐' => '\\doteq',
+        '≍' => '\\asymp', '∣' => '\\mid', '∤' => '\\nmid',
+        '⊕' => '\\oplus', '⊖' => '\\ominus', '⊗' => '\\otimes',
+        '⊘' => '\\oslash', '⊙' => '\\odot',
+        '⊥' => '\\perp', '⊢' => '\\vdash', '⊣' => '\\dashv', '⊨' => '\\models',
+        '⊲' => '\\vartriangleleft', '⊳' => '\\vartriangleright',
+        '⊴' => '\\unlhd', '⊵' => '\\unrhd',
+        // Letterlike Symbols (U+2100-U+214F) used as stand-ins for "holes" left
+        // unassigned in the Mathematical Alphanumeric Symbols block, plus a few
+        // standalone math symbols from the same block
+        'ℂ' => '\\mathbb{C}', 'ℍ' => '\\mathbb{H}', 'ℕ' => '\\mathbb{N}',
+        'ℙ' => '\\mathbb{P}', 'ℚ' => '\\mathbb{Q}', 'ℝ' => '\\mathbb{R}', 'ℤ' => '\\mathbb{Z}',
+        'ℬ' => '\\mathcal{B}', 'ℰ' => '\\mathcal{E}', 'ℱ' => '\\mathcal{F}',
+        'ℋ' => '\\mathcal{H}', 'ℐ' => '\\mathcal{I}', 'ℒ' => '\\mathcal{L}',
+        'ℳ' => '\\mathcal{M}', 'ℛ' => '\\mathcal{R}',
+        // \mathcal only has usable glyphs for uppercase in the standard (non
+        // unicode-math) math font, so these lowercase script holes fall back to
+        // a plain letter rather than rendering as garbage, same as italic h below
+        'ℯ' => 'e', 'ℊ' => 'g', 'ℴ' => 'o',
+        'ℭ' => '\\mathfrak{C}', 'ℌ' => '\\mathfrak{H}', 'ℑ' => '\\mathfrak{I}',
+        'ℜ' => '\\mathfrak{R}', 'ℨ' => '\\mathfrak{Z}',
+        'ℎ' => 'h',
+        'ℏ' => '\\hbar', 'ℓ' => '\\ell', '℘' => '\\wp',
+        'ℵ' => '\\aleph', 'ℶ' => '\\beth', 'ℷ' => '\\gimel', 'ℸ' => '\\daleth',
+        '℧' => '\\mho', "\u{2126}" => '\\Omega',
+    ];
+
+    /** Starting codepoint of each style's A-Z,a-z run in the Mathematical Alphanumeric Symbols block; each run spans 52 codepoints. */
+    private const LATIN_ALPHANUM_STYLES = [
+        0x1D400 => 'bold', 0x1D434 => 'italic', 0x1D468 => 'bolditalic',
+        0x1D49C => 'script', 0x1D4D0 => 'boldscript', 0x1D504 => 'fraktur',
+        0x1D538 => 'doublestruck', 0x1D56C => 'boldfraktur', 0x1D5A0 => 'sansserif',
+        0x1D5D4 => 'sansserifbold', 0x1D608 => 'sansserifitalic',
+        0x1D63C => 'sansserifbolditalic', 0x1D670 => 'monospace',
+    ];
+
+    /** Starting codepoint of each style's 0-9 run in the same block; each run spans 10 codepoints. */
+    private const DIGIT_ALPHANUM_STYLES = [
+        0x1D7CE => 'bold', 0x1D7D8 => 'doublestruck', 0x1D7E2 => 'sansserif',
+        0x1D7EC => 'sansserifbold', 0x1D7F6 => 'monospace',
+    ];
+
+    private const ALPHANUM_STYLE_WRAPPERS = [
+        'bold' => '\\mathbf{%s}', 'italic' => '%s',
+        'bolditalic' => '\\boldsymbol{%s}', 'script' => '\\mathcal{%s}',
+        'boldscript' => '\\boldsymbol{\\mathcal{%s}}', 'fraktur' => '\\mathfrak{%s}',
+        'boldfraktur' => '\\boldsymbol{\\mathfrak{%s}}', 'doublestruck' => '\\mathbb{%s}',
+        'sansserif' => '\\mathsf{%s}', 'sansserifbold' => '\\boldsymbol{\\mathsf{%s}}',
+        'sansserifitalic' => '\\mathsf{\\mathit{%s}}',
+        'sansserifbolditalic' => '\\boldsymbol{\\mathsf{\\mathit{%s}}}',
+        'monospace' => '\\mathtt{%s}',
     ];
 
     private const ESCAPE_MAP = [
@@ -458,8 +510,9 @@ class OmmlToLatex
         $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
         $out = '';
         foreach ($chars as $ch) {
-            if (isset(self::SYMBOL_MAP[$ch])) {
-                $out .= self::SYMBOL_MAP[$ch] . ' ';
+            $mapped = self::SYMBOL_MAP[$ch] ?? $this->mathAlphanumericToLatex($ch);
+            if ($mapped !== null) {
+                $out .= $mapped . ' ';
             } elseif (isset(self::ESCAPE_MAP[$ch])) {
                 $out .= self::ESCAPE_MAP[$ch];
             } else {
@@ -467,5 +520,33 @@ class OmmlToLatex
             }
         }
         return $out;
+    }
+
+    /** Convert a single Mathematical Alphanumeric Symbols (U+1D400-U+1D7FF) character to LaTeX, or null if out of range. */
+    private function mathAlphanumericToLatex(string $ch): ?string
+    {
+        $cp = mb_ord($ch);
+        if ($cp === false) {
+            return null;
+        }
+        if ($cp === 0x1D6A4) {
+            return '\\imath';
+        }
+        if ($cp === 0x1D6A5) {
+            return '\\jmath';
+        }
+        foreach (self::LATIN_ALPHANUM_STYLES as $start => $style) {
+            if ($cp >= $start && $cp < $start + 52) {
+                $offset = $cp - $start;
+                $letter = $offset < 26 ? chr(0x41 + $offset) : chr(0x61 + $offset - 26);
+                return sprintf(self::ALPHANUM_STYLE_WRAPPERS[$style], $letter);
+            }
+        }
+        foreach (self::DIGIT_ALPHANUM_STYLES as $start => $style) {
+            if ($cp >= $start && $cp < $start + 10) {
+                return sprintf(self::ALPHANUM_STYLE_WRAPPERS[$style], (string) ($cp - $start));
+            }
+        }
+        return null;
     }
 }
