@@ -1,6 +1,6 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Exporting LaTeX to EPUB](#converting-latex-to-epub)) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Converting LaTeX to EPUB](#converting-latex-to-epub)) without requiring the system-level Pandoc binary.
 
 ## Features
 
