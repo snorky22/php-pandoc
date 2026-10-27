@@ -1358,8 +1358,12 @@ class LatexReader implements ReaderInterface
         while (($opt = $this->readOptional($body, $j)) !== null) {
             $j = $this->skipWs($body, $opt[1]);
         }
+        $attrs = [];
         if (($body[$j] ?? '') === '{') {
-            [, $j] = $this->readBraced($body, $j);
+            [$declared, $j] = $this->readBraced($body, $j);
+            if (trim($declared) !== '') {
+                $attrs[] = ['width', $this->relativeLength($declared)];
+            }
         }
         $body = substr($body, $j);
         $caption = $this->extractCaption($body);
@@ -1370,7 +1374,7 @@ class LatexReader implements ReaderInterface
         if ($caption !== null && trim($caption) !== '') {
             $captionBlocks = [new Plain(array_merge([new Str("($letter)"), new Space()], $this->parseInlines($caption)))];
         }
-        return new Figure(new Attr($label ?? '', ['subfigure'], []), new Caption(null, $captionBlocks), $blocks);
+        return new Figure(new Attr($label ?? '', ['subfigure'], $attrs), new Caption(null, $captionBlocks), $blocks);
     }
 
     /** @return Block[] */
@@ -1817,14 +1821,28 @@ class LatexReader implements ReaderInterface
         return trim(preg_replace('/\\\\([#%_&~$^{}])/', '$1', $url));
     }
 
+    /** Exact key first, then a case-insensitive match (BibTeX ignores the case of keys). */
+    private function resolveBibKey(string $key): ?string
+    {
+        if (isset($this->bibKeys[$key])) {
+            return $key;
+        }
+        foreach ($this->bibKeys as $known => $_) {
+            if (strcasecmp($known, $key) === 0) {
+                return (string) $known;
+            }
+        }
+        return null;
+    }
+
     private function citeLink(string $keys): array
     {
         $parts = [];
         foreach (array_filter(array_map('trim', explode(',', $keys))) as $k) {
-            $label = isset($this->bibKeys[$k]) ? (string) $this->bibKeys[$k] : $k;
-            $parts[] = isset($this->bibKeys[$k])
-                ? new Link(new Attr('', ['citation'], []), [new Str($label)], new Target('#ref-' . $k))
-                : new Str($label);
+            $key = $this->resolveBibKey($k);
+            $parts[] = $key !== null
+                ? new Link(new Attr('', ['citation'], []), [new Str((string) $this->bibKeys[$key])], new Target('#ref-' . $key))
+                : new Str($k);
         }
         $out = [new Str('[')];
         foreach ($parts as $k => $p) {
@@ -2006,6 +2024,15 @@ class LatexReader implements ReaderInterface
         }
     }
 
+    /** "0.3\textwidth" becomes "30%"; other lengths (5cm, 120pt) are returned unchanged. */
+    private function relativeLength(string $v): string
+    {
+        $v = trim($v);
+        return preg_match('/^([0-9.]*)\s*\\\\(?:textwidth|linewidth|columnwidth|hsize)$/', $v, $m)
+            ? round(($m[1] === '' ? 1.0 : (float) $m[1]) * 100, 2) . '%'
+            : $v;
+    }
+
     private function parseImage(string $s, int &$i): Inline
     {
         $attrs = [];
@@ -2017,10 +2044,7 @@ class LatexReader implements ReaderInterface
                 }
                 [$k, $v] = array_map('trim', explode('=', $kv, 2));
                 if (in_array($k, ['width', 'height'], true)) {
-                    $v = preg_match('/^([0-9.]*)\s*\\\\(?:textwidth|linewidth|columnwidth|hsize)$/', $v, $m)
-                        ? round(($m[1] === '' ? 1.0 : (float) $m[1]) * 100, 2) . '%'
-                        : $v;
-                    $attrs[] = [$k, $v];
+                    $attrs[] = [$k, $this->relativeLength($v)];
                 }
             }
         }

@@ -296,19 +296,9 @@ class XhtmlWriter
     private function writeMath(Math $m): string
     {
         $display = $m->type === MathType::DisplayMath;
-        if ($this->mathMl && class_exists(\Latex2MathML\Converter::class)) {
-            try {
-                // latex2mathml-php 1.5 does not know \arg and leaks it as text
-                $tex = preg_replace('/\\\\arg(?![a-zA-Z])/', '\\\\operatorname{arg}', $m->text);
-                $mathml = \Latex2MathML\Converter::convert($tex, display: $display ? 'block' : 'inline');
-                $dom = new \DOMDocument();
-                if (@$dom->loadXML($mathml)) {
-                    $this->usedMathMl = true;
-                    return $dom->saveXML($dom->documentElement);
-                }
-            } catch (\Throwable) {
-                // fall through to the TeX fallback
-            }
+        if ($this->mathMl && ($mathml = MathMl::fromTex($m->text, $display)) !== null) {
+            $this->usedMathMl = true;
+            return $mathml;
         }
         return $display
             ? '<span class="math display">\\[' . self::escape($m->text) . '\\]</span>'

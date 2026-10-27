@@ -3,7 +3,7 @@
 This document details the document structures that are currently detected, parsed, and handled by the native PHP 8.4 port of Pandoc. The implementation follows the modular architecture of the original Haskell source, separating low-level extraction from high-level AST conversion through a unified `ReaderInterface`.
 
 **Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`), LaTeX (`.tex`)  
-**Output formats:** LaTeX (standalone document or body fragment), EPUB 3 (from the AST of any reader, in practice LaTeX)
+**Output formats:** LaTeX (standalone document or body fragment), EPUB 3 and ODT (from the AST of any reader, in practice LaTeX)
 
 ## Microsoft Word (Docx) Support
 ### 1. Document Structure & Sections
@@ -380,3 +380,35 @@ Each entry produces a `\bibitem{cite_key}` followed by all field values joined w
 
 ### 7. Not Yet Supported
 *   Author affiliations from `\thanks`; equation numbers inside multi-line environments (`align`, `eqnarray`) are not displayed (references still resolve); `\cellcolor` / `\rowcolor` shading; side-by-side layout of subfigures (they are stacked); `\multirow` row spans; `\pageref`; custom `\newenvironment` definitions; conditionals, counters and other programmable TeX; PDF/EPS figures (not valid EPUB images); `\cite` styles other than numeric.
+
+## OpenDocument Text (`.odt`) Output
+
+`OdtWriter` writes the AST produced by `LatexReader` as an ODF 1.3 text document (pure PHP: a zip of `content.xml`, `styles.xml`, `meta.xml`, `META-INF/manifest.xml`, `Pictures/` and one `Object N/` per formula). The `mimetype` entry is first and stored uncompressed.
+
+### 1. Text and Structure
+*   **Headings**: `text:h` with `text:outline-level` 1–6 (styles *Heading 1…6*); the section number from the reader is written as text.
+*   **Paragraphs and quotes**: *Text body*, *Quotations*, *Abstract*; a paragraph holding only a display formula is centred; a paragraph holding only pictures is centred.
+*   **Inline**: emphasis, strong, underline, strikeout, small caps, super/subscript, inline code, colours and background colours of spans, quotation marks, line breaks.
+*   **Links**: external links, internal links to bookmarks (cross-references, citations, bibliography entries), bookmarks for every label.
+*   **Footnotes**: real `text:note` footnotes, numbered consecutively.
+*   **Lists**: bulleted and numbered lists with format (`1`, `a`, `A`, `i`, `I`), prefix/suffix (`1.`, `1)`, `(1)`) and start value, nested up to six levels; definition lists as term and indented definition paragraphs.
+*   **Code**: preformatted paragraphs in a monospace style, keeping runs of spaces, tabs and line breaks.
+*   **Metadata**: title, authors, date, language; the language is also set as the document default.
+
+### 2. Tables, Figures, Algorithms
+*   **Tables**: column and row spans, header rows (repeated on page breaks), alignment per cell, booktabs-style rules, captions above the table. Column widths use auto layout: at least the longest word of the column, the rest of the 16 cm text width shared in proportion to the amount of text.
+*   **Figures**: images embedded in `Pictures/` with width/height from the `\includegraphics` options (percentages relative to the text width, capped at the page), caption below with the figure kept together with its caption. PNG, JPEG, GIF, SVG and WebP.
+*   **Sub-figures** are laid out side by side in borderless table rows (each cell as wide as its panel; a new row starts when the next panel does not fit). The panel width comes from the `subfigure` argument, else from the picture's width.
+*   **Algorithms**: caption plus one indented paragraph per pseudocode line, with bold keywords.
+*   **Cover**: the `\cover` image is centred above the title block.
+
+### 3. Math
+*   Every formula becomes an embedded MathML object (`draw:object` → `Object N/content.xml`), editable in LibreOffice. The frame carries **no** size, so LibreOffice sizes the formula itself (a declared size would stretch or shrink it).
+*   The MathML is adjusted for LibreOffice (`MathMl::forOffice`): runs of upright letters and multi-letter operator names are merged (otherwise rendered letter-spaced); plain bars `|x|`, `|g|_\infty` are paired into fences; a column of an aligned equation that starts with a relation gets an empty left operand, and a cell holding only a relation or nothing is replaced by text or an empty group; a lone operator used as a script (`J^{*}`, `\mathbb{R}_{+}`) and brackets that do not pair up (`[a,b)`) become literal text.
+*   With `mathml => false`, or when a formula cannot be converted, the TeX source is written as monospace text.
+
+### 4. Verified and Not Yet Supported
+*   Verified by opening the files in LibreOffice 26.8 (headless rendering in the test-suite, plus visual inspection of the four sample papers). Not verified in Microsoft Word, Apple Pages or Google Docs.
+*   About 0.6% of the distinct formulas of the sample papers still show LibreOffice's red `¿` marker (constructs such as `\bigl\lfloor … \bigr\rceil`, `\lVert … \rVert` combined with other fences, some nested `\boldsymbol` sums, `\tilde\alpha_{\mathrm{…}}`).
+*   Not supported: automatic outline numbering (numbers are text), a generated table of contents or list of figures/tables, page headers, `\multirow` row spans, side-by-side layout of figures other than sub-figures, `\cellcolor` shading, author affiliations from `\thanks`, page size or margin options.
+

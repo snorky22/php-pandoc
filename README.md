@@ -1,6 +1,6 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Converting LaTeX to EPUB](#converting-latex-to-epub)) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Converting LaTeX to EPUB](#converting-latex-to-epub)) and **OpenDocument text (`.odt`)** (see [Converting LaTeX to ODT](#converting-latex-to-odt)) without requiring the system-level Pandoc binary.
 
 ## Features
 
@@ -14,6 +14,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **Automatic ZIP Bundling**: When a document contains images or chart data, output is a `.zip` with the `.tex` and all media files in the same directory. Plain `.tex` otherwise.
 - **Full UTF-8**: End-to-end UTF-8, supporting CJK, Cyrillic, Arabic, Thai, and all Latin-extended scripts.
 - **LaTeX → EPUB 3**: Reads vanilla LaTeX (`LatexReader`) and writes a valid EPUB 3 with MathML math, numbered sections/figures/tables/theorems with working cross-references, footnotes, bibliography, algorithms, embedded images and an optional cover (see below).
+- **LaTeX → ODT**: The same reader feeds an OpenDocument writer for LibreOffice and other ODF applications: real headings, footnotes, tables, figures with captions, and editable equations (embedded MathML). Pure PHP, no LibreOffice needed on the server.
 - **Minimal Dependencies**: Pure PHP 8.4+ (`ext-dom`, `ext-zip`) plus [`latex2mathml/latex2mathml-php`](https://packagist.org/packages/latex2mathml/latex2mathml-php) for MathML. `ext-imagick` is optional.
 
 ## Installation
@@ -333,6 +334,40 @@ Pass them to the writer: `new EpubWriter(['splitLevel' => 2, 'tocDepth' => 2])`.
 Measured on an Apple M4 Max with images embedded unchanged: about 1 second for a 3,000-line survey with 20 figures (the EPUB is about the size of the images). Peak memory is 2 to 3 times the total image size, so allow headroom in `memory_limit` for very large projects.
 
 The output has been checked for well-formed XML, working internal links and MathML, but not with a strict validator such as [epubcheck](https://www.w3.org/publications/epubcheck/); run it before distributing a book. See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md#latex-tex-support-and-epub-3-output) for the full list of supported and unsupported LaTeX constructs.
+
+### Converting LaTeX to ODT
+
+The same `LatexReader` output can be written as an OpenDocument Text file, which opens in LibreOffice, Apache OpenOffice and other ODF applications. It is produced in pure PHP (`ext-zip`, `ext-dom`); LibreOffice is **not** needed on the server.
+
+```php
+use Pandoc\Reader\LatexReader;
+use Pandoc\Writer\OdtWriter;
+
+$doc = (new LatexReader())->read('/projects/paper/paper.tex');
+(new OdtWriter())->writeToFile($doc, '/projects/paper/paper.odt');
+
+$odt = (new OdtWriter())->write($doc);   // or get the binary string, to send as a download:
+// header('Content-Type: application/vnd.oasis.opendocument.text');
+```
+
+From the command line: `php latex2odt.php paper.tex [paper.odt] [--cover=cover.png] [--no-numbers]`.
+
+What you get: outline-level headings (so LibreOffice's Navigator works) with section numbers, paragraph and character styles, bulleted and numbered lists, footnotes as real footnotes, tables with column widths fitted to their content and booktabs-style rules, figures with numbered captions (sub-figures are laid out side by side, as in the PDF), algorithms as indented pseudocode, internal links and citations as working links, and **equations as embedded MathML objects**, which stay editable in LibreOffice. `\cover{file}` places the cover image centred above the title, as in the EPUB.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `numberSections` | `true` | Write the section numbers in headings |
+| `titlePage` | `true` | Title, authors and date at the top (with the cover, if any) |
+| `coverImage` | none | Path of a cover image; overrides the document's `\cover` |
+| `language` | from `babel`, else `en-US` | BCP 47 language tag of the document |
+| `resourcePath` | `['.']` | Folders searched for images not found next to the `.tex` |
+| `mathml` | `true` | Embed equations as MathML objects (otherwise the TeX source is written as text) |
+
+Notes:
+
+*   The output is checked against LibreOffice itself (opened and rendered headlessly in the tests when it is installed; set `LIBREOFFICE_BIN` if it is not in a standard place). It has **not** been checked in Microsoft Word, Pages or Google Docs, which handle embedded equation objects less consistently than LibreOffice.
+*   LibreOffice cannot parse a few TeX-math constructs. The writer rewrites the common ones (aligned equations, `|x|`, `[a,b)`, `J^{*}`, empty cells) so that they display, but about 0.6% of the distinct formulas of our four test papers (for example some `\bigl\lfloor … \bigr\rceil` and nested `\boldsymbol` sums) still show a red `¿` marker in LibreOffice. The EPUB output is not affected.
+*   Page layout is fixed (A4, 2.5 cm margins, 11 pt serif); there is no table of contents field yet (use LibreOffice's *Insert → Table of Contents*, which works because headings carry their outline level).
 
 ## Output: Plain `.tex` or `.zip`
 

@@ -344,4 +344,22 @@ class LatexReaderTest extends TestCase
         $this->assertSame('nothing/here', $doc->meta->map['cover-image']);
         $this->assertNull($doc->mediaBag->lookup('nothing/here'));
     }
+
+    public function testCitationKeysMatchBibliographyCaseInsensitively(): void
+    {
+        $doc = $this->read("See \\cite{Abbott2016, other}.\n\\begin{thebibliography}{9}\n\\bibitem{ABBOTT2016} A.\n\\end{thebibliography}");
+        $inlines = $doc->blocks[0]->content;
+        $link = array_values(array_filter($inlines, fn($i) => $i instanceof \Pandoc\AST\Link))[0];
+        $this->assertSame('#ref-ABBOTT2016', $link->target->url);
+        $this->assertSame('See [1; other].', $this->text($inlines));
+    }
+
+    public function testSubfigureKeepsItsDeclaredWidth(): void
+    {
+        $doc = $this->read("\\begin{figure}\\begin{subfigure}[b]{0.3\\textwidth}\\includegraphics[width=\\linewidth]{a.png}\\end{subfigure}\\begin{subfigure}{4cm}\\includegraphics{b.png}\\end{subfigure}\\end{figure}");
+        $subs = $doc->blocks[0]->content;
+        $this->assertSame([['width', '30%']], $subs[0]->attr->attributes);
+        $this->assertSame([['width', '4cm']], $subs[1]->attr->attributes);
+        $this->assertSame([['width', '100%']], $subs[0]->content[0]->content[0]->attr->attributes);
+    }
 }
