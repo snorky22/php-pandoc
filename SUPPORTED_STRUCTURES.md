@@ -2,8 +2,8 @@
 
 This document details the document structures that are currently detected, parsed, and handled by the native PHP 8.4 port of Pandoc. The implementation follows the modular architecture of the original Haskell source, separating low-level extraction from high-level AST conversion through a unified `ReaderInterface`.
 
-**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`)  
-**Output format:** LaTeX (standalone document or body fragment)
+**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`), LaTeX (`.tex`)  
+**Output formats:** LaTeX (standalone document or body fragment), EPUB 3 (from the AST of any reader, in practice LaTeX)
 
 ## Microsoft Word (Docx) Support
 ### 1. Document Structure & Sections
@@ -335,3 +335,48 @@ Each entry produces a `\bibitem{cite_key}` followed by all field values joined w
 - `@string` macro expansion (macro names are emitted as-is).
 - Cross-references (`crossref` field).
 - Author name formatting (first/last name reordering, "et al." truncation).
+
+## LaTeX (`.tex`) Support and EPUB 3 Output
+
+`LatexReader` reads *vanilla* LaTeX directly (it is not a TeX engine); `EpubWriter` (with `XhtmlWriter`) turns the AST into an EPUB 3 package. Unknown commands are ignored and unknown environments become a `Div` whose class is the environment name, so a document never fails to convert.
+
+### 1. Source Handling
+*   **Input**: a source string or a file path. `\input` / `\include` are inlined (relative to the file).
+*   **Comments** (`%`) are stripped, except inside `verbatim`, `lstlisting` and `minted`.
+*   **Macros**: `\newcommand`, `\renewcommand`, `\providecommand`, `\DeclareRobustCommand` and `\def` (with `#1`…`#9` arguments and one optional default argument) are expanded textually.
+*   **Preamble**: `\title`, `\author` (split on `\and`), `\date`, `\cover`, the `babel` / `polyglossia` language (stored as `lang`) and `\graphicspath`. `\thanks` content is dropped.
+
+### 2. Structure
+*   **Sectioning**: `\part`, `\chapter`, `\section` … `\subparagraph`, starred forms (unnumbered). With `\chapter` the levels shift down by one. Heading ids come from `\label`, otherwise from the title.
+*   **Numbering**: sections (including `\appendix` lettering, `A`, `A.1`), figures, tables, algorithms, equations and theorems are numbered like LaTeX. Headings carry a `number` attribute and captions are prefixed (`Figure 3:`, `Table 1:`, `Algorithm 2:`).
+*   **Cross-references**: `\ref`, `\eqref`, `\autoref`, `\cref`, `\Cref`, `\vref`, `\nameref`, `\hyperref`, `\hyperlink` / `\hypertarget` become internal links (`Fig. 3`, `Section A.1`, `(4)`, `Theorem 2.1`); sub-figure labels give `3a`. Unknown labels are shown as `[label]`.
+*   **Environments**: `quote` / `quotation` / `verse`, `center` / `flushleft` / `flushright` / `minipage` / `multicols` (transparent), `abstract`, `proof`, any `\newtheorem` environment (run-in heading such as `Lemma 1.2 (Name).`, shared counters and `[section]` resetting), `thebibliography`.
+
+### 3. Text (Inlines)
+*   **Styling**: `\emph`, `\textit`, `\textbf`, `\textsc`, `\texttt`, `\underline`, `\sout`, `\textsuperscript`, `\textsubscript`, group declarations such as `{\bfseries …}` / `{\em …}`, `\enquote`, `\textcolor` and `\colorbox` (rendered through `color` / `background-color` span attributes).
+*   **Typography**: `--`, `---`, TeX quote ligatures (opening and closing single/double quotes), `~`, `\,`, `\ `, accents (`\'e`, `\"o`, `\c{c}`, `\v{s}`, …), `\ss`, `\ae`, `\ldots`, `\LaTeX`, `\copyright`, and escaped specials.
+*   **Links**: `\href`, `\url`.
+*   **Code**: `\verb`, `\lstinline`; blocks via `verbatim`, `lstlisting` (language option) and `minted`.
+*   **Footnotes**: `\footnote` (collected at the end of each EPUB chapter, with back-links).
+*   **Citations**: `\cite` and variants (`\citep`, `\citet`, `\autocite`, …) link to the matching `\bibitem` as `[n]`; keys without a bibliography entry show as `[key]`.
+
+### 4. Lists, Tables, Floats
+*   **Lists**: `itemize`, `enumerate` (numbering style and delimiter from the optional label, default style per nesting depth), `description`; tight lists are detected.
+*   **Tables**: `tabular`, `tabularx`, `tabular*`, `longtable`; column alignment (`l c r`, `p{}`, `@{}`, `*{n}{…}`), `\multicolumn` (colspan), `\multirow` (content only), booktabs and `\hline` header-row detection, `\endhead` / `\endfirsthead`, rule and colour commands (`\cmidrule`, `\cellcolor`, …) ignored.
+*   **Floats**: `figure`, `table`, `wrapfigure`, `sidewaysfigure` / `sidewaystable`, with `\caption`, `\label` and `subfigure` / `subtable` (letters `(a)`, `(b)`).
+*   **Algorithms**: `algorithm` with `algorithmic` / `algpseudocode` bodies (`\STATE`, `\IF` / `\ELSIF` / `\ELSE`, `\FOR` / `\FORALL`, `\WHILE`, `\REPEAT` / `\UNTIL`, `\REQUIRE`, `\ENSURE`, `\RETURN`, `\COMMENT`, `\FUNCTION` …) rendered as numbered, indented lines with bold keywords.
+*   **Images**: `\includegraphics` with `width` / `height` (including fractions of `\textwidth`); files are searched through `\graphicspath` with or without extension and loaded into the `MediaBag` (PNG, JPEG, GIF, SVG, WebP).
+
+### 5. Math
+*   Inline (`$…$`, `\(…\)`) and display (`$$…$$`, `\[…\]`) math, and the environments `equation`, `align`, `alignat`, `flalign`, `gather`, `multline`, `eqnarray`, `split`, `displaymath`, `math`. Every `\label` becomes an anchor; single-line `equation` shows its number.
+*   The AST keeps the raw TeX. `XhtmlWriter` converts it to MathML with `latex2mathml/latex2mathml-php` (`\arg` is mapped to `\operatorname{arg}`); a formula that fails to convert falls back to `<span class="math">` with the TeX source.
+
+### 6. EPUB 3 Package
+*   **Layout**: `META-INF/container.xml`, `EPUB/content.opf`, `nav.xhtml` (nested table of contents), `toc.ncx` (EPUB 2 readers), one XHTML file per chapter, `styles/stylesheet1.css`, `media/`. `mimetype` is stored first and uncompressed.
+*   **Chapters** are split at heading level `splitLevel` (default 1); the table of contents lists levels down to `tocDepth` (default 3); front matter before the first heading gets its own entry. `numberSections` (default on) shows section numbers.
+*   **Metadata**: title, authors, date (normalised to ISO 8601), language, a deterministic `urn:uuid` identifier (overridable) and `dcterms:modified`. Pages containing MathML get `properties="mathml"`.
+*   **Title page**: title, authors and date, with the cover image centred above them when `\cover{file}` (or the `coverImage` option) is set. Without a title the cover gets a page of its own. No `\cover`, no cover. The image is also declared as the EPUB cover image.
+*   **Links and resources**: `#id` links are rewritten to `chapter.xhtml#id` across files; images are embedded unchanged (missing or remote images fall back to their alt text). Optional Imagick compression (`optimizeImages`, off by default) downsizes to `maxImageWidth` and re-encodes opaque photographic images as JPEG.
+
+### 7. Not Yet Supported
+*   Author affiliations from `\thanks`; equation numbers inside multi-line environments (`align`, `eqnarray`) are not displayed (references still resolve); `\cellcolor` / `\rowcolor` shading; side-by-side layout of subfigures (they are stacked); `\multirow` row spans; `\pageref`; custom `\newenvironment` definitions; conditionals, counters and other programmable TeX; PDF/EPS figures (not valid EPUB images); `\cite` styles other than numeric.
