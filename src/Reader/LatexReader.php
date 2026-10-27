@@ -415,10 +415,25 @@ class LatexReader implements ReaderInterface
     // Low-level scanning helpers
     // ------------------------------------------------------------------
 
+    /**
+     * ASCII-only character tests. ctype_space()/ctype_alpha() depend on the locale and, for example under
+     * C.UTF-8, treat the byte 0xA0 (second byte of "à") as a space and 0xC3 as a letter, which cuts
+     * multi-byte characters in half when scanning byte by byte.
+     */
+    private static function isSpace(string $c): bool
+    {
+        return $c === ' ' || $c === "\n" || $c === "\t" || $c === "\r" || $c === "\f" || $c === "\v";
+    }
+
+    private static function isAlpha(string $c): bool
+    {
+        return ($c >= 'a' && $c <= 'z') || ($c >= 'A' && $c <= 'Z');
+    }
+
     private function skipWs(string $s, int $i): int
     {
         $n = strlen($s);
-        while ($i < $n && ctype_space($s[$i])) {
+        while ($i < $n && self::isSpace($s[$i])) {
             $i++;
         }
         return $i;
@@ -527,7 +542,7 @@ class LatexReader implements ReaderInterface
                     $i++;
                     continue;
                 }
-                if (ctype_alpha($nx) && preg_match('/\G\\\\(begin|end)\{/', $s, $m, 0, $i)) {
+                if (self::isAlpha($nx) && preg_match('/\G\\\\(begin|end)\{/', $s, $m, 0, $i)) {
                     $env += $m[1] === 'begin' ? 1 : -1;
                 }
                 $buf .= $c . $nx;
@@ -796,7 +811,7 @@ class LatexReader implements ReaderInterface
                     return $n;
                 }
                 $nx = $s[$i + 1];
-                if (ctype_alpha($nx)) {
+                if (self::isAlpha($nx)) {
                     preg_match('/\G\\\\([a-zA-Z]+)/', $s, $m, 0, $i);
                     if ($depth === 0 && in_array($m[1], $stop, true)) {
                         return $i;
@@ -1634,10 +1649,10 @@ class LatexReader implements ReaderInterface
         while ($i < $n) {
             $c = $s[$i];
 
-            if (ctype_space($c)) {
+            if (self::isSpace($c)) {
                 $flush();
                 $nl = false;
-                while ($i < $n && ctype_space($s[$i])) {
+                while ($i < $n && self::isSpace($s[$i])) {
                     $nl = $nl || $s[$i] === "\n";
                     $i++;
                 }
@@ -1650,7 +1665,7 @@ class LatexReader implements ReaderInterface
                     break;
                 }
                 $nx = $s[$i + 1];
-                if (ctype_alpha($nx)) {
+                if (self::isAlpha($nx)) {
                     preg_match('/\G\\\\([a-zA-Z]+)\*?/', $s, $m, 0, $i);
                     $i += strlen($m[0]);
                     $flush();

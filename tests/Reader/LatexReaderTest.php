@@ -362,4 +362,15 @@ class LatexReaderTest extends TestCase
         $this->assertSame([['width', '4cm']], $subs[1]->attr->attributes);
         $this->assertSame([['width', '100%']], $subs[0]->content[0]->content[0]->attr->attributes);
     }
+
+    public function testMultiByteCharactersAreNeverSplit(): void
+    {
+        // the second byte of "à" (A0) and of "Å" (85) must not be taken for white space
+        $text = 'Università Ångström Çà va, déjà vu — naïve café ŝ ĝ ő';
+        $doc = $this->read($text . ' and \\emph{Università della Svizzera}.');
+        $out = $this->text($doc->blocks[0]->content);
+        $this->assertTrue(mb_check_encoding($out, 'UTF-8'));
+        $this->assertStringStartsWith($text, $out);
+        $this->assertStringContainsString('Università della Svizzera', $out);
+    }
 }
