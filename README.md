@@ -1,6 +1,6 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Exporting LaTeX to EPUB](#exporting-latex-to-epub)) without requiring the system-level Pandoc binary.
 
 ## Features
 
@@ -23,6 +23,80 @@ Requires PHP 8.4 or higher.
 ```bash
 composer require pandoc-php/pandoc
 ```
+
+## Exporting LaTeX to EPUB
+
+Turns a LaTeX source (an `article`, `report` or `book` using common packages) into an EPUB 3 file with real MathML equations, numbered sections, figures, tables and theorems, working cross-references (`Fig. 3`, `Section A.1`), footnotes, a bibliography and embedded images.
+
+Requirements: PHP 8.4 with `ext-zip` and `ext-dom`. [`latex2mathml-php`](https://packagist.org/packages/latex2mathml/latex2mathml-php) (MathML) is installed automatically by Composer.
+
+### From PHP
+
+```php
+require 'vendor/autoload.php';
+
+use Pandoc\Reader\LatexReader;
+use Pandoc\Writer\EpubWriter;
+
+// Pass the path of the .tex file: images, \input files and \cover are looked up next to it.
+$doc = (new LatexReader())->read('/projects/paper/paper.tex');
+
+(new EpubWriter())->writeToFile($doc, '/projects/paper/paper.epub');
+```
+
+To send the file from a web script instead of saving it:
+
+```php
+$epub = (new EpubWriter())->write($doc);          // binary string
+
+header('Content-Type: application/epub+zip');
+header('Content-Disposition: attachment; filename="paper.epub"');
+header('Content-Length: ' . strlen($epub));
+echo $epub;
+```
+
+If you give `read()` a string of LaTeX instead of a path, there is no folder to search; pass the image folder to the writer: `new EpubWriter(['resourcePath' => ['/projects/paper']])`.
+
+### From the command line
+
+```bash
+php latex2epub.php paper.tex                       # writes paper.epub next to it
+php latex2epub.php paper.tex out.epub --cover=cover.png --split=2 --toc-depth=2
+```
+
+The project must be unzipped first (the reader does not open archives), with the images beside the `.tex` file or in a `\graphicspath` folder. The web upload form in `web/` does not offer EPUB yet.
+
+### Preparing the LaTeX source
+
+*   **Metadata**: `\title{…}`, `\author{A \and B}`, `\date{…}` and a `babel` language (`\usepackage[french]{babel}`) fill the EPUB metadata and title page.
+*   **Cover**: add `\cover{file.png}` to the preamble (extension optional, resolved like `\includegraphics`). The image is shown centred at the top of the title page and declared as the EPUB cover. No `\cover`, no cover. If the same source is also compiled with LaTeX, add `\providecommand{\cover}[1]{}` so LaTeX ignores the command.
+*   **Bibliography**: BibTeX is **not** run and `\bibliography{…}` is ignored. Put the generated `thebibliography` environment (the contents of the `.bbl` file) in the source; `\cite` commands then become links to the entries.
+*   **Images**: PNG, JPEG, GIF, SVG and WebP are embedded unchanged. PDF/EPS figures cannot be used in an EPUB; convert them to PNG or SVG.
+*   **Macros**: `\newcommand` / `\def` definitions are expanded; packages are not loaded, and unknown commands are skipped rather than failing.
+
+### Options
+
+Pass them to the writer: `new EpubWriter(['splitLevel' => 2, 'tocDepth' => 2])`.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `splitLevel` | `1` | Headings of this level or higher start a new chapter file |
+| `tocDepth` | `3` | Deepest heading level in the table of contents |
+| `numberSections` | `true` | Show section numbers in headings and the table of contents |
+| `titlePage` | `true` | Generate a title page (title, authors, date, cover) |
+| `coverImage` | none | Path of a cover image; overrides the document's `\cover` |
+| `language` | from `babel`, else `en-US` | BCP 47 language tag |
+| `identifier` | derived UUID | `dc:identifier` of the book |
+| `css` | built-in | Replacement stylesheet contents |
+| `resourcePath` | `['.']` | Folders searched for images not found next to the `.tex` |
+| `mathml` | `true` | Convert math to MathML (falls back to the TeX source if a formula cannot be converted) |
+| `optimizeImages` | `false` | Opt-in image compression with `ext-imagick` (CPU-heavy: about 12 s for 40 MB of images). Uses `maxImageWidth` (`1600`) and `jpegQuality` (`85`) |
+
+### What to expect
+
+Measured on an Apple M4 Max with images embedded unchanged: about 1 second for a 3,000-line survey with 20 figures (the EPUB is about the size of the images). Peak memory is 2 to 3 times the total image size, so allow headroom in `memory_limit` for very large projects.
+
+The output has been checked for well-formed XML, working internal links and MathML, but not with a strict validator such as [epubcheck](https://www.w3.org/publications/epubcheck/); run it before distributing a book. See [SUPPORTED_STRUCTURES.md](SUPPORTED_STRUCTURES.md#latex-tex-support-and-epub-3-output) for the full list of supported and unsupported LaTeX constructs.
 
 ## Basic Usage
 
@@ -259,25 +333,6 @@ $json  = file_get_contents('notebook.ipynb');
 $doc   = $reader->read($json);
 $latex = $writer->write($doc);
 ```
-
-### Converting LaTeX to EPUB
-
-```php
-use Pandoc\Reader\LatexReader;
-use Pandoc\Writer\EpubWriter;
-
-$doc = (new LatexReader())->read('/path/to/paper.tex');   // source string or file path
-(new EpubWriter())->writeToFile($doc, '/path/to/paper.epub');
-```
-
-Or from the command line: `php latex2epub.php paper.tex [paper.epub] [--cover=img.png] [--split=N] [--toc-depth=N]`.
-
-- `\input`/`\include`, `\newcommand`/`\def` macros, `\graphicspath` and `babel` languages are honoured; images are embedded into the EPUB unchanged.
-- Chapters are split at heading level `splitLevel` (default 1); the table of contents lists headings down to `tocDepth` (default 3).
-- **Cover**: add `\cover{file.png}` to the preamble (or body); the path is resolved like `\includegraphics`. The image is shown centred at the top of the title page and declared as the EPUB cover. No `\cover`, no cover. Authors who also compile with LaTeX can add `\providecommand{\cover}[1]{}`. The `coverImage` option overrides it.
-- Math is converted to MathML; a formula that cannot be converted falls back to its TeX source.
-- Image compression is **off** by default (it is CPU-heavy). Pass `['optimizeImages' => true, 'maxImageWidth' => 1600, 'jpegQuality' => 85]` (requires `ext-imagick`) to enable it.
-- Not supported: author affiliations from `\thanks`, equation numbers inside `align`/`eqnarray`, `\cellcolor` shading, side-by-side subfigure layout.
 
 ## Output: Plain `.tex` or `.zip`
 
