@@ -1,6 +1,6 @@
 # Pandoc PHP
 
-A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Converting LaTeX to EPUB](#converting-latex-to-epub)) and **OpenDocument text (`.odt`)** (see [Converting LaTeX to ODT](#converting-latex-to-odt)) without requiring the system-level Pandoc binary.
+A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. This library converts documents between formats (Word `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, HTML `.html`, Markdown `.md`, Jupyter `.ipynb`, BibTeX `.bib` → LaTeX) and exports **LaTeX projects to EPUB 3** (see [Converting LaTeX to EPUB](#converting-latex-to-epub)) and **OpenDocument text (`.odt`)** (see [Converting LaTeX to ODT](#converting-latex-to-odt)), and reads `.odt` files back into LaTeX (see [Converting ODT to LaTeX](#converting-odt-to-latex)) without requiring the system-level Pandoc binary.
 
 ## Features
 
@@ -15,6 +15,7 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **Full UTF-8**: End-to-end UTF-8, supporting CJK, Cyrillic, Arabic, Thai, and all Latin-extended scripts.
 - **LaTeX → EPUB 3**: Reads vanilla LaTeX (`LatexReader`) and writes a valid EPUB 3 with MathML math, numbered sections/figures/tables/theorems with working cross-references, footnotes, bibliography, algorithms, embedded images and an optional cover (see below).
 - **LaTeX → ODT**: The same reader feeds an OpenDocument writer for LibreOffice and other ODF applications: real headings, footnotes, tables, figures with captions, and editable equations (embedded MathML). Pure PHP, no LibreOffice needed on the server.
+- **ODT → LaTeX**: Reads OpenDocument text from LibreOffice (or from this library) into standard LaTeX that compiles with `pdflatex` and uses no exotic packages: headings, lists, footnotes, tables, figures with captions, cross-references and citations, and equations converted from MathML. The result can be fed straight back into the LaTeX → EPUB/ODT converters.
 - **Minimal Dependencies**: Pure PHP 8.4+ (`ext-dom`, `ext-zip`) plus [`latex2mathml/latex2mathml-php`](https://packagist.org/packages/latex2mathml/latex2mathml-php) for MathML. `ext-imagick` is optional.
 
 ## Installation
@@ -368,6 +369,34 @@ Notes:
 *   The output is checked against LibreOffice itself (opened and rendered headlessly in the tests when it is installed; set `LIBREOFFICE_BIN` if it is not in a standard place). It has **not** been checked in Microsoft Word, Pages or Google Docs, which handle embedded equation objects less consistently than LibreOffice.
 *   LibreOffice cannot parse a few TeX-math constructs. The writer rewrites the common ones (aligned equations, `|x|`, `[a,b)`, `J^{*}`, empty cells) so that they display, but about 0.6% of the distinct formulas of our four test papers (for example some `\bigl\lfloor … \bigr\rceil` and nested `\boldsymbol` sums) still show a red `¿` marker in LibreOffice. The EPUB output is not affected.
 *   Page layout is fixed (A4, 2.5 cm margins, 11 pt serif); there is no table of contents field yet (use LibreOffice's *Insert → Table of Contents*, which works because headings carry their outline level).
+
+### Converting ODT to LaTeX
+
+```php
+use Pandoc\Reader\OdtReader;
+use Pandoc\Writer\LatexWriter;
+
+$doc = (new OdtReader())->read('/path/to/paper.odt');          // a file path, or the binary contents
+$tex = (new LatexWriter())->write($doc);                        // a standalone document; ->write($doc, false) for the body only
+
+file_put_contents('/path/to/paper.tex', $tex);
+foreach ($doc->mediaBag->getAll() as $path => $media) {         // the pictures the .tex refers to ("Pictures/image1.png", ...)
+    @mkdir(dirname("/path/to/$path"), 0777, true);
+    file_put_contents("/path/to/$path", $media['contents']);
+}
+```
+
+Or from the command line: `php odt2latex.php paper.odt [paper.tex] [--fragment] [--compact-tables]` (writes the pictures next to the `.tex`). The same `OdtReader` is used when you upload an `.odt` to `web/convert.php`.
+
+The LaTeX uses the kernel plus `amsmath`/`amssymb`, `graphicx`, `hyperref`, `booktabs`, `xcolor`, `soul`, and `subcaption` or `babel` only when the document needs them; `pdflatex` is enough. It is also readable by this library's `LatexReader`, so ODT → LaTeX → EPUB works.
+
+*   **Read from the ODT**: outline-level headings, paragraphs and character styles (bold, italic, underline, strikeout, small caps, super/subscript, monospace, colours, resolved through the style chain), lists with their numbering format, links and bookmarks, footnotes, tables with spans, header rows and alignment, pictures (embedded into the `MediaBag`), captions, and formulas (MathML converted to LaTeX; a `StarMath` annotation is ignored).
+*   **Recognised conventions**: `Title`/`Author`/`Date` paragraphs become the title block; a leading picture described as "Cover" becomes `\cover{…}`; "Figure 3: …" and "Table 2: …" captions are attached to their picture or table and lose their label (LaTeX numbers them); a row of pictures becomes side-by-side sub-figures; bibliography entries and citation links become `thebibliography` and `\cite`; links that point to a bookmark and show a number become `\ref`.
+*   **Manual heading numbers** ("1 Introduction", "2.1 Method", "A.1 Details") are removed, and the heading level is taken from the depth of the number, when the numbering is systematic across the document (this also repairs Word files whose headings are all "Heading 1"). Appendix letters must form a sequence, so a title such as "A Study of X" is never mistaken for one.
+*   **Word-style documents**: a list whose items are headings (how Word numbers them) is dissolved into ordinary headings and paragraphs, because LaTeX forbids sectioning commands inside lists; a link to a bookmark that does not exist (an unresolved cross-reference in the source) keeps its text and gets no `\\ref`.
+*   **Writer behaviour**: `\label` is written only for ids that something links to; the title block, `babel`, `amsmath` and `subcaption` only when needed. `compactWideTables => true` (or `--compact-tables`) shrinks tables of 7 or more columns to fit the page.
+*   **Changes to `LatexWriter` for every reader**: headings of level 4 and 5 are now `\paragraph` and `\subparagraph` (they were written as `\section`); characters that `pdflatex` rejects in text (arrows, relations, Greek letters, `✓`, `⋆`, zero-width spaces…) are written as `\ensuremath{…}` or dropped; `\ul` is replaced by `\underline` when the text holds a link or a formula; ordered lists keep their start value and numbering style; `description` lists, `\multicolumn`, table and figure captions, footnotes made of paragraphs and `Quoted`/`SmallCaps`/line-break nodes are now written.
+*   **Not supported**: theorem-like environments (a "Theorem 2.1." run-in heading stays bold text), algorithm captions and keywords (pseudo-code lines are kept as indented text), `\multirow` row spans, equation numbers inside multi-row environments, comments and tracked changes (dropped), pictures in EMF, WMF, SVG or GIF (`pdflatex` cannot include them, so a visible `[image: name.emf]` box is written instead of a compile error), and shapes other than text boxes.
 
 ## Output: Plain `.tex` or `.zip`
 

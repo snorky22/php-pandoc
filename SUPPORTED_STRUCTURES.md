@@ -2,7 +2,7 @@
 
 This document details the document structures that are currently detected, parsed, and handled by the native PHP 8.4 port of Pandoc. The implementation follows the modular architecture of the original Haskell source, separating low-level extraction from high-level AST conversion through a unified `ReaderInterface`.
 
-**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`), LaTeX (`.tex`)  
+**Supported input formats:** Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), HTML, Markdown, Jupyter Notebook (`.ipynb`), BibTeX (`.bib`), LaTeX (`.tex`), OpenDocument text (`.odt`)  
 **Output formats:** LaTeX (standalone document or body fragment), EPUB 3 and ODT (from the AST of any reader, in practice LaTeX)
 
 ## Microsoft Word (Docx) Support
@@ -411,4 +411,42 @@ Each entry produces a `\bibitem{cite_key}` followed by all field values joined w
 *   Verified by opening the files in LibreOffice 26.8 (headless rendering in the test-suite, plus visual inspection of the four sample papers). Not verified in Microsoft Word, Apple Pages or Google Docs.
 *   About 0.6% of the distinct formulas of the sample papers still show LibreOffice's red `¿` marker (constructs such as `\bigl\lfloor … \bigr\rceil`, `\lVert … \rVert` combined with other fences, some nested `\boldsymbol` sums, `\tilde\alpha_{\mathrm{…}}`).
 *   Not supported: automatic outline numbering (numbers are text), a generated table of contents or list of figures/tables, page headers, `\multirow` row spans, side-by-side layout of figures other than sub-figures, `\cellcolor` shading, author affiliations from `\thanks`, page size or margin options.
+
+
+
+## OpenDocument Text (`.odt`) Input
+
+`OdtReader` reads ODF 1.x text documents written by LibreOffice, Apache OpenOffice or this library's `OdtWriter` (`content.xml`, `styles.xml`, `meta.xml`, `Pictures/`, `Object N/` for formulas), and `LatexWriter` writes the result as `pdflatex`-ready LaTeX.
+
+### 1. Text and Structure
+*   **Styles**: character formatting is resolved through the style inheritance chain, so only what differs from the paragraph's own style becomes `Strong`/`Emph`/`Underline`/`Strikeout`/`Superscript`/`Subscript`/`SmallCaps`/`Code`/coloured span (a Heading style that is bold does not wrap every heading in `Strong`). Direct formatting of a whole paragraph (an automatic paragraph style) is applied; adjacent runs with the same formatting are merged.
+*   **Whitespace**: runs of spaces, tabs and line feeds collapse as ODF specifies; `text:s` and `text:tab` become spaces; preformatted paragraphs keep their spaces, tabs and line breaks.
+*   **Headings**: `text:h` with `text:outline-level` (and paragraphs in a "Heading N" style); empty headings are dropped; headings that sit inside shapes or text boxes (Word "text shapes" converted by LibreOffice) are recovered. Manual numbers are detected and removed as described in the README.
+*   **Front matter**: `Title`, `Author` and `Date` paragraphs before the body become metadata; `meta.xml` supplies title, creator and language when there is no such paragraph. The file's own creation/modification dates are not used as the document date. A leading picture described as "Cover" becomes the cover image.
+*   **Skipped**: tables of contents and other generated indexes, tracked changes, comments, soft page breaks, page numbers and other fields (their text is kept when it is meaningful, e.g. caption numbers).
+
+### 2. Lists, Quotes, Code
+*   **Lists**: bullet and numbered lists with the format of each level (`1`, `a`, `A`, `i`, `I`), prefix and suffix (`1.`, `1)`, `(1)`) and start value, nested; list styles are looked up per level.
+*   **Quotes and code**: "Quotations" paragraphs become block quotes; consecutive "Preformatted Text" paragraphs one code block; "Definition Term"/"Definition" paragraphs a definition list; "Abstract" paragraphs an abstract; a horizontal-line paragraph a rule.
+
+### 3. Tables, Figures, Cross-references
+*   **Tables**: header rows, rows, column and row spans (`covered-table-cell` is skipped), repeated empty cells, cell alignment taken from the first paragraph; a caption paragraph before or after the table is attached to it.
+*   **Figures**: pictures are read from `Pictures/` into the `MediaBag` with their width (as a percentage of the text width when it fits); a paragraph starting with a label such as "Figure 3:", "Table 2:", "Illustration 1:" (English, French, German, Spanish) is a caption, whose label is removed because LaTeX numbers it; a figure's bookmark may sit on the picture or on the caption. A row of pictures in a borderless table, with optional "(a)" captions, becomes sub-figures; consecutive rows are merged into one figure.
+*   **Links**: external links; links to bookmarks (a link whose text is a number becomes a reference, a link to `ref-…` a citation); LibreOffice's `bookmark-ref`/`reference-ref`/`sequence-ref` fields; bookmarks become ids. Bibliography entries (`ref-key` bookmarks) become a `thebibliography`.
+*   **Footnotes and endnotes**: `text:note` with its paragraphs.
+*   **Lists of headings**: Word numbers headings through a list, so LibreOffice writes `text:h` inside `text:list-item`; such a list is dissolved into its headings and paragraphs (nested ones too).
+*   **Broken links**: a link to a bookmark that does not exist keeps its text and is written without `\\ref` or `\\hyperref`.
+
+### 4. Math
+*   Each formula object is read from its `Object N/content.xml`: an `application/x-tex` annotation is used as it is, otherwise the MathML is converted to LaTeX (`MathmlToLatex`): tokens, scripts, fractions, roots, accents and over/under-scripts, big operators with limits, matrices (with the surrounding parentheses becoming `pmatrix`, `bmatrix`, …), equation arrays (`aligned`), `\left … \right` from stretchy fences, function names, Greek letters and the Letterlike/Mathematical Alphanumeric blocks (`\mathbb`, `\mathcal`, `\mathfrak`, …), named and numeric spaces. A brace-balance repair handles producers that leave a stray `}`.
+*   On the formulas of four test papers (1,596 distinct formulas) none failed to convert and 98.5% kept the same content after LaTeX → MathML → LaTeX → MathML.
+
+### 5. LaTeX Writer Additions
+*   `\label` only for linked ids (headings, captioned figures and tables, equations, paragraphs); `\ref` for links to numbered things, `\hyperref` otherwise (so a reference to a theorem keeps its own text), `\cite{a,b}` for grouped citation links; labelled display formulas as `equation` with `\tag` so that the number shown in the document is kept; `\appendix` before the first lettered heading.
+*   Figures (`figure`, `subfigure` with `subcaption`), tables (caption, `l`/`c`/`r` columns, `\multicolumn`, booktabs rules), `description` lists, `thebibliography`, `abstract`, footnotes, title block (`\title`/`\author`/`\date`/`\maketitle`), language through `babel`, `\cover{…}`.
+*   Characters that `pdflatex` rejects in text are mapped (see the README), including Unicode superscripts and subscripts (`Fe²⁺`, `H₂O`) as `\\textsuperscript`/`\\textsubscript` and the end-of-proof boxes; LibreOffice's empty-argument placeholder `❑` in a formula becomes `{}`; pictures in formats `pdflatex` cannot read become a visible `[image: name]` box.
+
+### 6. Verified and Not Yet Supported
+*   Verified by compiling the generated LaTeX with `pdflatex` (TeX Live 2026): the four sample papers (up to 113 pages) and eight files that LibreOffice wrote from real Word documents (a 6 MB review with chemistry notation and pictures, maths notes with Word equations, three converters' versions of one paper) give no error and no undefined reference; and by reading the LaTeX back: for the sample papers the headings, tables, figures, images, formulas, notes and links match those of the original source, and 97–100% of the words are identical.
+*   Not supported: theorem-like environments and algorithm structure (their text is kept), `\multirow`, per-row equation numbers, EMF/WMF/SVG/GIF pictures (a visible `[image: name]` box is written), comments and tracked changes, shapes other than text boxes, page layout, and styles as custom LaTeX classes.
 

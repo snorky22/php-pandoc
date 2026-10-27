@@ -283,10 +283,12 @@ class OdtWriter
 
     private function writeFigure(Figure $f, string $ctx): string
     {
-        $this->pushAnchor($f->attr->identifier);
         $caption = $this->captionInlines($f->caption->content);
         $subs = array_values(array_filter($f->content, fn($b) => $b instanceof Figure && in_array('subfigure', $b->attr->classes, true)));
         $grid = count($subs) >= 2 && count($subs) === count($f->content);
+        if (!$grid) {
+            $this->pushAnchor($f->attr->identifier);
+        }
         $out = $grid ? $this->subfigureRows($subs) : $this->writeBlocks($f->content, $ctx);
         if ($caption) {
             if (!$grid) {
@@ -296,6 +298,9 @@ class OdtWriter
                 if ($pos !== false) {
                     $out = substr_replace($out, 'text:style-name="Illustration_20_Captioned"', $pos, strlen($marker));
                 }
+            }
+            if ($grid) {
+                $this->pushAnchor($f->attr->identifier); // the figure's own bookmark sits on its caption, not on the first panel
             }
             $out .= '<text:p text:style-name="Caption">' . $this->takeAnchors() . $this->writeInlines($caption) . '</text:p>';
         }

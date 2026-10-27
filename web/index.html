@@ -18,13 +18,13 @@
 <body>
     <h1>Pandoc PHP Converter</h1>
     <div class="info">
-        <p>Upload a <strong>Markdown (.md)</strong>, <strong>HTML (.html)</strong>, <strong>Jupyter (.ipynb)</strong> or <strong>Word (.docx)</strong> file to convert it to <strong>LaTeX (.tex)</strong> using the Pandoc PHP library.</p>
+        <p>Upload a <strong>Markdown (.md)</strong>, <strong>HTML (.html)</strong>, <strong>Jupyter (.ipynb)</strong> or <strong>Word (.docx)</strong> or <strong>OpenDocument (.odt)</strong> file to convert it to <strong>LaTeX (.tex)</strong> using the Pandoc PHP library.</p>
     </div>
 
     <form action="convert.php" method="post" enctype="multipart/form-data">
         <div class="form-group">
             <label for="doc_file">Choose File:</label>
-            <input type="file" name="doc_file" id="doc_file" accept=".md,.docx,.html,.ipynb" required>
+            <input type="file" name="doc_file" id="doc_file" accept=".md,.docx,.odt,.html,.ipynb" required>
         </div>
         <div class="form-group">
             <label>Output Format:</label>

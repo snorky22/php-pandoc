@@ -21,6 +21,7 @@ class ReaderFactory
             'ipynb' => new IpynbReader(),
             'pptx' => new PptxReader(),
             'tex', 'latex' => new LatexReader(),
+            'odt' => new OdtReader(),
             'bib', 'bibtex' => new BibtexReader(),
             default => throw new \Exception("Unsupported file extension: .$extension")
         };

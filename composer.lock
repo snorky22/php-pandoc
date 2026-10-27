@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c3b9154a97f0b31675568a54117ddb00",
+    "content-hash": "c291a79d568419b3a082d049dcd2b414",
     "packages": [
         {
             "name": "latex2mathml/latex2mathml-php",
