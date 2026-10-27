@@ -13,7 +13,8 @@ A native PHP 8.4 port of the [Pandoc](https://pandoc.org/) document converter. T
 - **LaTeX Generation**: Standalone documents or body fragments.
 - **Automatic ZIP Bundling**: When a document contains images or chart data, output is a `.zip` with the `.tex` and all media files in the same directory. Plain `.tex` otherwise.
 - **Full UTF-8**: End-to-end UTF-8, supporting CJK, Cyrillic, Arabic, Thai, and all Latin-extended scripts.
-- **No External Dependencies**: Pure PHP 8.4+.
+- **LaTeX → EPUB 3**: Reads vanilla LaTeX (`LatexReader`) and writes a valid EPUB 3 with MathML math, numbered sections/figures/tables/theorems with working cross-references, footnotes, bibliography, algorithms, embedded images and an optional cover (see below).
+- **Minimal Dependencies**: Pure PHP 8.4+ (`ext-dom`, `ext-zip`) plus [`latex2mathml/latex2mathml-php`](https://packagist.org/packages/latex2mathml/latex2mathml-php) for MathML. `ext-imagick` is optional.
 
 ## Installation
 
@@ -258,6 +259,25 @@ $json  = file_get_contents('notebook.ipynb');
 $doc   = $reader->read($json);
 $latex = $writer->write($doc);
 ```
+
+### Converting LaTeX to EPUB
+
+```php
+use Pandoc\Reader\LatexReader;
+use Pandoc\Writer\EpubWriter;
+
+$doc = (new LatexReader())->read('/path/to/paper.tex');   // source string or file path
+(new EpubWriter())->writeToFile($doc, '/path/to/paper.epub');
+```
+
+Or from the command line: `php latex2epub.php paper.tex [paper.epub] [--cover=img.png] [--split=N] [--toc-depth=N]`.
+
+- `\input`/`\include`, `\newcommand`/`\def` macros, `\graphicspath` and `babel` languages are honoured; images are embedded into the EPUB unchanged.
+- Chapters are split at heading level `splitLevel` (default 1); the table of contents lists headings down to `tocDepth` (default 3).
+- **Cover**: add `\cover{file.png}` to the preamble (or body); the path is resolved like `\includegraphics`. The image is shown centred at the top of the title page and declared as the EPUB cover. No `\cover`, no cover. Authors who also compile with LaTeX can add `\providecommand{\cover}[1]{}`. The `coverImage` option overrides it.
+- Math is converted to MathML; a formula that cannot be converted falls back to its TeX source.
+- Image compression is **off** by default (it is CPU-heavy). Pass `['optimizeImages' => true, 'maxImageWidth' => 1600, 'jpegQuality' => 85]` (requires `ext-imagick`) to enable it.
+- Not supported: author affiliations from `\thanks`, equation numbers inside `align`/`eqnarray`, `\cellcolor` shading, side-by-side subfigure layout.
 
 ## Output: Plain `.tex` or `.zip`
 

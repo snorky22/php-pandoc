@@ -4,8 +4,61 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "81b50b32eed793297df1880dbbd8a046",
-    "packages": [],
+    "content-hash": "2b0e0a20df7f4eef43b514e0e68fa956",
+    "packages": [
+        {
+            "name": "latex2mathml/latex2mathml-php",
+            "version": "v1.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/snorky22/latex2mathml-php.git",
+                "reference": "f5a15110d2f107870e45e8775114b5de4a960183"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/snorky22/latex2mathml-php/zipball/f5a15110d2f107870e45e8775114b5de4a960183",
+                "reference": "f5a15110d2f107870e45e8775114b5de4a960183",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "php": ">=8.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Latex2MathML\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "snorky22",
+                    "email": "chaplains.francois@orange.fr"
+                }
+            ],
+            "description": "Pure PHP library for LaTeX to MathML and OMML conversion",
+            "keywords": [
+                "MathML",
+                "converter",
+                "latex",
+                "omml",
+                "php",
+                "word"
+            ],
+            "support": {
+                "issues": "https://github.com/snorky22/latex2mathml-php/issues",
+                "source": "https://github.com/snorky22/latex2mathml-php/tree/v1.5.0"
+            },
+            "time": "2026-03-09T14:33:21+00:00"
+        }
+    ],
     "packages-dev": [
         {
             "name": "myclabs/deep-copy",
@@ -1782,7 +1835,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.3"
+        "php": ">=8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"
